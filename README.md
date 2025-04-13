@@ -1,6 +1,8 @@
 # 💸 fintrackr
 
-A full-stack personal finance management app built with **Spring Boot** and **React**, designed to help users track small business inventories, transactions, and investment portfolios — all in one place.
+![Java CI](https://github.com/byanto/fintrackr/actions/workflows/ci.yml/badge.svg?branch=dev)
+
+A full-stack personal finance management app built with **Spring Boot** and **React**, designed to help small business owners and individuals to track inventories, transactions, and investment portfolios — all in one place.
 
 ---
 
