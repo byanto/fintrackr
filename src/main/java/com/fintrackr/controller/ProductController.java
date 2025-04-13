@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fintrackr.dto.ProductRequest;
 import com.fintrackr.dto.ProductResponse;
 import com.fintrackr.model.Product;
-import com.fintrackr.repository.ProductRepository;
+import com.fintrackr.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,50 +25,47 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/products")
 public class ProductController {
 
-	private final ProductRepository productRepository;	
+	private final ProductService productService;	
 	
 	@GetMapping
 	public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll()
+        return productService.getAllProducts()
                 .stream()
                 .map(product -> toResponse(product))
                 .collect(Collectors.toList());
 	}
 	
-	@PostMapping
-	public ResponseEntity<ProductResponse> createProduct(@RequestBody ProductRequest request) {
-        Product product = Product.builder()
-                .name(request.getName())
-				.stock(request.getStock())
-                .build();
-		Product savedProduct = productRepository.save(product);		
-        return ResponseEntity.ok(toResponse(savedProduct));
-	}
-	
 	@GetMapping("/{id}")
 	public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
-        return productRepository.findById(id)
+        return productService.getProductById(id)
                 .map(product -> ResponseEntity.ok(toResponse(product)))
                 .orElse(ResponseEntity.notFound().build());	
+	}
+
+	@PostMapping
+	public ResponseEntity<ProductResponse> createProduct(@RequestBody ProductRequest request) {       
+		Product newProduct = productService.createProduct(toProduct(request));		
+        return ResponseEntity.ok(toResponse(newProduct));
 	}
 	
 	@PutMapping("/{id}")
 	public ResponseEntity<ProductResponse> updateProduct(@PathVariable Long id, @RequestBody ProductRequest request) {
-        return productRepository.findById(id).map(product -> {
-            	product.setName(request.getName());
-				product.setStock(request.getStock());
-            	Product updatedProduct = productRepository.save(product);
-				return ResponseEntity.ok(toResponse(updatedProduct));
-        }).orElse(ResponseEntity.notFound().build());
+        try {
+            Product updatedProduct = productService.updateProduct(id, toProduct(request));
+            return ResponseEntity.ok(toResponse(updatedProduct));
+		} catch (RuntimeException ex) {
+            return ResponseEntity.notFound().build();
+		}
 	}
 	
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        if (!productRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-		productRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+		try {
+			productService.deleteProduct(id);
+			return ResponseEntity.noContent().build();
+		} catch (RuntimeException ex) {
+			return ResponseEntity.notFound().build();
+		}
 	}
 
     // Helper method to convert Product entity to ProductResponse
@@ -79,4 +76,12 @@ public class ProductController {
             .stock(product.getStock())
             .build();
 	}
+
+    // Helper method to convert ProductRequest to Product
+    private Product toProduct(ProductRequest request) {
+        return Product.builder()
+            .name(request.getName())
+            .stock(request.getStock())
+            .build();
+    }
 }
