@@ -2,20 +2,24 @@ package com.fintrackr.controller;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fintrackr.dto.ErrorResponse;
 import com.fintrackr.dto.TransactionRequest;
 import com.fintrackr.dto.TransactionResponse;
 import com.fintrackr.model.Product;
 import com.fintrackr.model.Transaction;
-import com.fintrackr.repository.ProductRepository;
-import com.fintrackr.repository.TransactionRepository;
+import com.fintrackr.service.ProductService;
+import com.fintrackr.service.TransactionService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,70 +28,71 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TransactionController {
 
-    private final TransactionRepository transactionRepository;
-    private final ProductRepository productRepository;
+    private final TransactionService transactionService;
+    private final ProductService productService;
 
-    @PostMapping
-    public ResponseEntity<TransactionResponse> createTransaction(@RequestBody TransactionRequest request) {
-        // Find product by ID
-        Product product = productRepository.findById(request.getProductId())
-                            .orElseThrow(() -> new RuntimeException("Product not found"));
-
-        int currentStock = product.getStock();
-
-        // Check the type of transaction and update stock accordingly
-        if (request.getType().equalsIgnoreCase("IN")) {
-            currentStock += request.getQuantity();            
-        } else if (request.getType().equalsIgnoreCase("OUT")) {
-            if (currentStock < request.getQuantity()) {
-                return ResponseEntity.badRequest().build();
-            }
-            currentStock -= request.getQuantity();
-        } else {
-            return ResponseEntity.badRequest().build();
-        }
-
-        // Update the product stock and save the transaction
-        product.setStock(currentStock);
-        productRepository.save(product);
-
-        // Create and save the transaction
-        Transaction transaction = Transaction.builder()
-                .product(product)
-                .quantity(request.getQuantity())
-                .type(request.getType())
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        Transaction saved = transactionRepository.save(transaction);
-        
-        // Transaction successfully created and saved
-        TransactionResponse response = TransactionResponse.builder()
-                .id(saved.getId())
-                .type(saved.getType())
-                .quantity(saved.getQuantity())
-                .timestamp(saved.getTimestamp())
-                .productId(saved.getProduct().getId())
-                .productName(saved.getProduct().getName())
-                .build();
-
-        // Build and return the response entity
-        return ResponseEntity.ok(response);
+    @GetMapping
+    public List<TransactionResponse> getAllTransactions() {
+        return transactionService.getAllTransactions()
+            .stream()
+            .map(this::toResponse)
+            .collect(Collectors.toList());
     }
 
-    public List<TransactionResponse> getAllTransactions() {
-        // Retrieve all transactions and map them to TransactionResponse
-        return transactionRepository.findAll().stream()
-                .map(transaction -> TransactionResponse.builder()
-                                        .id(transaction.getId())
-                                        .type(transaction.getType())
-                                        .quantity(transaction.getQuantity())
-                                        .timestamp(transaction.getTimestamp())
-                                        .productId(transaction.getProduct().getId())
-                                        .productName(transaction.getProduct().getName())
-                                        .build())
-                .collect(Collectors.toList());
-        
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getTransactionById(@PathVariable Long id) {
+        try {
+            return transactionService.getTransactionById(id)
+                .map(this::toResponse)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+        } catch (Exception ex) {       
+            return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createTransaction(@RequestBody TransactionRequest request) {
+        try {
+            Transaction savedTransaction = transactionService.createTransaction(toTransaction(request));
+            
+            // Build and return the Response Entity
+            return ResponseEntity.ok(toResponse(savedTransaction));
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
+        }     
+    }
+
+    /* Transaction should not be updated
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateTransaction(@PathVariable Long id, @RequestBody TransactionRequest request) {
+       return null;    
+    }
+    */
+
+    private TransactionResponse toResponse(Transaction transaction) {
+        return TransactionResponse.builder()
+            .id(transaction.getId())
+            .type(transaction.getType())
+            .quantity(transaction.getQuantity())
+            .productId(transaction.getProduct().getId())
+            .build();
+    }
+
+    private Transaction toTransaction(TransactionRequest request) {
+        // Find product by ID
+        Long productId = request.getProductId();
+        Optional<Product> optionalProduct = productService.getProductById(request.getProductId());
+        if (optionalProduct.isEmpty()) {
+            throw new IllegalArgumentException("Product with id " + productId + " does not exist.");
+        }
+
+        return Transaction.builder()
+            .type(request.getType())
+            .quantity(request.getQuantity())
+            .timestamp(LocalDateTime.now())
+            .product(optionalProduct.get())
+            .build();
     }
 
 }

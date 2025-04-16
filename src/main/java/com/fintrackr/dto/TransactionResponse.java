@@ -1,6 +1,6 @@
 package com.fintrackr.dto;
 
-import java.time.LocalDateTime;
+import com.fintrackr.model.TransactionType;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,10 +9,8 @@ import lombok.Data;
 @Builder
 public class TransactionResponse {
     private final Long id;
-    private final String type;
+    private final TransactionType type;
     private final int quantity;
-    private final LocalDateTime timestamp;
     private final Long productId;
-    private final String productName;
 }
     
