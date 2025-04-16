@@ -3,6 +3,7 @@ package com.fintrackr.controller;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fintrackr.dto.ErrorResponse;
 import com.fintrackr.dto.ProductRequest;
 import com.fintrackr.dto.ProductResponse;
 import com.fintrackr.model.Product;
@@ -31,40 +33,49 @@ public class ProductController {
 	public List<ProductResponse> getAllProducts() {
         return productService.getAllProducts()
                 .stream()
-                .map(product -> toResponse(product))
+                .map(this::toResponse)
                 .collect(Collectors.toList());
 	}
 	
 	@GetMapping("/{id}")
-	public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
-        return productService.getProductById(id)
-                .map(product -> ResponseEntity.ok(toResponse(product)))
+	public ResponseEntity<?> getProductById(@PathVariable Long id) {
+		try {
+			return productService.getProductById(id)
+				.map(this::toResponse)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());	
+		} catch (Exception ex) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
+		}
 	}
 
 	@PostMapping
-	public ResponseEntity<ProductResponse> createProduct(@RequestBody ProductRequest request) {       
-		Product newProduct = productService.createProduct(toProduct(request));		
-        return ResponseEntity.ok(toResponse(newProduct));
+	public ResponseEntity<?> createProduct(@RequestBody ProductRequest request) {       
+		try {
+			Product newProduct = productService.createProduct(toProduct(request));		
+        	return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(newProduct));
+		} catch (Exception ex) {
+			return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
+		}
 	}
 	
 	@PutMapping("/{id}")
-	public ResponseEntity<ProductResponse> updateProduct(@PathVariable Long id, @RequestBody ProductRequest request) {
+	public ResponseEntity<?> updateProduct(@PathVariable Long id, @RequestBody ProductRequest request) {
         try {
             Product updatedProduct = productService.updateProduct(id, toProduct(request));
             return ResponseEntity.ok(toResponse(updatedProduct));
-		} catch (RuntimeException ex) {
-            return ResponseEntity.notFound().build();
+		} catch (Exception ex) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
 		}
 	}
 	
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+	public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
 		try {
 			productService.deleteProduct(id);
 			return ResponseEntity.noContent().build();
-		} catch (RuntimeException ex) {
-			return ResponseEntity.notFound().build();
+        } catch (Exception ex) {
+			return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
 		}
 	}
 
