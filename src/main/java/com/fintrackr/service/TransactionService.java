@@ -47,11 +47,10 @@ public class TransactionService {
         // Update the product stock
         product.setStock(currentStock);        
 
-        // Save the transaction and product to the database
-        Transaction savedTransaction = transactionRepository.save(transaction);
+        // Save the updated product to the database
         productRepository.save(product);
 
-        return transactionRepository.save(savedTransaction);
+        return transactionRepository.save(transaction);
     }
 
     /* 
