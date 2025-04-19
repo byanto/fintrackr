@@ -20,6 +20,10 @@ import com.fintrackr.model.TransactionType;
 import com.fintrackr.repository.ProductRepository;
 import com.fintrackr.repository.TransactionRepository;
 
+/**
+ * Unit tests for {@link TransactionService} class focusing on transaction creation
+ * and stock management validation.
+ */
 class TransactionServiceTest {
 
     @Mock
@@ -36,8 +40,12 @@ class TransactionServiceTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    /* 
-     * Test the successful creation of an IN transaction.
+    /**
+     * Tests the creation of an IN transaction with valid inputs.
+     * Verifies that:
+     * - Product stock is correctly increased
+     * - Both product and transaction are saved
+     * - Final stock calculation is accurate
      */
     @Test
     void testCreateTransactionInSuccess() {
@@ -54,8 +62,12 @@ class TransactionServiceTest {
         verify(transactionRepository, times(1)).save(transaction);
     }
 
-    /*
-     * Test the successful creation of an OUT transaction.
+    /**
+     * Tests the creation of an OUT transaction with valid inputs.
+     * Verifies that:
+     * - Product stock is correctly decreased
+     * - Both product and transaction are saved
+     * - Final stock calculation is accurate
      */
     @Test
     void testCreateTransactionOutSuccess() {
@@ -72,12 +84,16 @@ class TransactionServiceTest {
         verify(transactionRepository, times(1)).save(transaction);
     }
 
-    /*
-     * Test for OUT transaction with insufficient stock
+    /**
+     * Tests the validation of OUT transactions when requested quantity
+     * exceeds available stock.
+     * Verifies that:
+     * - IllegalArgumentException is thrown with correct message
+     * - No database operations are performed
      */
     @Test
     void testCreateTransactionWithInsufficientStock() {
-        // Create mock product and transaction
+        // Arrange
         Product product = Product.builder().id(1L).name("Test Product").stock(5).build();
         Transaction transaction = Transaction.builder().id(1L).type(TransactionType.OUT).quantity(10).product(product).build();        
 
@@ -86,12 +102,16 @@ class TransactionServiceTest {
         System.out.println(ex.getMessage());
         assertEquals("Insufficient stock for the transaction.", ex.getMessage());
 
+        // Verify no interactions with database
         verify(productRepository, never()).save(any(Product.class));
         verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
-    /*
-     * Test for invalid transaction type
+    /**
+     * Tests the validation of transactions with invalid/null transaction type.
+     * Verifies that:
+     * - IllegalArgumentException is thrown with correct message
+     * - No database operations are performed
      */
     @Test
     void testCreateTransactionWithInvalidType() {
@@ -99,7 +119,7 @@ class TransactionServiceTest {
         Product product = Product.builder().id(1L).name("Test Product").stock(5).build();
         Transaction transaction = Transaction.builder().id(1L).quantity(3).product(product).type(null).build();        
 
-        // Act + Assert
+        // Assert
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> transactionService.createTransaction(transaction));
         assertEquals("Invalid transaction type.", ex.getMessage());
 

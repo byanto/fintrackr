@@ -19,7 +19,6 @@ class ProductServiceTest {
 
     @Mock
     private ProductRepository productRepository;
-
     @InjectMocks
     private ProductService productService;
 
@@ -27,6 +26,7 @@ class ProductServiceTest {
     void setup() {
         MockitoAnnotations.openMocks(this);
     }
+
 
     @Test
     void testCreateProduct() {
