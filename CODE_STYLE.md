@@ -55,10 +55,10 @@ To keep this project clean, consistent, and professional, we follow these conven
 
 - Use **underscore-style** (`snake_case`) to describe behavior clearly.
 - Format:  
-  `test_<MethodName>_When<Condition>_<ExpectedOutcome>`
+  `test<MethodName>_When<Condition>_<ExpectedOutcome>`
 - Examples:
-  - `test_DeleteProduct_WhenProductExists_ShouldRemoveFromRepository`
-  - `test_CreateTransaction_WhenStockIsInsufficient_ShouldThrowException`
+  - `testDeleteProduct_WhenProductExists_ShouldRemoveFromRepository`
+  - `testCreateTransaction_WhenStockIsInsufficient_ShouldThrowException`
 
 ---
 

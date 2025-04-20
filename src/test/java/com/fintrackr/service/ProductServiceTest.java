@@ -37,7 +37,7 @@ class ProductServiceTest {
     }
 
     @Test
-    void test_GetAllProducts() {
+    void testGetAllProducts() {
         // Arrange
         Product product1 = Product.builder()
                                 .name("Test Product 1")
@@ -65,7 +65,7 @@ class ProductServiceTest {
     }
 
     @Test
-    void test_GetProductById() {
+    void testGetProductById() {
         // Arrange
         Product inputProduct = Product.builder()
                                 .id(1L)
@@ -86,7 +86,7 @@ class ProductServiceTest {
     }
     
     @Test
-    void test_CreateProduct() {
+    void testCreateProduct() {
         // Arrange
         Product inputProduct = Product.builder()
                                 .name("Test Product")
@@ -107,7 +107,7 @@ class ProductServiceTest {
     }
 
     @Test
-    void test_UpdateProduct_WhenProductExists_ShouldRemoveFromRepository() {
+    void testUpdateProduct_WhenProductExists_ShouldRemoveFromRepository() {
         // Arrange
         Product inputProduct = Product.builder()
                                 .id(1L)     
@@ -130,7 +130,7 @@ class ProductServiceTest {
     }
 
     @Test
-    void test_UpdateProduct_WhenProductDoesNotExist_ShouldThrowException() {
+    void testUpdateProduct_WhenProductDoesNotExist_ShouldThrowException() {
         // Arrange
         Product inputProduct = Product.builder()
                                 .id(1L)     
@@ -150,7 +150,7 @@ class ProductServiceTest {
     }
 
     @Test
-    void test_DeleteProduct_WhenProductExists_ShouldRemoveFromRepository() {
+    void testDeleteProduct_WhenProductExists_ShouldRemoveFromRepository() {
         // Arrange
         when(productRepository.existsById(anyLong())).thenReturn(true);
 
@@ -162,7 +162,7 @@ class ProductServiceTest {
     }
 
     @Test
-    void test_DeleteProduct_WhenProductDoesNotExist_ShouldThrowException() {
+    void testDeleteProduct_WhenProductDoesNotExist_ShouldThrowException() {
         // Arrange
         Long id = 1L;
         when(productRepository.existsById(anyLong())).thenReturn(false);

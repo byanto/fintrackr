@@ -48,7 +48,7 @@ class TransactionServiceTest {
      * - Final stock calculation is accurate
      */
     @Test
-    void test_CreateTransaction_InSuccess_ShouldIncreaseStock() {
+    void testCreateTransaction_InSuccess_ShouldIncreaseStock() {
         Product product = Product.builder().id(1L).name("Test Product").stock(5).build();
         Transaction transaction = Transaction.builder().id(1L).type(TransactionType.IN).quantity(3).product(product).build();
 
@@ -70,7 +70,7 @@ class TransactionServiceTest {
      * - Final stock calculation is accurate
      */
     @Test
-    void test_CreateTransaction_OutSuccess_ShouldDecreaseStock() {
+    void testCreateTransaction_OutSuccess_ShouldDecreaseStock() {
         Product product = Product.builder().id(1L).name("Test Product").stock(5).build();
         Transaction transaction = Transaction.builder().id(1L).type(TransactionType.OUT).quantity(3).product(product).build();
 
@@ -92,7 +92,7 @@ class TransactionServiceTest {
      * - No database operations are performed
      */
     @Test
-    void test_CreateTransaction_WhenInsufficientStock_ShouldThrowException() {
+    void testCreateTransaction_WhenInsufficientStock_ShouldThrowException() {
         // Arrange
         Product product = Product.builder().id(1L).name("Test Product").stock(5).build();
         Transaction transaction = Transaction.builder().id(1L).type(TransactionType.OUT).quantity(10).product(product).build();        
@@ -114,7 +114,7 @@ class TransactionServiceTest {
      * - No database operations are performed
      */
     @Test
-    void test_CreateTransaction_WhenInvalidType_ShouldThrowException() {
+    void testCreateTransaction_WhenInvalidType_ShouldThrowException() {
         // Arrange
         Product product = Product.builder().id(1L).name("Test Product").stock(5).build();
         Transaction transaction = Transaction.builder().id(1L).quantity(3).product(product).type(null).build();        
