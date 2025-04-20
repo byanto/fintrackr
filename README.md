@@ -1,6 +1,7 @@
 # 💸 fintrackr
 
 ![Java CI](https://github.com/byanto/fintrackr/actions/workflows/ci.yml/badge.svg?branch=dev)
+[![codecov](https://codecov.io/gh/byanto/fintrackr/branch/main/graph/badge.svg)](https://codecov.io/gh/byanto/fintrackr)
 ![Java](https://img.shields.io/badge/Java-21-blue)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4-green)
 ![Maven](https://img.shields.io/badge/Maven-3.9-blue)
