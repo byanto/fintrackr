@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import com.fintrackr.model.Product;
 import com.fintrackr.repository.ProductRepository;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

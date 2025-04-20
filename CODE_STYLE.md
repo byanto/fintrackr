@@ -1,6 +1,6 @@
 # ✨ Fintrackr - Code Style & Naming Conventions
 
-To keep this project clean, consistent, and professional, we follow these conventions:
+To keep this project clean, consistent, and professional, please follow these conventions:
 
 ---
 
@@ -17,10 +17,11 @@ To keep this project clean, consistent, and professional, we follow these conven
 
 ## ✅ Project Structure
 
-- **Entities** live in the `model` package.
-- **DTOs** (Data Transfer Objects) live in the `dto` package.
-- **Business logic** goes into the `service` layer.
-- **Controller** layer handles API input/output and maps between DTOs and domain entities.
+- `model` → domain entities.
+- `service` → contain business logic.
+- `repository` → data access layer for CRUD operations.
+- `dto` → Data Transfer Objects.
+- `controller` → handles HTTP layer, API requests and responses, maps between DTOs and domain entities.
 
 ---
 
@@ -44,10 +45,13 @@ To keep this project clean, consistent, and professional, we follow these conven
 
 ## ✅ Test Style
 
+- Use **JUnit5 5** and **Mockito** for testing.
+- Test class names: `ClassNameTest` (e.g. TransactionServiceTest)
+- Test method names: use underscore to separate conditions (e.g. `testDeleteProduct_WhenProductExists`)
 - Prefer **Mockito** to mock dependencies (e.g., repositories).
 - Prefer **unit tests for service layer**, mocking the repository.
 - Test only **one behavior per test**.
-- Use `@Mock` and `@InjectMocks` for setup.
+- Use `@Mock` and `@InjectMocks` to isolate service logic.
 
 ---
 
