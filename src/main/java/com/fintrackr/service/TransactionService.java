@@ -11,7 +11,6 @@ import com.fintrackr.model.TransactionType;
 import com.fintrackr.repository.ProductRepository;
 import com.fintrackr.repository.TransactionRepository;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**
