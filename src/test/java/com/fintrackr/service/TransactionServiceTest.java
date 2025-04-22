@@ -8,6 +8,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -49,15 +52,18 @@ class TransactionServiceTest {
      */
     @Test
     void testCreateTransaction_InSuccess_ShouldIncreaseStock() {
+        // Arrange
         Product product = Product.builder().id(1L).name("Test Product").stock(5).build();
         Transaction transaction = Transaction.builder().id(1L).type(TransactionType.IN).quantity(3).product(product).build();
 
         when(productRepository.save(any(Product.class))).thenReturn(product);
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Transaction newTransaction = transactionService.createTransaction(transaction);        
-        assertEquals(8, newTransaction.getProduct().getStock());
-
+        // Act
+        Transaction result = transactionService.createTransaction(transaction);        
+        
+        // Assert
+        assertEquals(8, result.getProduct().getStock());
         verify(productRepository, times(1)).save(product);
         verify(transactionRepository, times(1)).save(transaction);
     }
@@ -71,15 +77,18 @@ class TransactionServiceTest {
      */
     @Test
     void testCreateTransaction_OutSuccess_ShouldDecreaseStock() {
+        // Arrange
         Product product = Product.builder().id(1L).name("Test Product").stock(5).build();
         Transaction transaction = Transaction.builder().id(1L).type(TransactionType.OUT).quantity(3).product(product).build();
 
         when(productRepository.save(any(Product.class))).thenReturn(product);
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Transaction newTransaction = transactionService.createTransaction(transaction);        
-        assertEquals(2, newTransaction.getProduct().getStock());
-
+        // Act
+        Transaction result = transactionService.createTransaction(transaction);        
+        
+        // Assert
+        assertEquals(2, result.getProduct().getStock());
         verify(productRepository, times(1)).save(product);
         verify(transactionRepository, times(1)).save(transaction);
     }
@@ -97,11 +106,10 @@ class TransactionServiceTest {
         Product product = Product.builder().id(1L).name("Test Product").stock(5).build();
         Transaction transaction = Transaction.builder().id(1L).type(TransactionType.OUT).quantity(10).product(product).build();        
 
-        // Assert
+        // Act & Assert
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> transactionService.createTransaction(transaction));
-        System.out.println(ex.getMessage());
         assertEquals("Insufficient stock for the transaction.", ex.getMessage());
-
+        
         // Verify no interactions with database
         verify(productRepository, never()).save(any(Product.class));
         verify(transactionRepository, never()).save(any(Transaction.class));
@@ -119,13 +127,59 @@ class TransactionServiceTest {
         Product product = Product.builder().id(1L).name("Test Product").stock(5).build();
         Transaction transaction = Transaction.builder().id(1L).quantity(3).product(product).type(null).build();        
 
-        // Assert
+        // Act & Assert
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> transactionService.createTransaction(transaction));
         assertEquals("Invalid transaction type.", ex.getMessage());
 
         // Verify no interactions with database
         verify(productRepository, never()).save(any(Product.class));
         verify(transactionRepository, never()).save(any(Transaction.class));
+    }
+
+    /**
+     * Tests the retrieval of all transactions.
+     * Verifies that:
+     * - The list of transactions returned matches the expected list
+     * - The size of the list is correct
+     */
+    @Test
+    void testGetAllTransactions_ReturnsListOfTransactions() {
+        // Arrange
+        Product product = Product.builder().id(1L).name("Test Product").stock(10).build();
+        Transaction transaction1 = Transaction.builder().id(1L).type(TransactionType.IN).quantity(5).product(product).build();
+        Transaction transaction2 = Transaction.builder().id(2L).type(TransactionType.OUT).quantity(2).product(product).build();
+        List<Transaction> expectedTransactions = List.of(transaction1, transaction2);
+        when(transactionRepository.findAll()).thenReturn(expectedTransactions);
+
+        // Act
+        List<Transaction> result = transactionService.getAllTransactions();
+
+        // Assert
+        assertEquals(expectedTransactions, result);
+        assertEquals(expectedTransactions.size(), result.size());
+    }
+
+    /**
+     * Tests the retrieval of a transaction by its unique identifier.
+     * Verifies that:
+     * - The retrieved transaction matches the expected transaction
+     * - The quantity, product name, and product stock of the retrieved transaction are correct
+     */
+    @Test
+    void testGetTransactionById_ReturnsRequestedTransaction() {
+        // Arrange
+        Product product = Product.builder().id(1L).name("Test Product").stock(10).build();
+        Transaction transaction = Transaction.builder().id(1L).type(TransactionType.IN).quantity(5).product(product).build();
+        when(transactionRepository.findById(1L)).thenReturn(Optional.of(transaction));
+
+        // Act
+        Optional<Transaction> result = transactionService.getTransactionById(1L);
+
+        // Assert
+        assertEquals(Optional.of(transaction), result);
+        assertEquals(transaction.getQuantity(), result.get().getQuantity());
+        assertEquals(transaction.getProduct().getName(), result.get().getProduct().getName());
+        assertEquals(transaction.getProduct().getStock(), result.get().getProduct().getStock());
     }
 
 }
