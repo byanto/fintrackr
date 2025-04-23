@@ -1,6 +1,7 @@
 package com.fintrackr.service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -50,8 +51,9 @@ public class TransactionService {
      * @param id the unique identifier of the transaction
      * @return the found transaction entity
      */
-    public Optional<Transaction> getTransactionById(Long id) {
-        return transactionRepository.findById(id);
+    public Transaction getTransactionById(Long id) {
+        return transactionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Transaction with id " + id + " does not exist."));
     }
 
     /**

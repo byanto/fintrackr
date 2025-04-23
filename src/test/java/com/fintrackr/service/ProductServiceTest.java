@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -36,62 +37,97 @@ class ProductServiceTest {
         MockitoAnnotations.openMocks(this);
     }
 
+    /**
+     * Tests the retrieval of all products.
+     * Verifies that:
+     * - The list of products returned matches the expected list
+     * - The size of the list is correct
+     * - The names, stock, and quantity of the retrieved products are correct
+     */
     @Test
-    void testGetAllProducts() {
+    void testGetAllProducts_ShouldReturnListOfProducts() {
         // Arrange
         Product product1 = Product.builder()
-                                .name("Test Product 1")
-                                .stock(5)
-                                .build();
+                .name("Test Product 1")
+                .stock(5)
+                .build();
         Product product2 = Product.builder()
-                                .name("Test Product 2")
-                                .stock(10)
-                                .build();
-        
-        List<Product> products = Arrays.asList(product1, product2);
-        when(productRepository.findAll()).thenReturn(products);
+                .name("Test Product 2")
+                .stock(10)
+                .build();
+
+        List<Product> expectedProducts = Arrays.asList(product1, product2);
+        when(productRepository.findAll()).thenReturn(expectedProducts);
+
+        // Act
+        List<Product> result = productService.getAllProducts();
 
         // Assert
-        List<Product> productList = productService.getAllProducts();
-        assertEquals(2, productList.size());
-        assertEquals("Test Product 1", productList.get(0).getName());
-        assertEquals("Test Product 2", productList.get(1).getName());
-        assertEquals(10, productList.get(1).getStock());
-        assertEquals(5, productList.get(0).getStock());
-        assertNotNull(productList);
-        
-        // Verify interactions
+        assertNotNull(result);
+        assertEquals(expectedProducts, result);
+        assertEquals(2, result.size());
+        assertEquals("Test Product 1", result.get(0).getName());
+        assertEquals("Test Product 2", result.get(1).getName());
+        assertEquals(10, result.get(1).getStock());
+        assertEquals(5, result.get(0).getStock());
         verify(productRepository, times(1)).findAll();
     }
 
+    /**
+     * Tests the retrieval of a product by its unique identifier, when the product
+     * exists.
+     * Verifies that:
+     * - The retrieved product matches the expected product
+     * - The repository's findById method was called once
+     */
     @Test
-    void testGetProductById() {
+    void testGetProductById_WhenProductExists_ShouldReturnProduct() {
         // Arrange
         Product inputProduct = Product.builder()
-                                .id(1L)
-                                .name("Test Product")
-                                .stock(5)
-                                .build();
+                .id(1L)
+                .name("Test Product")
+                .stock(5)
+                .build();
 
         when(productRepository.findById(1L)).thenReturn(Optional.of(inputProduct));
 
-        // Assert that the product returned matches the input product
-        Product result = productService.getProductById(1L).get();
+        // Act
+        Product result = productService.getProductById(1L);
+
+        // Assert
         assertNotNull(result);
+        assertEquals(1L, result.getId());
         assertEquals("Test Product", result.getName());
         assertEquals(5, result.getStock());
-
-        // Verify that the repository's findById method was called once
         verify(productRepository, times(1)).findById(1L);
     }
-    
+
+    /**
+     * Tests the retrieval of a product by its unique identifier, when the product does not exist.
+     * Verifies that:
+     * - NoSuchElementException is thrown with the correct message
+     * - The repository's findById method was called once
+     */
+    @Test
+    void testGetProductById_WhenProductDoesNotExist_ShouldThrowException() {
+        // Arrange
+        Long productId = 1L;
+        when(productRepository.findById(productId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        NoSuchElementException ex = assertThrows(NoSuchElementException.class,
+                () -> productService.getProductById(productId));
+        assertEquals("Product with id " + productId + " does not exist.", ex.getMessage());
+        verify(productRepository, times(1)).findById(productId);
+    }
+
     @Test
     void testCreateProduct() {
         // Arrange
         Product inputProduct = Product.builder()
-                                .name("Test Product")
-                                .stock(5)
-                                .build();
+                .name("Test Product")
+                .stock(5)
+                .build();
 
         when(productRepository.save(any(Product.class))).thenReturn(inputProduct);
 
@@ -110,11 +146,11 @@ class ProductServiceTest {
     void testUpdateProduct_WhenProductExists_ShouldRemoveFromRepository() {
         // Arrange
         Product inputProduct = Product.builder()
-                                .id(1L)     
-                                .name("Test Product")
-                                .stock(5)
-                                .build();
-        
+                .id(1L)
+                .name("Test Product")
+                .stock(5)
+                .build();
+
         when(productRepository.findById(anyLong())).thenReturn(Optional.of(inputProduct));
         when(productRepository.save(any(Product.class))).thenReturn(inputProduct);
 
@@ -133,17 +169,18 @@ class ProductServiceTest {
     void testUpdateProduct_WhenProductDoesNotExist_ShouldThrowException() {
         // Arrange
         Product inputProduct = Product.builder()
-                                .id(1L)     
-                                .name("Test Product")
-                                .stock(5)
-                                .build();
-        
+                .id(1L)
+                .name("Test Product")
+                .stock(5)
+                .build();
+
         when(productRepository.findById(anyLong())).thenReturn(Optional.empty());
-        
+
         // Act & Assert
-        IllegalArgumentException ex  = assertThrows(IllegalArgumentException.class, () -> productService.updateProduct(inputProduct.getId(), inputProduct));
+        NoSuchElementException ex = assertThrows(NoSuchElementException.class,
+                () -> productService.updateProduct(inputProduct.getId(), inputProduct));
         assertEquals("Product with id " + inputProduct.getId() + " does not exist.", ex.getMessage());
-    
+
         // Verify
         verify(productRepository, never()).save(any(Product.class));
 
@@ -168,13 +205,12 @@ class ProductServiceTest {
         when(productRepository.existsById(anyLong())).thenReturn(false);
 
         // Act & Assert
-        IllegalArgumentException ex  = assertThrows(IllegalArgumentException.class, () -> productService.deleteProduct(id));
+        NoSuchElementException ex = assertThrows(NoSuchElementException.class,
+                () -> productService.deleteProduct(id));
         assertEquals("Product with id " + id + " does not exist.", ex.getMessage());
 
         // Verify
         verify(productRepository, never()).deleteById(anyLong());
     }
-
-    
 
 }

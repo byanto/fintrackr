@@ -1,6 +1,7 @@
 package com.fintrackr.service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -41,8 +42,9 @@ public class ProductService {
      * @param id the unique identifier of the product
      * @return the found product entity
      */
-    public Optional<Product> getProductById(Long id) {
-        return productRepository.findById(id);
+    public Product getProductById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Product with id " + id + " does not exist."));
     }
 
     /**
@@ -68,7 +70,7 @@ public class ProductService {
             product.setName(updatedProduct.getName());
             product.setStock(updatedProduct.getStock());
             return productRepository.save(product);
-        }).orElseThrow(() -> new IllegalArgumentException("Product with id " + id + " does not exist."));
+        }).orElseThrow(() -> new NoSuchElementException("Product with id " + id + " does not exist."));
     }
 
     /**
@@ -79,7 +81,7 @@ public class ProductService {
      */
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
-            throw new IllegalArgumentException("Product with id " + id + " does not exist.");
+            throw new NoSuchElementException("Product with id " + id + " does not exist.");
         }
         productRepository.deleteById(id);
     }

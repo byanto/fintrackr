@@ -42,7 +42,7 @@ public class TransactionController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getTransactionById(@PathVariable Long id) {
         try {
-            return transactionService.getTransactionById(id)
+            return Optional.of(transactionService.getTransactionById(id))
                 .map(this::toResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -81,17 +81,13 @@ public class TransactionController {
 
     private Transaction toTransaction(TransactionRequest request) {
         // Find product by ID
-        Long productId = request.getProductId();
-        Optional<Product> optionalProduct = productService.getProductById(request.getProductId());
-        if (optionalProduct.isEmpty()) {
-            throw new IllegalArgumentException("Product with id " + productId + " does not exist.");
-        }
+        Product product = productService.getProductById(request.getProductId());
 
         return Transaction.builder()
             .type(request.getType())
             .quantity(request.getQuantity())
             .timestamp(LocalDateTime.now())
-            .product(optionalProduct.get())
+            .product(product)
             .build();
     }
 

@@ -1,6 +1,7 @@
 package com.fintrackr.controller;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -40,7 +41,7 @@ public class ProductController {
 	@GetMapping("/{id}")
 	public ResponseEntity<?> getProductById(@PathVariable Long id) {
 		try {
-			return productService.getProductById(id)
+			return Optional.of(productService.getProductById(id))
 				.map(this::toResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());	
