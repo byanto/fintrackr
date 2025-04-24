@@ -103,7 +103,8 @@ class ProductServiceTest {
     }
 
     /**
-     * Tests the retrieval of a product by its unique identifier, when the product does not exist.
+     * Tests the retrieval of a product by its unique identifier, when the product
+     * does not exist.
      * Verifies that:
      * - NoSuchElementException is thrown with the correct message
      * - The repository's findById method was called once
@@ -121,8 +122,14 @@ class ProductServiceTest {
         verify(productRepository, times(1)).findById(productId);
     }
 
+    /**
+     * Tests the creation of a product.
+     * Verifies that:
+     * - The returned product matches the expected product
+     * - The repository's save method was called once with the input product
+     */
     @Test
-    void testCreateProduct() {
+    void testCreateProduct_ShouldReturnProduct() {
         // Arrange
         Product inputProduct = Product.builder()
                 .name("Test Product")
@@ -132,16 +139,24 @@ class ProductServiceTest {
         when(productRepository.save(any(Product.class))).thenReturn(inputProduct);
 
         // Act
-        Product resultProduct = productService.createProduct(inputProduct);
+        Product result = productService.createProduct(inputProduct);
 
         // Assert
-        assertEquals("Test Product", resultProduct.getName());
-        assertEquals(5, resultProduct.getStock());
+        assertNotNull(result);
+        assertEquals("Test Product", result.getName());
+        assertEquals(5, result.getStock());
 
         // Verify that the save method was called exactly once with the input product
         verify(productRepository, times(1)).save(inputProduct);
     }
 
+    /**
+     * Tests the update of an existing product.
+     * Verifies that:
+     * - The returned product matches the expected product
+     * - The repository's findById method was called once with the input id
+     * - The repository's save method was called once with the updated product
+     */
     @Test
     void testUpdateProduct_WhenProductExists_ShouldRemoveFromRepository() {
         // Arrange
@@ -150,21 +165,34 @@ class ProductServiceTest {
                 .name("Test Product")
                 .stock(5)
                 .build();
+        Product updatedProduct = Product.builder()
+                .id(1L)
+                .name("Updated Product")
+                .stock(10)
+                .build();
 
         when(productRepository.findById(anyLong())).thenReturn(Optional.of(inputProduct));
-        when(productRepository.save(any(Product.class))).thenReturn(inputProduct);
+        when(productRepository.save(any(Product.class))).thenReturn(updatedProduct);
 
-        // Assert that the product was updated correctly
-        Product updatedProduct = productService.updateProduct(1L, inputProduct);
-        assertNotNull(updatedProduct);
-        assertEquals("Test Product", updatedProduct.getName());
-        assertEquals(5, updatedProduct.getStock());
+        // Act
+        Product result = productService.updateProduct(1L, inputProduct);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Updated Product", result.getName());
+        assertEquals(10, result.getStock());
 
         // Verify that the repository's save method was called once
         verify(productRepository, times(1)).findById(anyLong());
         verify(productRepository, times(1)).save(any(Product.class));
     }
 
+    /**
+     * Tests the update of an existing product, when the product does not exist.
+     * Verifies that:
+     * - NoSuchElementException is thrown with the correct message
+     * - The repository's save method was not called
+     */
     @Test
     void testUpdateProduct_WhenProductDoesNotExist_ShouldThrowException() {
         // Arrange
@@ -180,12 +208,14 @@ class ProductServiceTest {
         NoSuchElementException ex = assertThrows(NoSuchElementException.class,
                 () -> productService.updateProduct(inputProduct.getId(), inputProduct));
         assertEquals("Product with id " + inputProduct.getId() + " does not exist.", ex.getMessage());
-
-        // Verify
         verify(productRepository, never()).save(any(Product.class));
-
     }
 
+    /**
+     * Tests the deletion of an existing product.
+     * Verifies that:
+     * - The repository's deleteById method was called once with the input id
+     */
     @Test
     void testDeleteProduct_WhenProductExists_ShouldRemoveFromRepository() {
         // Arrange
@@ -198,6 +228,12 @@ class ProductServiceTest {
         verify(productRepository, times(1)).deleteById(1L);
     }
 
+    /**
+     * Tests the deletion of a product when the product does not exist.
+     * Verifies that:
+     * - NoSuchElementException is thrown with the correct message
+     * - The repository's deleteById method is not called
+     */
     @Test
     void testDeleteProduct_WhenProductDoesNotExist_ShouldThrowException() {
         // Arrange

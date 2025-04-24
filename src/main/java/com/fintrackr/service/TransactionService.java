@@ -1,8 +1,8 @@
 package com.fintrackr.service;
 
+import java.lang.foreign.Linker.Option;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -108,18 +108,32 @@ public class TransactionService {
             .orElseThrow(() -> new IllegalArgumentException("Transaction with id " + id + " does not exist."));
     }
     */
-
+    
+    
     /**
-     * Deletes a transactions.
-     *
+     * Deletes a transaction with the given identifier.
+     * Only allowed to delete OUT transactions.
+     * Prevent deletion of IN transactions to avoid issues when stock is no longer sufficient to roll back.
+     * When OUT transaction is deleted, the stock is rolled back by the transaction quantity.
      * @param id the unique identifier of the transaction to delete
-     * @throws IllegalArgumentException if no transaction exists with the given ID
+     * @throws NoSuchElementException if no transaction exists with the given ID
+     * @throws UnsupportedOperationException if the transaction is an IN transaction
      */
     public void deleteTransaction(Long id) {
-        if (!transactionRepository.existsById(id)) {
-            throw new IllegalArgumentException("Transaction with id " + id + " does not exist.");
+        Transaction transaction = transactionRepository.findById(id)
+                    .orElseThrow(() -> new NoSuchElementException("Transaction with id " + id + " does not exist."));
+        
+        // Only allowed deletion of OUT transactions
+        // Prevent deletion of IN transactions to avoid issues when stock is no longer sufficient to roll back
+        if (transaction.getType() == TransactionType.IN) {
+            throw new UnsupportedOperationException("Cannot delete IN transaction to ensure stock consistency.");
         }
-        transactionRepository.deleteById(id);
+
+        // Roll back the stock
+        Product product = transaction.getProduct();
+        product.setStock(product.getStock() + transaction.getQuantity());
+        productRepository.save(product);
+        transactionRepository.delete(transaction);
     }
 
 }

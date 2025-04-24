@@ -3,9 +3,9 @@ package com.fintrackr.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -138,8 +138,8 @@ class TransactionServiceTest {
         Transaction transaction = Transaction.builder().id(1L).type(TransactionType.IN).quantity(3).product(product)
                 .build();
 
-        when(productRepository.save(any(Product.class))).thenReturn(product);
-        when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
+        when(productRepository.save(product)).thenReturn(product);
+        when(transactionRepository.save(transaction)).thenReturn(transaction);
 
         // Act
         Transaction result = transactionService.createTransaction(transaction);
@@ -169,8 +169,8 @@ class TransactionServiceTest {
         Transaction transaction = Transaction.builder().id(1L).type(TransactionType.OUT).quantity(3).product(product)
                 .build();
 
-        when(productRepository.save(any(Product.class))).thenReturn(product);
-        when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
+        when(productRepository.save(product)).thenReturn(product);
+        when(transactionRepository.save(transaction)).thenReturn(transaction);
 
         // Act
         Transaction result = transactionService.createTransaction(transaction);
@@ -206,8 +206,8 @@ class TransactionServiceTest {
         assertEquals("Insufficient stock for the transaction.", ex.getMessage());
 
         // Verify no interactions with database
-        verify(productRepository, never()).save(any(Product.class));
-        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(productRepository, never()).save(product);
+        verify(transactionRepository, never()).save(transaction);
     }
 
     /**
@@ -228,10 +228,47 @@ class TransactionServiceTest {
         assertEquals("Invalid transaction type.", ex.getMessage());
 
         // Verify no interactions with database
-        verify(productRepository, never()).save(any(Product.class));
-        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(productRepository, never()).save(product);
+        verify(transactionRepository, never()).save(transaction);
     }
 
-    
+    @Test
+    void testDeleteTransaction_WhenInTransactionExists_ShouldThrowException() {
+        // Arrange
+        Product product = Product.builder().id(1L).name("Test Product").stock(10).build();
+        Long transactionId = 1L;
+        Transaction transaction = Transaction.builder()
+                        .id(transactionId).type(TransactionType.IN).quantity(5).product(product).build();
+        
+        when(transactionRepository.findById(transactionId)).thenReturn(Optional.of(transaction));
+
+        // Act & Assert
+        UnsupportedOperationException ex = assertThrows(UnsupportedOperationException.class,
+                () -> transactionService.deleteTransaction(transactionId));
+        assertEquals("Cannot delete IN transaction to ensure stock consistency.", ex.getMessage());
+        verify(transactionRepository, times(1)).findById(transactionId);
+        verify(transactionRepository, never()).delete(transaction);
+        verify(productRepository, never()).save(product);
+    }
+
+    @Test
+    void testDeleteTransaction_WhenOutTransactionExists_ShouldDeleteTransactionAndRestoreStock() {
+        // Arrange
+        Product product = Product.builder().id(1L).name("Test Product").stock(10).build();
+        Long transactionId = 1L;
+        Transaction transaction = Transaction.builder()
+                        .id(transactionId).type(TransactionType.OUT).quantity(5).product(product).build();
+        
+        when(transactionRepository.findById(transactionId)).thenReturn(Optional.of(transaction));
+
+        // Act
+        transactionService.deleteTransaction(transactionId);
+
+        // Assert
+        assertEquals(15, product.getStock());
+        verify(productRepository, times(1)).save(product);  
+        verify(transactionRepository, times(1)).findById(transactionId);
+        verify(transactionRepository, times(1)).delete(transaction);
+    }
 
 }
