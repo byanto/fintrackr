@@ -14,7 +14,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // For JPA use only
-public class MutualFund {
+public class MutualFund extends Asset{
 	
 	private String fundManager;
 	private Double currentNAV;

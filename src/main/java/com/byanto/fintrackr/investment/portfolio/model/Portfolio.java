@@ -12,11 +12,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
 public class Portfolio {
 
 	@Id
@@ -32,5 +34,10 @@ public class Portfolio {
 	
 	@OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Transaction> transactions;
+	
+	public Portfolio(String name, String description) {
+		this.name = name;
+		this.description = description;
+	}
 	
 }
