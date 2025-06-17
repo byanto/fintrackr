@@ -1,6 +1,7 @@
 package com.byanto.fintrackr.investment.portfolio;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.DisplayName;
@@ -38,8 +39,24 @@ class PortfolioServiceIntegrationTest {
 		assertNotNull(savedPortfolio.getId());
 		
 		var foundInDB = portfolioRepository.findById(savedPortfolio.getId()).orElseThrow();
-		assertEquals("Real DB Test", foundInDB.getName());
-		assertEquals("Portfolio saved in a real DB.", foundInDB.getDescription());
+		assertEquals(request.name(), foundInDB.getName());
+		assertEquals(request.description(), foundInDB.getDescription());
+	}
+	
+	@Test
+	@DisplayName("GIVEN an existing portfolio id WHEN the GET endpoint is called THEN the portfolio is returned")
+	void shouldReturnPortfolio_whenRetrievingByExistingId() {
+		// Arrange
+		var request = new PortfolioRequest("Real DB Test", "Portfolio saved in a real DB.");
+		var createdPortfolio = portfolioService.createPortfolio(request);
+		
+		// Act
+		var foundPortfolio = portfolioService.retrievePortfolioById(createdPortfolio.getId());
+		
+		// Assert
+		assertTrue(foundPortfolio.isPresent());
+		assertEquals(createdPortfolio.getName(), foundPortfolio.get().getName());
+		assertEquals(createdPortfolio.getDescription(), foundPortfolio.get().getDescription());
 	}
 
 }

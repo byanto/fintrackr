@@ -1,5 +1,14 @@
 package com.byanto.fintrackr.investment.portfolio;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -8,17 +17,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.service.annotation.PostExchange;
 
 import com.byanto.fintrackr.investment.portfolio.dto.PortfolioRequest;
 import com.byanto.fintrackr.investment.portfolio.model.Portfolio;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.any;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PortfolioController.class)
 @DisplayName("Portfolio API Tests")
@@ -40,10 +42,10 @@ class PortfolioControllerTest {
 		
 		@Test
 		@DisplayName("GIVEN a valid portfolio request WHEN the POST endpoint is called THEN a new portfolio is created with status 201")
-		void shouldReturn201AndPortfolio_whenRequestIsValid() throws Exception{
+		void shouldReturnStatus201AndPortfolio_whenRequestIsValid() throws Exception{
 			// Arrange
 			var request = new PortfolioRequest("My Retirement", "Primary retirement savings portfolio.");
-			var createdPortfolio = new Portfolio("My Retirement", "Primary retirement savings portfolio.");
+			var createdPortfolio = new Portfolio(request.name(), request.description());
 			createdPortfolio.setId(1L); // Simulate that the portfolio was saved and got an ID
 			
 			// Act
@@ -61,6 +63,43 @@ class PortfolioControllerTest {
 	}
 	
 	// TEST: Get a single portfolio
+	@Nested
+	@DisplayName("Get Portfolio By Id Endpoint Tests")
+	class GetPortfolioById {
+		
+		@Test
+		@DisplayName("GIVEN a valid portfolio id WHEN the GET endpoint is called THEN the portfolio is returned with status 200 OK")
+		void shouldReturnStatus200AndPortfolio_whenPortfolioExists() throws Exception{
+			// Arrange
+			var portfolioId = 1L;
+			var expectedPortfolio = new Portfolio("My Retirement", "Primary retirement savings portfolio.");
+			expectedPortfolio.setId(portfolioId);
+			
+			// Act
+			when(portfolioService.retrievePortfolioById(portfolioId)).thenReturn(Optional.of(expectedPortfolio));
+			
+			// Assert
+			mockMvc.perform(get("/api/investment/portfolios/{id}", portfolioId))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.id").value(expectedPortfolio.getId()))
+					.andExpect(jsonPath("$.name").value(expectedPortfolio.getName()))
+					.andExpect(jsonPath("$.description").value(expectedPortfolio.getDescription()));
+		}
+		
+		@Test
+		@DisplayName("GIVEN an invalid portfolio id WHEN the GET endpoint is called THEN status 404 is returned")
+		void shouldReturnStatus404_whenPortfolioDoesNotExist() throws Exception {
+			// Arrange
+			var portfolioId = 1L;
+			
+			// Act
+			when(portfolioService.retrievePortfolioById(portfolioId)).thenReturn(Optional.empty());
+			
+			// Assert
+			mockMvc.perform(get("/api/investment/portfolios/{id}", portfolioId))
+					.andExpect(status().isNotFound());
+		}
+	}
 	
 	// TEST: Get all portfolios
 	

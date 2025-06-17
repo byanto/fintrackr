@@ -1,5 +1,7 @@
 package com.byanto.fintrackr.investment.portfolio;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 
 import com.byanto.fintrackr.investment.portfolio.dto.PortfolioRequest;
@@ -17,6 +19,10 @@ public class PortfolioService {
 	public Portfolio createPortfolio(PortfolioRequest request) {
 		Portfolio portfolio = new Portfolio(request.name(), request.description());
 		return portfolioRepository.save(portfolio);
+	}
+
+	public Optional<Portfolio> retrievePortfolioById(Long id) {
+		return portfolioRepository.findById(id);		
 	}
 
 }
