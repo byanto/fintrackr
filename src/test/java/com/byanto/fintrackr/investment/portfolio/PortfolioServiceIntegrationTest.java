@@ -8,15 +8,23 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.byanto.fintrackr.investment.portfolio.dto.PortfolioRequest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE) // Don't start a web server
-//@Testcontainers
+@Testcontainers // This annotation is needed to manage the @Container lifecycle
 @ActiveProfiles("test")
 class PortfolioServiceIntegrationTest {
 
+	@Container
+    @ServiceConnection // This is the magic annotation!
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+	
 	private final PortfolioService portfolioService;
 	private final PortfolioRepository portfolioRepository;
 	
