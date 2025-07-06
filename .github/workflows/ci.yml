@@ -58,3 +58,5 @@ jobs:
         env:
           # Tell Spring to use the 'test' profile
           SPRING_PROFILES_ACTIVE: test
+          # Securely inject the password from GitHub Secrets
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
