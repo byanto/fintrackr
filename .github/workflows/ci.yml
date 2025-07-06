@@ -16,7 +16,7 @@ jobs:
         image: postgres:16-alpine
         env:
           POSTGRES_USER: fintrackrdb_user
-          POSTGRES_PASSWORD: fintrackrdb_password
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
           POSTGRES_DB: fintrackr_db
         ports:
           - 5432:5432
