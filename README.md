@@ -1,5 +1,6 @@
 # 💸 Fintrackr
 
+![Java CI](https://github.com/byanto/fintrackr/actions/workflows/ci.yml/badge.svg)
 ![Java](https://img.shields.io/badge/Java-21-blue)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blue)
@@ -39,7 +40,7 @@ This project was designed not just to be functional, but to demonstrate a deep u
 | Database 	| [PostgreSQL](https://www.postgresql.org/)                                                                           |
 | Testing 	| [JUnit 5](https://junit.org/junit5/), [Mockito](https://site.mockito.org/), [AssertJ](https://assertj.github.io/doc/), [Testcontainers](https://www.testcontainers.org/) |
 | Build 	| [Apache Maven](https://maven.apache.org/)                                                                           |
-| Versioning | Git & [Github](https://projectlombok.org/)                                                                                |
+| Versioning | Git & [Github](https://github.com/)                                                                                |
 | DevOps 	| [Docker](https://www.docker.com/) & Docker Compose                                                                  |
 | Utilities | [Lombok](https://projectlombok.org/)                                                                                |
 | Frontend | [React](https://react.dev/)   																						  |
@@ -98,13 +99,17 @@ curl -X POST http://localhost:8080/api/investment/portfolios \
 }'
 ```
 
+**Get portfolio with ID 1:**
+```bash
+curl http://localhost:8080/api/investment/portfolios/1
+
 ---
 
 ## 📝 Learning Journey
 
 Fintrackr is more than a project—it's my personal journey back into the world of software development.
 
-After completing my MSc in Computer Science from TU Berlin in 2016 and working as a Werkstudent at IRB and KNIME, I returned to Indonesia and pursued other paths. In 2025, I decided to return to my roots in tech and re-enter the industry as a backend developer.
+After completing my MSc in Computer Science from TU Berlin in 2016 and working as a Werkstudent at IRB and KNIME, I returned to Indonesia and successfully built and managed my own e-commerce business with a team of about 10 employees. In 2025, I decided to return to my roots in tech and re-enter the industry as a backend developer.
 
 To rebuild my skills, I used a combination of structured courses (I enrolled in a Spring Boot course by in28minutes at Udemy) and interactive exploration with ChatGPT (as my pair programmer) to deepen my understanding and problem-solving skills. I also supplemented it with hands-on practice through this app.
 
