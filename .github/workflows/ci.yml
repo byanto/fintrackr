@@ -53,6 +53,14 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven
 
+      # --- ADD THIS TEMPORARY DEBUG STEP ---
+      - name: Debug Database Connection
+        run: |
+          echo "Attempting to manually connect to PostgreSQL..."
+          PGPASSWORD=${{ secrets.DB_PASSWORD }} psql -h localhost -U fintrackrdb_user -d fintrackr_db -c "\l"
+          echo "psql command finished. Exit code: $?"
+      # -------------------------------------
+          
       - name: Build and Test with Maven
         run: mvn -B verify
         env:
