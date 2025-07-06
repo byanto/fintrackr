@@ -28,11 +28,16 @@ jobs:
           --health-retries 5
 
     steps:
-	  - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
-	  - run: echo "This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-	  - run: echo "The name of the branch is ${{ github.ref }} and the repository is ${{ github.repository }}."
+      - name: Log triggering event
+        run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
       
-	  - name: Checkout repository code
+      - name: Log runner info
+        run: echo "This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+
+      - name: Log branch and repo info
+        run: echo "The name of the branch is ${{ github.ref }} and the repository is ${{ github.repository }}."
+
+      - name: Checkout repository code
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
@@ -40,13 +45,13 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-		  
-	  - name: Cache Maven dependencies
-	 	uses: actions/cache@v3
-		with:
-		  path: ~/.m2
-		  key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-		  restore-keys: ${{ runner.os }}-maven
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven
 
       - name: Build and Test with Maven
         run: mvn -B verify
