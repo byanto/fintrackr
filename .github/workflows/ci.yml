@@ -1,0 +1,49 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      # Start a PostgreSQL database service for our integration tests
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fintrackrdb_user
+          POSTGRES_PASSWORD: fintrackrdb_password
+          POSTGRES_DB: fintrackr_db
+        ports:
+          - 5432:5432
+        # Health check to wait until the database is ready
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+	  - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
+	  - run: echo "This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+	  - run: echo "The name of the branch is ${{ github.ref }} and the repository is ${{ github.repository }}."
+      
+	  - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and Test with Maven
+        run: mvn -B verify
+        env:
+          # Tell Spring to use the 'test' profile
+          SPRING_PROFILES_ACTIVE: test
