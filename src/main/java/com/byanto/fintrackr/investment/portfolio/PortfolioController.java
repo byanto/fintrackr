@@ -1,6 +1,8 @@
 package com.byanto.fintrackr.investment.portfolio;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,4 +36,14 @@ public class PortfolioController {
 		return portfolioService.retrievePortfolioById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Portfolio not found with id: " + id));
 	}
+	
+	@DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePortfolioById(@PathVariable Long id) {
+		boolean isDeleted = portfolioService.deletePortfolioById(id);
+        if (isDeleted) {
+            return ResponseEntity.noContent().build(); // HTTP 204
+        } else {
+        	return ResponseEntity.notFound().build(); // HTTP 404
+        }
+    }
 }

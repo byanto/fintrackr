@@ -25,4 +25,12 @@ public class PortfolioService {
 		return portfolioRepository.findById(id);		
 	}
 
+	public boolean deletePortfolioById(long portfolioId) {
+        if (portfolioRepository.existsById(portfolioId)) {
+            portfolioRepository.deleteById(portfolioId);
+            return true;
+        }
+		return false;
+	}
+
 }

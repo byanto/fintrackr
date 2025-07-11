@@ -3,6 +3,7 @@ package com.byanto.fintrackr.investment.portfolio;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,23 @@ class PortfolioServiceIntegrationTest {
 		assertTrue(foundPortfolio.isPresent());
 		assertEquals(createdPortfolio.getName(), foundPortfolio.get().getName());
 		assertEquals(createdPortfolio.getDescription(), foundPortfolio.get().getDescription());
+	}
+	
+	@Test
+	@DisplayName("GIVEN an existing portfolio id WHEN the DELETE endpoint is called THEN the portfolio is deleted")
+	void shouldDeletePortfolio_whenPortfolioExists() {
+		// Arrange
+		var request = new PortfolioRequest("Real DB Test", "Portfolio deleted from a real DB.");
+		var createdPortfolio = portfolioService.createPortfolio(request);
+		Long portfolioId = createdPortfolio.getId();
+		assertTrue(portfolioRepository.existsById(portfolioId)); // Check if it exists before it is deleted
+		
+		// Act
+		boolean isDeleted = portfolioService.deletePortfolioById(portfolioId);
+		
+		// Assert
+		assertTrue(isDeleted);
+		assertFalse(portfolioRepository.existsById(portfolioId));
 	}
 
 }

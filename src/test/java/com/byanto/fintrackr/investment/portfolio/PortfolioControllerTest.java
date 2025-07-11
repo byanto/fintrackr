@@ -1,9 +1,12 @@
 package com.byanto.fintrackr.investment.portfolio;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,7 +38,7 @@ class PortfolioControllerTest {
 	@MockitoBean
 	private PortfolioService portfolioService;
 	
-	// TEST: Create a new portfolio
+	// TEST: Create a new portfolio (POST /api/investment/portfolios)
 	@Nested 
 	@DisplayName("Create Portfolio Endpoint Tests")
 	class CreatePortfolio {
@@ -62,7 +65,7 @@ class PortfolioControllerTest {
 		}
 	}
 	
-	// TEST: Get a single portfolio
+	// TEST: Get a single portfolio (GET /api/investment/portfolios/{id})
 	@Nested
 	@DisplayName("Get Portfolio By Id Endpoint Tests")
 	class GetPortfolioById {
@@ -101,11 +104,44 @@ class PortfolioControllerTest {
 		}
 	}
 	
-	// TEST: Get all portfolios
+	// TEST: Get all portfolios (GET /api/investment/portfolios)
 	
 	// TEST: Update a portfolio
 	
-	// TEST: Delete a portfolio
+	// TEST: Delete a portfolio (DELETE /api/investment/portfolios/{id})
+	@Nested
+	@DisplayName("Delete Portfolio By Id Endpoint Tests")
+	class DeletePortfolioById {
+		
+		@Test
+		@DisplayName("GIVEN a valid portfolio id WHEN the DELETE endpoint is called THEN the portfolio is deleted with status 204 No Content")
+		void shouldReturnStatus204NoContent_whenPortfolioExists() throws Exception{
+			// Arrange
+			var portfolioId = 1L;
+			
+			// Act
+			when(portfolioService.deletePortfolioById(portfolioId)).thenReturn(true);
+			
+			// Assert
+			mockMvc.perform(delete("/api/investment/portfolios/{id}", portfolioId))
+					.andExpect(status().isNoContent());
+			verify(portfolioService, times(1)).deletePortfolioById(portfolioId);
+		}
+		
+		@Test
+		@DisplayName("GIVEN an invalid portfolio id WHEN the DELETE endpoint is called THEN status 404 is returned")
+		void shouldReturnStatus404_whenPortfolioDoesNotExist() throws Exception {
+			// Arrange
+			var portfolioId = 1L;
+			
+			// Act
+			when(portfolioService.deletePortfolioById(portfolioId)).thenReturn(false);
+			
+			// Assert
+			mockMvc.perform(delete("/api/investment/portfolios/{id}", portfolioId))
+					.andExpect(status().isNotFound());
+		}
+	}
 	
 	// TEST: Handle invalid requests
 	
