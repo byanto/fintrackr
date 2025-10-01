@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.investment_service.domain;
+package com.budiyanto.fintrackr.investmentservice.domain;
 
 public enum InstrumentType {
     STOCK,

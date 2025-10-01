@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.investment_service;
+package com.budiyanto.fintrackr.investmentservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

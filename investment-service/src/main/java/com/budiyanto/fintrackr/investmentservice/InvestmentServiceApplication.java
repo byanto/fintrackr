@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.investment_service;
+package com.budiyanto.fintrackr.investmentservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
