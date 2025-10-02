@@ -22,17 +22,17 @@ class PortfolioRepositoryTest {
     @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
 
+    private final PortfolioRepository portfolioRepository;
+
     @Autowired
-    private PortfolioRepository portfolioRepository;
+    PortfolioRepositoryTest(PortfolioRepository portfolioRepository) {
+        this.portfolioRepository = portfolioRepository;
+    }
 
     @Test
     void shouldSaveAndRetrievePortfolio() {
         // Arrange: Create a new Portfolio object
         Portfolio portfolio = new Portfolio();
-        String portfolioName = "My Portfolio";
-        portfolio.setName(portfolioName);
-
-        // Act: Save the portfolio using the repository
         portfolio.setName("My Portfolio");
 
         // Act: Save the portfolio using the repository
@@ -42,10 +42,10 @@ class PortfolioRepositoryTest {
         assertThat(savedPortfolio).isNotNull();
         assertThat(savedPortfolio.getId()).isGreaterThan(0);
 
-        Portfolio foundPortfolio = portfolioRepository.findById(savedPortfolio.getId()).orElse(null);
-        assertThat(foundPortfolio).isNotNull();
-        assertThat(foundPortfolio.getName()).isEqualTo(portfolioName);
-        assertThat(foundPortfolio.getCreatedAt()).isNotNull();
+        Portfolio retrievedPortfolio = portfolioRepository.findById(savedPortfolio.getId()).orElse(null);
+        assertThat(retrievedPortfolio).isNotNull();
+        assertThat(retrievedPortfolio.getName()).isEqualTo(portfolio.getName());
+        assertThat(retrievedPortfolio.getCreatedAt()).isNotNull();
 
     }
 }

@@ -4,6 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 
-public interface InstrumentPortfolio extends JpaRepository<Instrument, Long> {
+public interface InstrumentRepository extends JpaRepository<Instrument, Long> {
 
 }
