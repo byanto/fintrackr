@@ -3,7 +3,7 @@
 -- Portfolio Table: Represents a collection of investments.
 CREATE TABLE portfolio (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
 

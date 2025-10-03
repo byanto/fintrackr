@@ -4,24 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.InstrumentType;
 
-@Testcontainers
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class InstrumentRepositoryTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
+class InstrumentRepositoryTest extends AbstractRepositoryTest{
 
     private final InstrumentRepository instrumentRepository;
 
@@ -33,11 +20,7 @@ class InstrumentRepositoryTest {
     @Test
     void shouldSaveAndRetrieveInstrument() {
         // Arrange: Create a new Instrument object
-        Instrument instrument = new Instrument();
-        instrument.setName("Bank Central Asia");
-        instrument.setCode("BBCA");
-        instrument.setInstrumentType(InstrumentType.STOCK);
-        instrument.setCurrency("IDR");
+        Instrument instrument = new Instrument(InstrumentType.STOCK, "BBCA", "Bank Central Asia", "IDR");
 
         // Act: Save the instrument using the repository
         Instrument savedInstrument = instrumentRepository.save(instrument);

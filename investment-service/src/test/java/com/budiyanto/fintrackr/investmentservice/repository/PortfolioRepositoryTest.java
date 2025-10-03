@@ -4,23 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
 
-@Testcontainers
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class PortfolioRepositoryTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
+class PortfolioRepositoryTest extends AbstractRepositoryTest{
 
     private final PortfolioRepository portfolioRepository;
 
@@ -32,8 +19,7 @@ class PortfolioRepositoryTest {
     @Test
     void shouldSaveAndRetrievePortfolio() {
         // Arrange: Create a new Portfolio object
-        Portfolio portfolio = new Portfolio();
-        portfolio.setName("My Portfolio");
+        Portfolio portfolio = new Portfolio("My Portfolio");
 
         // Act: Save the portfolio using the repository
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);

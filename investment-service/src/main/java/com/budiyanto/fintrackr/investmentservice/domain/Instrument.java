@@ -19,29 +19,38 @@ import lombok.Setter;
 @Entity
 @Table(name = "instrument")
 @Getter
-@Setter
-@NoArgsConstructor
+@NoArgsConstructor (force = true)
 public class Instrument {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
     
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private InstrumentType instrumentType;
+    @Column(name = "instrument_type", nullable = false, updatable = false)
+    private final InstrumentType instrumentType;
     
-    @Column(nullable = false, unique = true)
+    @Setter
+    @Column(name = "code", nullable = false, unique = true) // Made mutable as requested
     private String code;
-
-    @Column(nullable = false)
+    
+    @Setter
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private String currency;
+    @Column(name = "currency", nullable = false, updatable = false)
+    private final String currency;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at",nullable = false, updatable = false)
     private Instant createdAt;
+
+    public Instrument(InstrumentType instrumentType, String code, String name, String currency) {
+        this.instrumentType = instrumentType;
+        this.code = code;
+        this.name = name;
+        this.currency = currency;
+    }
 
 }

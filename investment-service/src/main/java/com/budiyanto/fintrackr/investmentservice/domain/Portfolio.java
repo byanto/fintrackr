@@ -17,19 +17,24 @@ import lombok.Setter;
 @Entity
 @Table(name = "portfolio")
 @Getter
-@Setter
 @NoArgsConstructor
 public class Portfolio {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Setter
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    public Portfolio(String name) {
+        this.name = name;
+    }
 
 }

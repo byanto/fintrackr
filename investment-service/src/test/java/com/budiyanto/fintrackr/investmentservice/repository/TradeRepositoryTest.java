@@ -8,12 +8,6 @@ import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.InstrumentType;
@@ -21,14 +15,7 @@ import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
 import com.budiyanto.fintrackr.investmentservice.domain.Trade;
 import com.budiyanto.fintrackr.investmentservice.domain.TradeType;
 
-@Testcontainers
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class TradeRepositoryTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
+class TradeRepositoryTest extends AbstractRepositoryTest{
 
     private final TradeRepository tradeRepository;
     private final PortfolioRepository portfolioRepository;
@@ -45,24 +32,13 @@ class TradeRepositoryTest {
     @Test
     void shouldSaveAndRetrieveTrade() {
         // Arrange: Create a new Trade object
-        Portfolio portfolio = new Portfolio();
-        portfolio.setName("My Portfolio");
+        Portfolio portfolio = new Portfolio("My Portfolio");
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);
 
-        Instrument instrument = new Instrument();
-        instrument.setName("Bank Central Asia");
-        instrument.setCode("BBCA");
-        instrument.setInstrumentType(InstrumentType.STOCK);
-        instrument.setCurrency("IDR");
+        Instrument instrument = new Instrument(InstrumentType.STOCK, "BBCA", "Bank Central Asia", "IDR");
         Instrument savedInstrument = instrumentRepository.save(instrument);
 
-        Trade trade = new Trade();
-        trade.setPortfolio(savedPortfolio);
-        trade.setInstrument(savedInstrument);
-        trade.setTradeType(TradeType.BUY);
-        trade.setQuantity(new BigDecimal(100));
-        trade.setPrice(new BigDecimal(1520));
-        trade.setTradedAt(Instant.now());
+        Trade trade = new Trade(savedPortfolio, savedInstrument, TradeType.BUY, new BigDecimal(100), new BigDecimal(1520), Instant.now());
         
         // Act: Save using the repository
         Trade savedTrade = tradeRepository.save(trade);
@@ -75,8 +51,8 @@ class TradeRepositoryTest {
         assertThat(retrievedTrade.getPortfolio().getId()).isEqualTo(savedPortfolio.getId());
         assertThat(retrievedTrade.getInstrument().getId()).isEqualTo(savedInstrument.getId());
         assertThat(retrievedTrade.getTradeType()).isEqualTo(trade.getTradeType());
-        assertThat(retrievedTrade.getQuantity()).isEqualTo(trade.getQuantity());
-        assertThat(retrievedTrade.getPrice()).isEqualTo(trade.getPrice());
+        assertThat(retrievedTrade.getQuantity()).isEqualByComparingTo(trade.getQuantity());
+        assertThat(retrievedTrade.getPrice()).isEqualByComparingTo(trade.getPrice());
         assertThat(retrievedTrade.getTradedAt()).isNotNull();
 
     }
