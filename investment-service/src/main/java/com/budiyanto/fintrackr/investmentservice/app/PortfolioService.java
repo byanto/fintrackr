@@ -24,14 +24,15 @@ public class PortfolioService {
 
     @Transactional
     public PortfolioResponse createPortfolio(CreatePortfolioRequest request) {
-        Portfolio savedPortfolio = portfolioRepository.save(new Portfolio(request.name()));
+        Portfolio portfolio = portfolioMapper.toPortfolio(request);
+        Portfolio savedPortfolio = portfolioRepository.save(portfolio);
         return portfolioMapper.toDto(savedPortfolio);
     }
 
     @Transactional(readOnly = true)
-    public PortfolioResponse retrievePortfolioById(Long portfolioId) {
-        Portfolio retrievedPortfolio = portfolioRepository.findById(portfolioId)
-            .orElseThrow(() -> new PortfolioNotFoundException(portfolioId));
+    public PortfolioResponse retrievePortfolioById(Long id) {
+        Portfolio retrievedPortfolio = portfolioRepository.findById(id)
+            .orElseThrow(() -> new PortfolioNotFoundException(id));
         return portfolioMapper.toDto(retrievedPortfolio); 
     }
 
@@ -42,17 +43,17 @@ public class PortfolioService {
     }
 
     @Transactional
-    public void deletePortfolioById(Long portfolioId) {
-        portfolioRepository.deleteById(portfolioId);
-    }
-
-    @Transactional
-    public PortfolioResponse updatePortfolio(Long portfolioId, UpdatePortfolioRequest request) {
-        Portfolio existingPortfolio = portfolioRepository.findById(portfolioId)
-            .orElseThrow(() -> new PortfolioNotFoundException(portfolioId));
+    public PortfolioResponse updatePortfolio(Long id, UpdatePortfolioRequest request) {
+        Portfolio existingPortfolio = portfolioRepository.findById(id)
+            .orElseThrow(() -> new PortfolioNotFoundException(id));
         existingPortfolio.setName(request.name());
         Portfolio updatedPortfolio = portfolioRepository.save(existingPortfolio);
         return portfolioMapper.toDto(updatedPortfolio);
+    }
+
+    @Transactional
+    public void deletePortfolioById(Long id) {
+        portfolioRepository.deleteById(id);
     }
 
 }
