@@ -10,8 +10,10 @@ import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
 
 @Mapper(componentModel = "spring")
 public interface PortfolioMapper {
+
     Portfolio toPortfolio(CreatePortfolioRequest request);
-    PortfolioResponse toDto(Portfolio portfolio);
-    List<PortfolioResponse> toDtoList(List<Portfolio> portfolios);
-    Portfolio toPortfolio(PortfolioResponse portfolioResponse);
+    Portfolio toPortfolio(PortfolioResponse reponse);
+    PortfolioResponse toResponseDto(Portfolio portfolio);
+    List<PortfolioResponse> toReponseDtoList(List<Portfolio> portfolios);
+    
 }

@@ -26,20 +26,20 @@ public class PortfolioService {
     public PortfolioResponse createPortfolio(CreatePortfolioRequest request) {
         Portfolio portfolio = portfolioMapper.toPortfolio(request);
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);
-        return portfolioMapper.toDto(savedPortfolio);
+        return portfolioMapper.toResponseDto(savedPortfolio);
     }
 
     @Transactional(readOnly = true)
     public PortfolioResponse retrievePortfolioById(Long id) {
         Portfolio retrievedPortfolio = portfolioRepository.findById(id)
             .orElseThrow(() -> new PortfolioNotFoundException(id));
-        return portfolioMapper.toDto(retrievedPortfolio); 
+        return portfolioMapper.toResponseDto(retrievedPortfolio); 
     }
 
     @Transactional(readOnly = true)
     public List<PortfolioResponse> retrieveAllPortfolios() {
         List<Portfolio> allPortfolios = portfolioRepository.findAll();
-        return portfolioMapper.toDtoList(allPortfolios);
+        return portfolioMapper.toReponseDtoList(allPortfolios);
     }
 
     @Transactional
@@ -48,7 +48,7 @@ public class PortfolioService {
             .orElseThrow(() -> new PortfolioNotFoundException(id));
         existingPortfolio.setName(request.name());
         Portfolio updatedPortfolio = portfolioRepository.save(existingPortfolio);
-        return portfolioMapper.toDto(updatedPortfolio);
+        return portfolioMapper.toResponseDto(updatedPortfolio);
     }
 
     @Transactional
