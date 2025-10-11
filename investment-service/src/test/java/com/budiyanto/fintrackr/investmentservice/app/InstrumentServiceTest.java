@@ -61,23 +61,23 @@ class InstrumentServiceTest {
         void should_createInstrument() {
             // Arrange
             Instant createdAt = Instant.now();
+            CreateInstrumentRequest request = new CreateInstrumentRequest(INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY);
 
             // Mapper converts request DTO to a transient entity (no ID yet)
             Instrument transientInstrument = new Instrument(INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY);
-            when(instrumentMapper.toInstrument(any(CreateInstrumentRequest.class))).thenReturn(transientInstrument);
+            when(instrumentMapper.toInstrument(request)).thenReturn(transientInstrument);
 
             // Repository saves the transient entity and returns a persisted one (with an ID)
             Instrument savedInstrument = new Instrument(INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY);
             ReflectionTestUtils.setField(savedInstrument, "id", INSTRUMENT_ID);
             ReflectionTestUtils.setField(savedInstrument, "createdAt", createdAt);
-            when(instrumentRepository.save(any(Instrument.class))).thenReturn(savedInstrument);
+            when(instrumentRepository.save(transientInstrument)).thenReturn(savedInstrument);
             
             // Mapper converts the persisted entity to a response DTO
             InstrumentResponse response = new InstrumentResponse(INSTRUMENT_ID, INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY, createdAt);
-            when(instrumentMapper.toResponseDto(any(Instrument.class))).thenReturn(response);
+            when(instrumentMapper.toResponseDto(savedInstrument)).thenReturn(response);
 
             // Act
-            CreateInstrumentRequest request = new CreateInstrumentRequest(INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY);
             InstrumentResponse result = instrumentService.createInstrument(request);
 
             // Assert on the returned DTO (State-based test)
@@ -118,7 +118,7 @@ class InstrumentServiceTest {
 
             // Mapper converts the retrieved entity to a response DTO
             InstrumentResponse response = new InstrumentResponse(INSTRUMENT_ID, INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY, createdAt);
-            when(instrumentMapper.toResponseDto(any(Instrument.class))).thenReturn(response);
+            when(instrumentMapper.toResponseDto(retrievedInstrument)).thenReturn(response);
 
             // Act
             InstrumentResponse result = instrumentService.retrieveInstrumentById(INSTRUMENT_ID);
@@ -126,6 +126,10 @@ class InstrumentServiceTest {
             // Assert on the returned DTO
             assertThat(result).isNotNull();
             assertThat(result).isEqualTo(response);
+
+            // Verify interactions
+            verify(instrumentRepository, times(1)).findById(INSTRUMENT_ID);
+            verify(instrumentMapper, times(1)).toResponseDto(retrievedInstrument);
         }
 
         @Test
@@ -143,8 +147,6 @@ class InstrumentServiceTest {
                 .asInstanceOf(InstanceOfAssertFactories.type(InstrumentNotFoundException.class))
                 .extracting(InstrumentNotFoundException::getId)
                 .isEqualTo(nonExistentId);
-
-            verify(instrumentRepository, times(1)).findById(nonExistentId);
 
         }
     }
@@ -180,7 +182,7 @@ class InstrumentServiceTest {
             InstrumentResponse response1 = new InstrumentResponse(INSTRUMENT_ID, INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY, createdAt1);
             InstrumentResponse response2 = new InstrumentResponse(id2, type2, code2, name2, currency2, createdAt2);
             List<InstrumentResponse> responseList = List.of(response1, response2);
-            when(instrumentMapper.toResponseDtoList(eq(instrumentList))).thenReturn(responseList);
+            when(instrumentMapper.toResponseDtoList(instrumentList)).thenReturn(responseList);
 
             // Act
             List<InstrumentResponse> result = instrumentService.retrieveAllInstruments();
@@ -188,7 +190,10 @@ class InstrumentServiceTest {
             // Assert
             assertThat(result).isNotNull();
             assertThat(result).containsExactlyInAnyOrder(response1, response2);
+
+            // Verify interactions
             verify(instrumentRepository, times(1)).findAll();
+            verify(instrumentMapper, times(1)).toResponseDtoList(instrumentList);
         }
     }
 
@@ -216,7 +221,7 @@ class InstrumentServiceTest {
 
             // Mapper converts the updated entity to a response DTO
             InstrumentResponse response = new InstrumentResponse(INSTRUMENT_ID, INSTRUMENT_TYPE, updatedCode, updatedName, INSTRUMENT_CURRENCY, createdAt);
-            when(instrumentMapper.toResponseDto(any(Instrument.class))).thenReturn(response);
+            when(instrumentMapper.toResponseDto(existingInstrument)).thenReturn(response);
 
             // Act
             UpdateInstrumentRequest request = new UpdateInstrumentRequest(updatedCode, updatedName);
