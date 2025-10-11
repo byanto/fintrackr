@@ -5,11 +5,11 @@ import lombok.Getter;
 @Getter
 public class PortfolioNotFoundException extends RuntimeException {
 
-    private final Long portfolioId;
+    private final Long id;
 
-    public PortfolioNotFoundException(Long portfolioId) {
-        super("Portfolio with ID " + portfolioId + " not found.");
-        this.portfolioId = portfolioId;
+    public PortfolioNotFoundException(Long id) {
+        super("Portfolio with ID " + id + " not found.");
+        this.id = id;
     }
 
 }

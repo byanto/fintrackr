@@ -46,6 +46,9 @@ class PortfolioServiceTest {
     @InjectMocks
     private PortfolioService portfolioService;
 
+    private static final Long PORTFOLIO_ID = 1L;
+    private static final String PORTFOLIO_NAME = "Test Portfolio";
+
     @Nested
     @DisplayName("createPortfolio method")
     class CreatePortfolio {
@@ -54,34 +57,30 @@ class PortfolioServiceTest {
         @DisplayName("should create and return a new portfolio")
         void should_createAndReturnNewPortfolio() {
             // Arrange
-            Long portfolioId = 1L;
-            String portfolioName = "Test Portfolio";
             Instant createdAt = Instant.now();
 
             // Mapper converts request DTO to a transient entity (no ID yet)
-            Portfolio transientPortfolio = new Portfolio(portfolioName);
+            Portfolio transientPortfolio = new Portfolio(PORTFOLIO_NAME);
             when(portfolioMapper.toPortfolio(any(CreatePortfolioRequest.class)))
                 .thenReturn(transientPortfolio);
 
             // Repository saves the transient entity and returns a persisted one (with an ID)
-            Portfolio savedPortfolio = new Portfolio(portfolioName);
-            ReflectionTestUtils.setField(savedPortfolio, "id", portfolioId);
+            Portfolio savedPortfolio = new Portfolio(PORTFOLIO_NAME);
+            ReflectionTestUtils.setField(savedPortfolio, "id", PORTFOLIO_ID);
             ReflectionTestUtils.setField(savedPortfolio, "createdAt", createdAt);
             when(portfolioRepository.save(any(Portfolio.class))).thenReturn(savedPortfolio);
 
             // Mapper converts the persisted entity to a response DTO
-            PortfolioResponse responseDto = new PortfolioResponse(portfolioId, portfolioName, createdAt);
-            when(portfolioMapper.toResponseDto(savedPortfolio)).thenReturn(responseDto);
+            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, createdAt);
+            when(portfolioMapper.toResponseDto(savedPortfolio)).thenReturn(response);
             
             // Act
-            CreatePortfolioRequest request = new CreatePortfolioRequest(portfolioName);
+            CreatePortfolioRequest request = new CreatePortfolioRequest(PORTFOLIO_NAME);
             PortfolioResponse result = portfolioService.createPortfolio(request);
 
             // Assert on the returned DTO (State-based test)
             assertThat(result).isNotNull();
-            assertThat(result.id()).isEqualTo(portfolioId);
-            assertThat(result.name()).isEqualTo(portfolioName);
-            assertThat(result.createdAt()).isEqualTo(createdAt);
+            assertThat(result).isEqualTo(response);
 
             // Assert on the interaction: verify the correct entity was passed to save()
             ArgumentCaptor<Portfolio> captor = ArgumentCaptor.forClass(Portfolio.class);
@@ -90,7 +89,7 @@ class PortfolioServiceTest {
 
             assertThat(capturedPortfolio).isSameAs(transientPortfolio); // It's the exact same instance
             assertThat(capturedPortfolio.getId()).isNull(); // Should be the transient entity
-            assertThat(capturedPortfolio.getName()).isEqualTo(portfolioName);
+            assertThat(capturedPortfolio.getName()).isEqualTo(PORTFOLIO_NAME);
             assertThat(capturedPortfolio.getCreatedAt()).isNull(); // Should be the transient entity
         }
     }
@@ -98,44 +97,43 @@ class PortfolioServiceTest {
     @Nested
     @DisplayName("retrievePortfolioById method")
     class RetrievePortfolioById {
+
         @Test
         @DisplayName("should return portfolio when ID exists")
         void should_returnPortfolio_when_idExists() {
-            // Arrange
-            Long portfolioId = 1L;
-            String portfolioName = "Test Portfolio";
-
-            Portfolio retrievedPortfolio = new Portfolio(portfolioName);
-            ReflectionTestUtils.setField(retrievedPortfolio, "id", portfolioId);
-
-            when(portfolioRepository.findById(portfolioId)).thenReturn(Optional.of(retrievedPortfolio));
+            // Arrange            
+            // Repository finds the portfolio based on the given ID
+            Portfolio retrievedPortfolio = new Portfolio(PORTFOLIO_NAME);
+            ReflectionTestUtils.setField(retrievedPortfolio, "id", PORTFOLIO_ID);
+            when(portfolioRepository.findById(PORTFOLIO_ID)).thenReturn(Optional.of(retrievedPortfolio));
             
-            PortfolioResponse responseDto = new PortfolioResponse(portfolioId, portfolioName, Instant.now());
-            when(portfolioMapper.toResponseDto(any(Portfolio.class))).thenReturn(responseDto);  
+            // Mapper converts the retrieved entity to a response DTO
+            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, Instant.now());
+            when(portfolioMapper.toResponseDto(any(Portfolio.class))).thenReturn(response);  
 
             // Act
-            PortfolioResponse result = portfolioService.retrievePortfolioById(portfolioId);
+            PortfolioResponse result = portfolioService.retrievePortfolioById(PORTFOLIO_ID);
 
-            // Assert
+            // Assert on the returned DTO
             assertThat(result).isNotNull();
-            assertThat(result.id()).isEqualTo(portfolioId);
-            assertThat(result.name()).isEqualTo(portfolioName);
+            assertThat(result).isEqualTo(response);
         }
 
         @Test
         @DisplayName("should throw PortfolioNotFoundException when ID does not exist")
         void should_throwException_when_retrievingNonExistentPortfolio() {
             // Arrange
-            Long portfolioId = 1L;
-            
-            when(portfolioRepository.findById(portfolioId)).thenReturn(Optional.empty());        
+            Long nonExistentId = 99L;
+            when(portfolioRepository.findById(nonExistentId)).thenReturn(Optional.empty());        
 
             // Act & Assert
-            assertThatThrownBy(() -> portfolioService.retrievePortfolioById(portfolioId))
+            assertThatThrownBy(() -> portfolioService.retrievePortfolioById(nonExistentId))
                 .isInstanceOf(PortfolioNotFoundException.class)
                 .asInstanceOf(InstanceOfAssertFactories.type(PortfolioNotFoundException.class))
-                .extracting(PortfolioNotFoundException::getPortfolioId)
-                .isEqualTo(portfolioId);
+                .extracting(PortfolioNotFoundException::getId)
+                .isEqualTo(nonExistentId);
+
+            verify(portfolioRepository, times(1)).findById(nonExistentId);
         }
     }
 
@@ -154,19 +152,18 @@ class PortfolioServiceTest {
             List<Portfolio> portfolioList = List.of(portfolio1, portfolio2);
             when(portfolioRepository.findAll()).thenReturn(portfolioList);
 
-            PortfolioResponse responseDto1 = new PortfolioResponse(1L, portfolioName1, Instant.now());
-            PortfolioResponse responseDto2 = new PortfolioResponse(2L, portfolioName2, Instant.now());
-            List<PortfolioResponse> responseDtoList = List.of(responseDto1, responseDto2);
-            when(portfolioMapper.toReponseDtoList(eq(portfolioList))).thenReturn(responseDtoList);  
+            PortfolioResponse response1 = new PortfolioResponse(1L, portfolioName1, Instant.now());
+            PortfolioResponse response2 = new PortfolioResponse(2L, portfolioName2, Instant.now());
+            List<PortfolioResponse> responseList = List.of(response1, response2);
+            when(portfolioMapper.toReponseDtoList(eq(portfolioList))).thenReturn(responseList);  
             
             // Act
             List<PortfolioResponse> result = portfolioService.retrieveAllPortfolios();
             
             // Assert
             assertThat(result).isNotNull();
-            assertThat(result).hasSize(2);
-            assertThat(result.get(0).name()).isEqualTo(portfolioName1);
-            assertThat(result.get(1).name()).isEqualTo(portfolioName2);   
+            assertThat(result).containsExactlyInAnyOrder(response1, response2);            
+            verify(portfolioRepository, times(1)).findAll();
         }
     }
 
@@ -177,34 +174,30 @@ class PortfolioServiceTest {
         @DisplayName("should update portfolio when ID exists")
         void should_updatePortfolio_when_idExists() {
             // Arrange
-            Long portfolioId = 1L;
-            String existingPortfolioName = "Existing Portfolio";
             String updatedPortfolioName = "Updated Portfolio";
             Instant createdAt = Instant.now();
             
             // Repository find the Entity by id
-            Portfolio existingPortfolio = new Portfolio(existingPortfolioName);
-            ReflectionTestUtils.setField(existingPortfolio, "id", portfolioId);
+            Portfolio existingPortfolio = new Portfolio(PORTFOLIO_NAME);
+            ReflectionTestUtils.setField(existingPortfolio, "id", PORTFOLIO_ID);
             ReflectionTestUtils.setField(existingPortfolio, "createdAt", createdAt);
-            when(portfolioRepository.findById(portfolioId)).thenReturn(Optional.of(existingPortfolio));
+            when(portfolioRepository.findById(PORTFOLIO_ID)).thenReturn(Optional.of(existingPortfolio));
 
             // When save is called, we can just return the same instance that was passed to it
             when(portfolioRepository.save(any(Portfolio.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-            // Mapper will convert the updated entity to a response DTO
-            PortfolioResponse response = new PortfolioResponse(portfolioId, updatedPortfolioName, createdAt);
+            // Mapper convert the updated entity to a response DTO
+            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, updatedPortfolioName, createdAt);
             when(portfolioMapper.toResponseDto(any(Portfolio.class))).thenReturn(response);
             
             // Act
             UpdatePortfolioRequest request = new UpdatePortfolioRequest(updatedPortfolioName);
-            PortfolioResponse result = portfolioService.updatePortfolio(portfolioId, request);
+            PortfolioResponse result = portfolioService.updatePortfolio(PORTFOLIO_ID, request);
 
             // Assert on the returned DTO (State-based test)
             assertThat(result).isNotNull();
-            assertThat(result.id()).isEqualTo(portfolioId);
-            assertThat(result.name()).isEqualTo(updatedPortfolioName);
-            assertThat(result.createdAt()).isEqualTo(createdAt);
+            assertThat(result).isEqualTo(response);
 
             // Assert on the interaction: verify the correct entity was passed to save()
             ArgumentCaptor<Portfolio> captor = ArgumentCaptor.forClass(Portfolio.class);
@@ -212,8 +205,8 @@ class PortfolioServiceTest {
             Portfolio capturedPortfolio = captor.getValue();
             
             assertThat(capturedPortfolio).isSameAs(existingPortfolio); // It's the exact same instance
-            assertThat(capturedPortfolio.getId()).isEqualTo(portfolioId);
-            assertThat(capturedPortfolio.getName()).isEqualTo(updatedPortfolioName);
+            assertThat(capturedPortfolio.getId()).isEqualTo(PORTFOLIO_ID); // The ID should be preserved
+            assertThat(capturedPortfolio.getName()).isEqualTo(updatedPortfolioName); // The name should be updated
             assertThat(capturedPortfolio.getCreatedAt()).isEqualTo(createdAt); // The original createdAt should be preserved
         }
 
@@ -221,18 +214,18 @@ class PortfolioServiceTest {
         @DisplayName("should throw PortfolioNotFoundException when ID does not exist")
         void should_throwException_when_updatingNonExistentPortfolio() {
             // Arrange
-            Long portfolioId = 1L;
+            Long nonExistentId = 99L;
+
+            when(portfolioRepository.findById(nonExistentId)).thenReturn(Optional.empty());
             UpdatePortfolioRequest request = new UpdatePortfolioRequest("Updated Portfolio");
 
-            // Act
-            when(portfolioRepository.findById(portfolioId)).thenReturn(Optional.empty());
-
-            // Assert
-            assertThatThrownBy(() -> portfolioService.updatePortfolio(portfolioId, request))
+            // Act & Assert
+            assertThatThrownBy(() -> portfolioService.updatePortfolio(nonExistentId, request))
                 .isInstanceOf(PortfolioNotFoundException.class)
                 .asInstanceOf(InstanceOfAssertFactories.type(PortfolioNotFoundException.class))
-                .extracting(PortfolioNotFoundException::getPortfolioId)
-                .isEqualTo(portfolioId);
+                .extracting(PortfolioNotFoundException::getId)
+                .isEqualTo(nonExistentId);
+
             verify(portfolioRepository, never()).save(any(Portfolio.class));
         }
     }
@@ -242,15 +235,12 @@ class PortfolioServiceTest {
     class DeletePortfolio {
         @Test
         @DisplayName("should delete portfolio")
-        void shouldDeletePortfolio() {
-            // Arrange
-            Long portfolioId = 1L;
-
+        void should_deletePortfolio() {
             // Act
-            portfolioService.deletePortfolioById(portfolioId);
+            portfolioService.deletePortfolioById(PORTFOLIO_ID);
 
             // Assert
-            verify(portfolioRepository, times(1)).deleteById(portfolioId);
+            verify(portfolioRepository, times(1)).deleteById(PORTFOLIO_ID);
         }
     }
 

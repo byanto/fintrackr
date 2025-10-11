@@ -1,14 +1,18 @@
 package com.budiyanto.fintrackr.investmentservice.app;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.budiyanto.fintrackr.investmentservice.api.dto.CreateInstrumentRequest;
 import com.budiyanto.fintrackr.investmentservice.api.dto.InstrumentResponse;
+import com.budiyanto.fintrackr.investmentservice.api.dto.UpdateInstrumentRequest;
+import com.budiyanto.fintrackr.investmentservice.app.exception.InstrumentNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.mapper.InstrumentMapper;
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.repository.InstrumentRepository;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -23,6 +27,34 @@ public class InstrumentService {
         Instrument instrument = instrumentMapper.toInstrument(request);
         Instrument savedInstrument = instrumentRepository.save(instrument);
         return instrumentMapper.toResponseDto(savedInstrument);
+    }
+
+    @Transactional(readOnly = true)
+    public InstrumentResponse retrieveInstrumentById(Long id) {
+        Instrument retrievedInstrument = instrumentRepository.findById(id)
+            .orElseThrow(() -> new InstrumentNotFoundException(id));
+        return instrumentMapper.toResponseDto(retrievedInstrument);
+    }
+
+    @Transactional(readOnly = true)
+    public List<InstrumentResponse> retrieveAllInstruments() {
+        List<Instrument> allInstruments = instrumentRepository.findAll();
+        return instrumentMapper.toResponseDtoList(allInstruments);
+    }
+
+    @Transactional  
+    public InstrumentResponse updateInstrument(Long id, UpdateInstrumentRequest request) {
+        Instrument retrievedInstrument = instrumentRepository.findById(id)
+            .orElseThrow(() -> new InstrumentNotFoundException(id));
+        retrievedInstrument.setCode(request.code());
+        retrievedInstrument.setName(request.name());
+        Instrument updatedInstrument = instrumentRepository.save(retrievedInstrument);
+        return instrumentMapper.toResponseDto(updatedInstrument);
+    }
+
+    @Transactional
+    public void deleteInstrumentById(Long id) {
+        instrumentRepository.deleteById(id);
     }
 
 }
