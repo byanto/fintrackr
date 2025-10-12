@@ -18,6 +18,7 @@ import com.budiyanto.fintrackr.investmentservice.api.dto.PortfolioResponse;
 import com.budiyanto.fintrackr.investmentservice.api.dto.UpdatePortfolioRequest;
 import com.budiyanto.fintrackr.investmentservice.app.PortfolioService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 
@@ -30,7 +31,7 @@ public class PortfolioController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public PortfolioResponse createPortfolio(@RequestBody CreatePortfolioRequest request) {
+    public PortfolioResponse createPortfolio(@Valid @RequestBody CreatePortfolioRequest request) {
         return portfolioService.createPortfolio(request);
     }
 
@@ -45,7 +46,7 @@ public class PortfolioController {
     }
 
     @PutMapping("/{id}")
-    public PortfolioResponse updatePortfolio(@PathVariable Long id, @RequestBody UpdatePortfolioRequest request) {
+    public PortfolioResponse updatePortfolio(@PathVariable Long id, @Valid @RequestBody UpdatePortfolioRequest request) {
         return portfolioService.updatePortfolio(id, request);
     }
 

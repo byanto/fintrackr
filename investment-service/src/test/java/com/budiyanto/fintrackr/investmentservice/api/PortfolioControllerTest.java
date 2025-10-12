@@ -1,6 +1,7 @@
 package com.budiyanto.fintrackr.investmentservice.api;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -72,6 +73,20 @@ class PortfolioControllerTest {
             // Verify that the service method was called with the correct argument
             verify(portfolioService).createPortfolio(request);
         }
+
+        @Test
+        @DisplayName("should return BadRequest when name is blank")
+        void should_returnBadRequest_when_nameIsBlank() throws Exception {
+            // Arrange
+            // Create a request with a blank name
+            CreatePortfolioRequest request = new CreatePortfolioRequest("   ");
+
+            // Act & Assert
+            mockMvc.perform(post("/api/portfolios")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+        }
     }
    
     @Nested
@@ -82,8 +97,8 @@ class PortfolioControllerTest {
         void should_returnPortfolio_when_idExists() throws Exception{
             // Arrange
             Instant createdAt = Instant.now();
+            
             PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, createdAt);
-
             when(portfolioService.retrievePortfolioById(PORTFOLIO_ID)).thenReturn(response);
         
             // Act & Assert
@@ -134,6 +149,9 @@ class PortfolioControllerTest {
                     .andExpect(jsonPath("$[0].name").value(portfolioName1))
                     .andExpect(jsonPath("$[1].id").value(portfolioId2))
                     .andExpect(jsonPath("$[1].name").value(portfolioName2));
+
+            // Verify that the service method was called with the correct argument
+            verify(portfolioService).retrieveAllPortfolios();
         }
     }
 
@@ -172,7 +190,7 @@ class PortfolioControllerTest {
             UpdatePortfolioRequest request = new UpdatePortfolioRequest("Updated Portfolio Name");
             
             // Mock the service to throw the expected exception when called
-            when(portfolioService.updatePortfolio(nonExistentId, any(UpdatePortfolioRequest.class)))
+            when(portfolioService.updatePortfolio(eq(nonExistentId), any(UpdatePortfolioRequest.class)))
                 .thenThrow(new PortfolioNotFoundException(nonExistentId));
 
             // Act & Assert
@@ -181,12 +199,28 @@ class PortfolioControllerTest {
                     .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound());
         }
+
+        @Test
+        @DisplayName("should return BadRequest when name is blank")
+        void should_returnBadRequest_when_nameIsBlank() throws Exception {
+            // Arrange
+            // Create a request with a blank name
+            UpdatePortfolioRequest request = new UpdatePortfolioRequest("   ");
+
+            // Act & Assert
+            mockMvc.perform(put("/api/portfolios/{id}", PORTFOLIO_ID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+        }
+
     }
 
     @Nested
     @DisplayName("deletePortfolioById method")
     class DeletePortfolio {
         @Test
+        @DisplayName("should delete portfolio")
         void should_deletePortfolio() throws Exception {
             // Arrange
             doNothing().when(portfolioService).deletePortfolioById(PORTFOLIO_ID);

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.budiyanto.fintrackr.investmentservice.app.exception.InstrumentNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
 
 @RestControllerAdvice
@@ -15,6 +16,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PortfolioNotFoundException.class)
     @ResponseStatus(value = HttpStatus.NOT_FOUND)
     public Map<String, String> handlePortfolioNotFound(PortfolioNotFoundException ex) {
+        return Map.of("error", ex.getMessage());
+    }
+
+    @ExceptionHandler(InstrumentNotFoundException.class)
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public Map<String, String> handleInstrumentNotFound(InstrumentNotFoundException ex) {
         return Map.of("error", ex.getMessage());
     }
 }
