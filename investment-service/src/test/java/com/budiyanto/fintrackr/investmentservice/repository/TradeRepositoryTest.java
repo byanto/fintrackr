@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,6 +16,7 @@ import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
 import com.budiyanto.fintrackr.investmentservice.domain.Trade;
 import com.budiyanto.fintrackr.investmentservice.domain.TradeType;
 
+@DisplayName("TradeRepository Tests")
 class TradeRepositoryTest extends AbstractRepositoryTest{
 
     private final TradeRepository tradeRepository;
@@ -30,7 +32,8 @@ class TradeRepositoryTest extends AbstractRepositoryTest{
     }
 
     @Test
-    void shouldSaveAndRetrieveTrade() {
+    @DisplayName("should save and retrieve trade")
+    void should_saveAndRetrieveTrade() {
         // Arrange: Create a new Trade object
         Portfolio portfolio = new Portfolio("My Portfolio");
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);

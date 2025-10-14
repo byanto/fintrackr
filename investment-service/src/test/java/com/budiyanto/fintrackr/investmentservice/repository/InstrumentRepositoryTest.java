@@ -2,12 +2,14 @@ package com.budiyanto.fintrackr.investmentservice.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.InstrumentType;
 
+@DisplayName("InstrumentRepository Tests")
 class InstrumentRepositoryTest extends AbstractRepositoryTest{
 
     private final InstrumentRepository instrumentRepository;
@@ -18,7 +20,8 @@ class InstrumentRepositoryTest extends AbstractRepositoryTest{
     }
 
     @Test
-    void shouldSaveAndRetrieveInstrument() {
+    @DisplayName("should save and retrieve instrument")
+    void should_saveAndRetrieveInstrument() {
         // Arrange: Create a new Instrument object
         Instrument instrument = new Instrument(InstrumentType.STOCK, "BBCA", "Bank Central Asia", "IDR");
 

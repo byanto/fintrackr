@@ -2,11 +2,13 @@ package com.budiyanto.fintrackr.investmentservice.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
 
+@DisplayName("PortfolioRepository Tests")
 class PortfolioRepositoryTest extends AbstractRepositoryTest{
 
     private final PortfolioRepository portfolioRepository;
@@ -17,7 +19,8 @@ class PortfolioRepositoryTest extends AbstractRepositoryTest{
     }
 
     @Test
-    void shouldSaveAndRetrievePortfolio() {
+    @DisplayName("should save and retrieve portfolio")
+    void should_saveAndRetrievePortfolio() {
         // Arrange: Create a new Portfolio object
         Portfolio portfolio = new Portfolio("My Portfolio");
 
