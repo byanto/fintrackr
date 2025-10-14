@@ -1,5 +1,7 @@
 package com.budiyanto.fintrackr.investmentservice.app.mapper;
 
+import java.util.List;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -12,5 +14,10 @@ public interface TradeMapper {
     @Mapping(target = "portfolioId", source = "portfolio.id")
     @Mapping(target = "instrumentId", source = "instrument.id")
     TradeResponse toResponseDto(Trade trade);
+
+    @Mapping(target = "portfolioId", source = "portfolio.id")
+    @Mapping(target = "instrumentId", source = "instrument.id")
+    List<TradeResponse> toResponseDtoList(List<Trade> trades);
+
 
 }

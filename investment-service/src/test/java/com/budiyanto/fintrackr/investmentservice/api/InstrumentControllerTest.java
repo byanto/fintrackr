@@ -14,10 +14,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -56,7 +59,7 @@ class InstrumentControllerTest {
     class CreateInstrument {
         @Test
         @DisplayName("should create instrument")
-        void should_createInstrument() throws Exception {
+        void should_createInstrument_when_requestIsValid() throws Exception {
             // Arrange
             Instant createdAt = Instant.now();
             CreateInstrumentRequest request = new CreateInstrumentRequest(INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY);
@@ -80,26 +83,25 @@ class InstrumentControllerTest {
             verify(instrumentService).createInstrument(request);
         }
 
-        @Test
+        @ParameterizedTest
+        @MethodSource("provideInvalidCreateInstrumentRequests")
         @DisplayName("should return BadRequest when any field is invalid")
-        void should_returnBadRequest_when_fieldIsInvalid() throws Exception {
-            // Arrange: Create a request with a blank name
-            CreateInstrumentRequest blankNameRequest = new CreateInstrumentRequest(INSTRUMENT_TYPE, INSTRUMENT_CODE, "  ", INSTRUMENT_CURRENCY);
-
-            // Act & Assert for blank name
+        void should_returnBadRequest_when_requestIsInvalid(CreateInstrumentRequest invalidRequest) throws Exception {
+            // Act & Assert for invalid requests
             mockMvc.perform(post("/api/instruments")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(blankNameRequest)))
+                    .content(objectMapper.writeValueAsString(invalidRequest)))
                     .andExpect(status().isBadRequest());
+        }
 
-            // Arrange: Create a request with a null instrument type
-            CreateInstrumentRequest nullTypeRequest = new CreateInstrumentRequest(null, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY);
-
-            // Act & Assert for null instrument type
-            mockMvc.perform(post("/api/instruments")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(nullTypeRequest)))
-                    .andExpect(status().isBadRequest());
+        private static Stream<CreateInstrumentRequest> provideInvalidCreateInstrumentRequests() {
+            return Stream.of(
+                // Null fields
+                new CreateInstrumentRequest(null, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY),
+                new CreateInstrumentRequest(INSTRUMENT_TYPE, "   ", INSTRUMENT_NAME, INSTRUMENT_CURRENCY),
+                new CreateInstrumentRequest(INSTRUMENT_TYPE, INSTRUMENT_CODE, "   ", INSTRUMENT_CURRENCY),
+                new CreateInstrumentRequest(INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, "   ")
+            );
         }
     }
    

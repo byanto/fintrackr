@@ -1,7 +1,9 @@
 package com.budiyanto.fintrackr.investmentservice.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -9,7 +11,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 
-
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.budiyanto.fintrackr.investmentservice.api.dto.CreateTradeRequest;
 import com.budiyanto.fintrackr.investmentservice.api.dto.TradeResponse;
+import com.budiyanto.fintrackr.investmentservice.app.exception.InstrumentNotFoundException;
+import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
+import com.budiyanto.fintrackr.investmentservice.app.exception.TradeNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.mapper.TradeMapper;
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.InstrumentType;
@@ -64,7 +69,7 @@ class TradeServiceTest {
         
         @Test
         @DisplayName("should create trade")
-        void should_createTrade() {
+        void should_createTrade_when_portfolioAndInstrumentExists() {
             // Arrange
             Instant tradedAt = Instant.now();
             CreateTradeRequest request = new CreateTradeRequest(
@@ -115,8 +120,133 @@ class TradeServiceTest {
             verify(portfolioRepository).findById(PORTFOLIO_ID);
             verify(instrumentRepository).findById(INSTRUMENT_ID);
             verify(tradeMapper).toResponseDto(savedTrade);
-        
         }
-    }   
 
+        @Test
+        @DisplayName("should throw exception when portfolio does not exist")
+        void should_throwException_when_portfolioDoesNotExist() {
+            // Arrange
+            Long nonExistentPortfolioId = 99L;
+            Instant tradedAt = Instant.now();
+            CreateTradeRequest request = new CreateTradeRequest(
+                nonExistentPortfolioId,
+                INSTRUMENT_ID,
+                TRADE_TYPE,
+                QUANTITY,
+                PRICE,
+                tradedAt
+            );
+
+            when(portfolioRepository.findById(nonExistentPortfolioId)).thenReturn(Optional.empty());
+            
+            // Act & Assert
+            assertThatThrownBy(() -> tradeService.createTrade(request))
+                .isInstanceOf(PortfolioNotFoundException.class)
+                .asInstanceOf(InstanceOfAssertFactories.type(PortfolioNotFoundException.class))
+                .extracting(PortfolioNotFoundException::getId)
+                .isEqualTo(nonExistentPortfolioId);
+
+            // Verify that no further interactions occurred
+            verify(instrumentRepository, never()).findById(any());
+            verify(tradeRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should throw exception when instrument does not exist")
+        void should_throwException_when_instrumentDoesNotExist() {
+            // Arrange
+            Long nonExistentInstrumentId = 99L;
+            Instant tradedAt = Instant.now();
+            CreateTradeRequest request = new CreateTradeRequest(
+                PORTFOLIO_ID,
+                nonExistentInstrumentId,
+                TRADE_TYPE,
+                QUANTITY,
+                PRICE,
+                tradedAt
+            );
+
+            Portfolio portfolio = new Portfolio("Test Portfolio");
+            ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
+            when(portfolioRepository.findById(PORTFOLIO_ID)).thenReturn(Optional.of(portfolio));
+
+            when(instrumentRepository.findById(nonExistentInstrumentId)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThatThrownBy(() -> tradeService.createTrade(request))
+                .isInstanceOf(InstrumentNotFoundException.class)
+                .asInstanceOf(InstanceOfAssertFactories.type(InstrumentNotFoundException.class))
+                .extracting(InstrumentNotFoundException::getId)
+                .isEqualTo(nonExistentInstrumentId);
+
+            // Verify that the trade was never saved
+            verify(tradeRepository, never()).save(any());
+        }
+    } 
+    
+    @Nested
+    @DisplayName("retrieveTradeById method")    
+    class RetrieveTradeById {
+        @Test
+        @DisplayName("should return trade when ID exists")
+        void should_returnTrade_when_idExists() {
+            
+            // Arrange
+            Portfolio portfolio = new Portfolio("Test Portfolio");
+            ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
+
+            Instrument instrument = new Instrument(InstrumentType.STOCK, "BBCA", "Bank Central Asia", "IDR");
+            ReflectionTestUtils.setField(instrument, "id", INSTRUMENT_ID);
+            ReflectionTestUtils.setField(instrument, "createdAt", Instant.now());
+            
+            Instant tradedAt = Instant.now();
+            Trade retrievedTrade = new Trade(
+                portfolio,
+                instrument,
+                TRADE_TYPE,
+                QUANTITY,
+                PRICE,
+                tradedAt
+            );
+            ReflectionTestUtils.setField(retrievedTrade, "id", TRADE_ID);
+            when(tradeRepository.findById(TRADE_ID)).thenReturn(Optional.of(retrievedTrade));
+
+            TradeResponse response = new TradeResponse(
+                TRADE_ID, 
+                PORTFOLIO_ID, 
+                INSTRUMENT_ID, 
+                TRADE_TYPE, 
+                QUANTITY, 
+                PRICE, 
+                tradedAt
+            );
+            when(tradeMapper.toResponseDto(retrievedTrade)).thenReturn(response);
+
+            // Act
+            TradeResponse result = tradeService.retrieveTradeById(TRADE_ID);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result).isEqualTo(response);
+
+            // Verify interactions
+            verify(tradeRepository).findById(TRADE_ID);
+            verify(tradeMapper).toResponseDto(retrievedTrade);
+        }
+
+        @Test
+        @DisplayName("should throw exception when ID does not exist")
+        void should_throwException_when_retrievingNonExistentTrade() {
+            // Arrange
+            Long nonExistentId = 99L;
+            when(tradeRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThatThrownBy(() -> tradeService.retrieveTradeById(nonExistentId))
+                .isInstanceOf(TradeNotFoundException.class)
+                .asInstanceOf(InstanceOfAssertFactories.type(TradeNotFoundException.class))
+                .extracting(TradeNotFoundException::getId)
+                .isEqualTo(nonExistentId);
+        }
+    }
 }

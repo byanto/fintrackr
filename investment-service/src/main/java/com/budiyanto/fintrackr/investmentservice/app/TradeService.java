@@ -1,5 +1,6 @@
 package com.budiyanto.fintrackr.investmentservice.app;
 
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -7,6 +8,7 @@ import com.budiyanto.fintrackr.investmentservice.api.dto.CreateTradeRequest;
 import com.budiyanto.fintrackr.investmentservice.api.dto.TradeResponse;
 import com.budiyanto.fintrackr.investmentservice.app.exception.InstrumentNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
+import com.budiyanto.fintrackr.investmentservice.app.exception.TradeNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.mapper.TradeMapper;
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
@@ -49,5 +51,19 @@ public class TradeService {
 
         // Map the entity to response
         return tradeMapper.toResponseDto(savedTrade);
+    }
+
+    @Transactional(readOnly = true)
+    public TradeResponse retrieveTradeById(Long id) {
+        Trade retrievedTrade = tradeRepository.findById(id)
+            .orElseThrow(() -> new TradeNotFoundException(id));
+        return tradeMapper.toResponseDto(retrievedTrade);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TradeResponse> retrieveAllTrades() { 
+        List<Trade> allTrades = tradeRepository.findAll();
+        return tradeMapper.toResponseDtoList(allTrades);
+    
     }
 }
