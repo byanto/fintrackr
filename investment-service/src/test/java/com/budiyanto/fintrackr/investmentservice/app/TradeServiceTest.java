@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -51,6 +52,9 @@ class TradeServiceTest {
     private InstrumentRepository instrumentRepository;
 
     @Mock
+    private HoldingService holdingService;
+
+    @Mock
     private TradeMapper tradeMapper;
     
     @InjectMocks
@@ -68,8 +72,8 @@ class TradeServiceTest {
     class CreateTrade {
         
         @Test
-        @DisplayName("should create trade")
-        void should_createTrade_when_portfolioAndInstrumentExists() {
+        @DisplayName("should create trade and update holding")
+        void should_createTradeAndUpdateHolding_when_portfolioAndInstrumentExists() {
             // Arrange
             Instant tradedAt = Instant.now();
             CreateTradeRequest request = new CreateTradeRequest(
@@ -91,7 +95,7 @@ class TradeServiceTest {
 
             Trade savedTrade = new Trade(portfolio, instrument, TRADE_TYPE, QUANTITY, PRICE, tradedAt);
             ReflectionTestUtils.setField(savedTrade, "id", TRADE_ID);
-            when(tradeRepository.save(any(Trade.class))).thenReturn(savedTrade);
+            when(tradeRepository.save(any(Trade.class))).thenReturn(savedTrade); // any() is fine here as we assert on the captor
 
             TradeResponse response = new TradeResponse(TRADE_ID, PORTFOLIO_ID, INSTRUMENT_ID, TRADE_TYPE, QUANTITY, PRICE, tradedAt);
             when(tradeMapper.toResponseDto(savedTrade)).thenReturn(response);
@@ -116,9 +120,10 @@ class TradeServiceTest {
             assertThat(capturedTrade.getPrice()).isEqualByComparingTo(PRICE);
             assertThat(capturedTrade.getTradedAt()).isEqualTo(tradedAt);
 
-            // Verify other interactions
+            // Verify interactions
             verify(portfolioRepository).findById(PORTFOLIO_ID);
             verify(instrumentRepository).findById(INSTRUMENT_ID);
+            verify(holdingService).processTrade(savedTrade);
             verify(tradeMapper).toResponseDto(savedTrade);
         }
 
@@ -149,6 +154,8 @@ class TradeServiceTest {
             // Verify that no further interactions occurred
             verify(instrumentRepository, never()).findById(any());
             verify(tradeRepository, never()).save(any());
+            verify(holdingService, never()).processTrade(any());
+            verify(tradeMapper, never()).toResponseDto(any());
         }
 
         @Test
@@ -179,8 +186,10 @@ class TradeServiceTest {
                 .extracting(InstrumentNotFoundException::getId)
                 .isEqualTo(nonExistentInstrumentId);
 
-            // Verify that the trade was never saved
+            // Verify that no further interactions occurred
             verify(tradeRepository, never()).save(any());
+            verify(holdingService, never()).processTrade(any());
+            verify(tradeMapper, never()).toResponseDto(any());
         }
     } 
     
@@ -247,6 +256,43 @@ class TradeServiceTest {
                 .asInstanceOf(InstanceOfAssertFactories.type(TradeNotFoundException.class))
                 .extracting(TradeNotFoundException::getId)
                 .isEqualTo(nonExistentId);
+        }
+    }
+
+    @Nested
+    @DisplayName("retrieveAllTrades method")
+    class RetrieveAllTrades {
+        @Test
+        @DisplayName("should return a list of all trades")
+        void should_returnAllTrades() {
+            // Arrange
+            Portfolio portfolio1 = new Portfolio("Portfolio 1");
+            Instrument instrument1 = new Instrument(InstrumentType.STOCK, "CODE1", "Instrument 1", "IDR");
+            Trade trade1 = new Trade(portfolio1, instrument1, TradeType.BUY, BigDecimal.ONE, BigDecimal.TEN, Instant.now());
+
+            Portfolio portfolio2 = new Portfolio("Portfolio 2");
+            Instrument instrument2 = new Instrument(InstrumentType.BOND, "CODE2", "Instrument 2", "IDR");
+            Trade trade2 = new Trade(portfolio2, instrument2, TradeType.SELL, BigDecimal.ONE, BigDecimal.TEN, Instant.now());
+
+            List<Trade> tradeList = List.of(trade1, trade2);
+            when(tradeRepository.findAll()).thenReturn(tradeList);
+
+            TradeResponse response1 = new TradeResponse(1L, 1L, 1L, TradeType.BUY, BigDecimal.ONE, BigDecimal.TEN, Instant.now());
+            TradeResponse response2 = new TradeResponse(2L, 2L, 2L, TradeType.SELL, BigDecimal.ONE, BigDecimal.TEN, Instant.now());
+            List<TradeResponse> responseList = List.of(response1, response2);
+            when(tradeMapper.toResponseDtoList(tradeList)).thenReturn(responseList);
+
+            // Act
+            List<TradeResponse> result = tradeService.retrieveAllTrades();
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result).hasSize(2);
+            assertThat(result).containsExactlyInAnyOrder(response1, response2);
+
+            // Verify interactions
+            verify(tradeRepository).findAll();
+            verify(tradeMapper).toResponseDtoList(tradeList);
         }
     }
 }

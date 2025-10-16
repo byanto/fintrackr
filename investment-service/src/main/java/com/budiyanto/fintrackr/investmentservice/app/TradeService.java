@@ -26,6 +26,7 @@ public class TradeService {
     private final TradeRepository tradeRepository;
     private final PortfolioRepository portfolioRepository;
     private final InstrumentRepository instrumentRepository;
+    private final HoldingService holdingService;
     private final TradeMapper tradeMapper;
 
     @Transactional
@@ -49,6 +50,9 @@ public class TradeService {
         // Save the new entity
         Trade savedTrade = tradeRepository.save(trade);
 
+        // Update holdings based on the trade
+        holdingService.processTrade(savedTrade);
+
         // Map the entity to response
         return tradeMapper.toResponseDto(savedTrade);
     }
@@ -64,6 +68,5 @@ public class TradeService {
     public List<TradeResponse> retrieveAllTrades() { 
         List<Trade> allTrades = tradeRepository.findAll();
         return tradeMapper.toResponseDtoList(allTrades);
-    
     }
 }

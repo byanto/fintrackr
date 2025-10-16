@@ -56,30 +56,27 @@ public class Holding {
     }
 
     /**
-     * Updates the holding based on a new trade, recalculating quantity and average price.
-     * @param trade The trade to apply.
+     * Adds a buy transaction to the holding, updating the quantity and recalculating the average price.
+     * @param quantity The quantity of the instrument bought.
+     * @param price The price per unit of the instrument bought.
      */
-    public void applyTrade(Trade trade) {
-        if (trade.getTradeType() == TradeType.BUY) {
-            BigDecimal newTotalValue = (this.averagePrice.multiply(this.quantity))
-                    .add(trade.getPrice().multiply(trade.getQuantity()));
-            BigDecimal newQuantity = this.quantity.add(trade.getQuantity());
-            
-            this.quantity = newQuantity;
-            // Avoid division by zero if quantity becomes zero after a sell.
-            if (newQuantity.compareTo(BigDecimal.ZERO) == 0) {
-                this.averagePrice = BigDecimal.ZERO;
-            } else {
-                this.averagePrice = newTotalValue.divide(newQuantity, 4, RoundingMode.HALF_UP);
-            }
-        } else if (trade.getTradeType() == TradeType.SELL) {
-            // Average price does not change on a sell, only quantity is reduced.
-            BigDecimal newQuantity = this.quantity.subtract(trade.getQuantity());
-            if (newQuantity.compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalArgumentException("Cannot sell more than the current holding quantity.");
-            }
-            this.quantity = newQuantity;
-        }
+    public void add(BigDecimal quantity, BigDecimal price) {
+        BigDecimal currentTotalValue = this.quantity.multiply(this.averagePrice);
+        BigDecimal tradeTotalValue = quantity.multiply(price);
+        BigDecimal newTotalValue = currentTotalValue.add(tradeTotalValue);
+        BigDecimal newTotalQuantity = this.quantity.add(quantity);
+
+        this.quantity = newTotalQuantity;
+        this.averagePrice = newTotalValue.divide(newTotalQuantity, 4, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Subtracts a specified quantity from the holding.
+     * 
+     * @param quantity The quantity to be subtracted.
+     */
+    public void subtract(BigDecimal quantity) {
+        this.quantity = this.quantity.subtract(quantity);
     }
 
 }

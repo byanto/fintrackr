@@ -15,8 +15,6 @@ public interface TradeMapper {
     @Mapping(target = "instrumentId", source = "instrument.id")
     TradeResponse toResponseDto(Trade trade);
 
-    @Mapping(target = "portfolioId", source = "portfolio.id")
-    @Mapping(target = "instrumentId", source = "instrument.id")
     List<TradeResponse> toResponseDtoList(List<Trade> trades);
 
 

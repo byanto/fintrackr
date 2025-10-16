@@ -134,8 +134,12 @@ class PortfolioServiceTest {
             assertThatThrownBy(() -> portfolioService.retrievePortfolioById(nonExistentId))
                 .isInstanceOf(PortfolioNotFoundException.class)
                 .asInstanceOf(InstanceOfAssertFactories.type(PortfolioNotFoundException.class))
-                .extracting(PortfolioNotFoundException::getId)
-                .isEqualTo(nonExistentId);
+                .satisfies(ex -> {
+                    assertThat(ex.getId()).isEqualTo(nonExistentId);
+                });
+
+            // Verify interactions
+            verify(portfolioMapper, never()).toResponseDto(any(Portfolio.class));
         }
     }
 
@@ -228,9 +232,11 @@ class PortfolioServiceTest {
             assertThatThrownBy(() -> portfolioService.updatePortfolio(nonExistentId, request))
                 .isInstanceOf(PortfolioNotFoundException.class)
                 .asInstanceOf(InstanceOfAssertFactories.type(PortfolioNotFoundException.class))
-                .extracting(PortfolioNotFoundException::getId)
-                .isEqualTo(nonExistentId);
+                .satisfies(ex -> {
+                    assertThat(ex.getId()).isEqualTo(nonExistentId);
+                });
 
+            // Verify interactions
             verify(portfolioRepository, never()).save(any(Portfolio.class));
         }
     }

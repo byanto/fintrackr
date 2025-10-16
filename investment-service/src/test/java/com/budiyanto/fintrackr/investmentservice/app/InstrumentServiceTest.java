@@ -144,9 +144,9 @@ class InstrumentServiceTest {
             assertThatThrownBy(() -> instrumentService.retrieveInstrumentById(nonExistentId))
                 .isInstanceOf(InstrumentNotFoundException.class)
                 .asInstanceOf(InstanceOfAssertFactories.type(InstrumentNotFoundException.class))
-                .extracting(InstrumentNotFoundException::getId)
-                .isEqualTo(nonExistentId);
-
+                .satisfies(ex -> {
+                    assertThat(ex.getId()).isEqualTo(nonExistentId);
+                });
         }
     }
 
@@ -258,9 +258,11 @@ class InstrumentServiceTest {
              assertThatThrownBy(() -> instrumentService.updateInstrument(nonExistentId, request))
                 .isInstanceOf(InstrumentNotFoundException.class)
                 .asInstanceOf(InstanceOfAssertFactories.type(InstrumentNotFoundException.class))
-                .extracting(InstrumentNotFoundException::getId)
-                .isEqualTo(nonExistentId);
+                .satisfies(ex -> {
+                    assertThat(ex.getId()).isEqualTo(nonExistentId);
+                });
             
+            // Verify
             verify(instrumentRepository, never()).save(any(Instrument.class));
             
         }

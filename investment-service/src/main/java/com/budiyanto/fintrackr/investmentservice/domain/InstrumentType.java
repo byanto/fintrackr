@@ -4,5 +4,6 @@ public enum InstrumentType {
     STOCK,
     MUTUAL_FUND,
     ETF,
-    TIMED_DEPOSIT
+    TIMED_DEPOSIT,
+    BOND
 }
