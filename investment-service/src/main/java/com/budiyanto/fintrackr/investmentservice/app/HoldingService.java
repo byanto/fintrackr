@@ -1,16 +1,22 @@
 package com.budiyanto.fintrackr.investmentservice.app;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.budiyanto.fintrackr.investmentservice.api.dto.HoldingResponse;
+import com.budiyanto.fintrackr.investmentservice.app.exception.HoldingNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.InsufficientHoldingsException;
+import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
+import com.budiyanto.fintrackr.investmentservice.app.mapper.HoldingMapper;
 import com.budiyanto.fintrackr.investmentservice.domain.Holding;
 import com.budiyanto.fintrackr.investmentservice.domain.Trade;
 import com.budiyanto.fintrackr.investmentservice.domain.TradeType;
 import com.budiyanto.fintrackr.investmentservice.repository.HoldingRepository;
+import com.budiyanto.fintrackr.investmentservice.repository.PortfolioRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 public class HoldingService {
 
     private final HoldingRepository holdingRepository;
+    private final PortfolioRepository portfolioRepository;
+    private final HoldingMapper holdingMapper;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void processTrade(Trade trade) {
@@ -45,6 +53,23 @@ public class HoldingService {
         } else {
             holdingRepository.save(holding);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public HoldingResponse retrieveHoldingById(Long id) {
+        Holding retrievedHolding = holdingRepository.findById(id)
+            .orElseThrow(() -> new HoldingNotFoundException(id));
+        return holdingMapper.toResponseDto(retrievedHolding);
+    }
+
+    @Transactional(readOnly = true)
+    public List<HoldingResponse> retrieveHoldingsByPortfolioId(Long portfolioId) {
+        if (!portfolioRepository.existsById(portfolioId)) {
+            throw new PortfolioNotFoundException(portfolioId);
+        }
+        
+        List<Holding> retrievedHoldings = holdingRepository.findByPortfolioId(portfolioId);
+        return holdingMapper.toResponseDtoList(retrievedHoldings);
     }
 
 }

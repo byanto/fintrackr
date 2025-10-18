@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.budiyanto.fintrackr.investmentservice.app.exception.InsufficientHoldingsException;
+import com.budiyanto.fintrackr.investmentservice.app.exception.HoldingNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.InstrumentNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.TradeNotFoundException;
@@ -36,6 +37,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InsufficientHoldingsException.class)
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
     public Map<String, String> handleInsufficientHoldings(InsufficientHoldingsException ex) {
+        return Map.of("error", ex.getMessage());
+    }
+
+    @ExceptionHandler(HoldingNotFoundException.class)
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public Map<String, String> handleHoldingNotFound(HoldingNotFoundException ex) {
         return Map.of("error", ex.getMessage());
     }
 }

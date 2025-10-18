@@ -254,8 +254,12 @@ class TradeServiceTest {
             assertThatThrownBy(() -> tradeService.retrieveTradeById(nonExistentId))
                 .isInstanceOf(TradeNotFoundException.class)
                 .asInstanceOf(InstanceOfAssertFactories.type(TradeNotFoundException.class))
-                .extracting(TradeNotFoundException::getId)
-                .isEqualTo(nonExistentId);
+                .satisfies(ex -> {
+                    assertThat(ex.getId()).isEqualTo(nonExistentId);
+                });
+
+            // Verify that no further interactions occurred
+            verify(tradeMapper, never()).toResponseDto(any());
         }
     }
 

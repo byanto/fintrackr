@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -23,7 +24,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import com.budiyanto.fintrackr.investmentservice.api.dto.HoldingResponse;
+import com.budiyanto.fintrackr.investmentservice.app.exception.HoldingNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.InsufficientHoldingsException;
+import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
+import com.budiyanto.fintrackr.investmentservice.app.mapper.HoldingMapper;
 import com.budiyanto.fintrackr.investmentservice.domain.Holding;
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.InstrumentType;
@@ -31,6 +37,7 @@ import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
 import com.budiyanto.fintrackr.investmentservice.domain.Trade;
 import com.budiyanto.fintrackr.investmentservice.domain.TradeType;
 import com.budiyanto.fintrackr.investmentservice.repository.HoldingRepository;
+import com.budiyanto.fintrackr.investmentservice.repository.PortfolioRepository;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("HoldingService Tests")
@@ -38,6 +45,12 @@ class HoldingServiceTest {
 
     @Mock
     private HoldingRepository holdingRepository;
+
+    @Mock
+    private PortfolioRepository portfolioRepository;
+
+    @Mock
+    private HoldingMapper holdingMapper;
 
     @InjectMocks
     private HoldingService holdingService;
@@ -51,7 +64,6 @@ class HoldingServiceTest {
     private static final Long HOLDING_ID = 1L;
     private static final BigDecimal HOLDING_QUANTITY = new BigDecimal(2000);
     private static final BigDecimal HOLDING_AVERAGE_PRICE = new BigDecimal(1800);
-
 
     @BeforeEach
     void setUp() {
@@ -204,5 +216,120 @@ class HoldingServiceTest {
             verify(holdingRepository, never()).delete(any(Holding.class));
             verify(holdingRepository, never()).save(any(Holding.class));
         }
+    }
+
+    @Nested
+    @DisplayName("retrieveHoldingById method")
+    class RetrieveHoldingById {
+
+        @Test
+        @DisplayName("should return holding when ID exists")
+        void should_returnHolding_when_idExists() {
+            // Arrange
+            Holding existingHolding = new Holding(portfolio, instrument, HOLDING_QUANTITY, HOLDING_AVERAGE_PRICE);
+            when(holdingRepository.findById(HOLDING_ID)).thenReturn(Optional.of(existingHolding));
+            
+            var instrumentDto = new HoldingResponse.InstrumentInHoldingResponse(INSTRUMENT_ID, "BBCA", "Bank Central Asia", "IDR");
+            HoldingResponse response = new HoldingResponse(HOLDING_ID, PORTFOLIO_ID, instrumentDto, HOLDING_QUANTITY, HOLDING_AVERAGE_PRICE, Instant.now());
+            when(holdingMapper.toResponseDto(existingHolding)).thenReturn(response);
+
+            // Act
+            HoldingResponse result = holdingService.retrieveHoldingById(HOLDING_ID);
+            
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result).isEqualTo(response);
+
+            // Verify interactions
+            verify(holdingRepository).findById(HOLDING_ID);
+            verify(holdingMapper).toResponseDto(existingHolding);
+        }
+
+        @Test
+        @DisplayName("should throw exception when ID not exists")
+        void should_throwException_when_idNotExists() {
+            // Arrange
+            Long nonExistentId = 99L;
+            when(holdingRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThatThrownBy(() -> holdingService.retrieveHoldingById(nonExistentId))
+                .isInstanceOf(HoldingNotFoundException.class)
+                .asInstanceOf(InstanceOfAssertFactories.type(HoldingNotFoundException.class))
+                .satisfies(ex -> {
+                    assertThat(ex.getId()).isEqualTo(nonExistentId);
+                });
+
+            // Verify that no further interactions occurred
+            verify(holdingMapper, never()).toResponseDto(any());
+        }
+
+        @Nested
+        @DisplayName("retrieveHoldingsByPortfolioId method")
+        class RetrieveHoldingsByPortfolioId {
+            @Test
+            @DisplayName("should return holdings when portfolio exists")
+            void should_returnHolding_when_portfolioExists() {
+                // Arrange
+                when(portfolioRepository.existsById(PORTFOLIO_ID)).thenReturn(true);
+
+                Long holdingId1 = 1L;
+                Long instrumentId1 = 1L;
+                String instrumentCode1 = "BBCA";
+                String instrumentName1 = "Bank Central Asia";
+                String instrumentCurrency1 = "IDR";
+                BigDecimal holdingQuantity1 = new BigDecimal(1000);
+                BigDecimal holdingAveragePrice1 = new BigDecimal(1250);
+
+                Long holdingId2 = 2L;
+                Long instrumentId2 = 2L;
+                String instrumentCode2 = "BBRI";
+                String instrumentName2 = "Bank Rakyat Indonesia";
+                String instrumentCurrency2 = "IDR";
+                BigDecimal holdingQuantity2 = new BigDecimal(2000);
+                BigDecimal holdingAveragePrice2 = new BigDecimal(2250);
+
+                Instrument instrument1 = new Instrument(InstrumentType.STOCK, instrumentCode1, instrumentName1, instrumentCurrency1);
+                Instrument instrument2 = new Instrument(InstrumentType.STOCK, instrumentCode2, instrumentName2, instrumentCurrency2);
+                Holding holding1 = new Holding(portfolio, instrument1, holdingQuantity1, holdingAveragePrice1);
+                Holding holding2 = new Holding(portfolio, instrument2, holdingQuantity2, holdingAveragePrice2);
+                when(holdingRepository.findByPortfolioId(PORTFOLIO_ID)).thenReturn(List.of(holding1, holding2));
+
+                var instrumentResponseDto1 = new HoldingResponse.InstrumentInHoldingResponse(instrumentId1, instrumentCode1, instrumentName1, instrumentCurrency1);
+                var instrumentResponseDto2 = new HoldingResponse.InstrumentInHoldingResponse(instrumentId2, instrumentCode2, instrumentName2, instrumentCurrency2);
+                HoldingResponse response1 = new HoldingResponse(holdingId1, PORTFOLIO_ID, instrumentResponseDto1, holdingQuantity1, holdingAveragePrice1, Instant.now());
+                HoldingResponse response2 = new HoldingResponse(holdingId2, PORTFOLIO_ID, instrumentResponseDto2, holdingQuantity2, holdingAveragePrice2, Instant.now());
+                when(holdingMapper.toResponseDtoList(List.of(holding1, holding2))).thenReturn(List.of(response1, response2));
+
+                // Act
+                List<HoldingResponse> result = holdingService.retrieveHoldingsByPortfolioId(PORTFOLIO_ID);
+    
+                // Assert
+                assertThat(result).isNotNull();
+                assertThat(result).hasSize(2);
+                assertThat(result).containsExactlyInAnyOrder(response1, response2);
+    
+                // Verify interactions
+                verify(portfolioRepository).existsById(PORTFOLIO_ID);
+                verify(holdingRepository).findByPortfolioId(PORTFOLIO_ID);
+                verify(holdingMapper).toResponseDtoList(List.of(holding1, holding2));
+            }
+
+            @Test
+            @DisplayName("should throw exception when non existent portfolio")
+            void should_throwException_when_nonExistentPortfolio() {
+                // Arrange
+                Long nonExistentId = 99L;
+                when(portfolioRepository.existsById(nonExistentId)).thenReturn(false);
+
+                // Act & Assert
+                assertThatThrownBy(() -> holdingService.retrieveHoldingsByPortfolioId(nonExistentId))
+                    .isInstanceOf(PortfolioNotFoundException.class)
+                    .asInstanceOf(InstanceOfAssertFactories.type(PortfolioNotFoundException.class))
+                    .satisfies(ex -> {
+                        assertThat(ex.getId()).isEqualTo(nonExistentId);
+                    });
+            }
+        }   
     }
 }

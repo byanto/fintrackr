@@ -18,7 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/trade")
+@RequestMapping("/api/trades")
 @RequiredArgsConstructor
 public class TradeController {
 

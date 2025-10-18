@@ -81,7 +81,7 @@ class TradeControllerTest {
             when(tradeService.createTrade(request)).thenReturn(response);
 
             // Act & Assert
-            mockMvc.perform(post("/api/trade")
+            mockMvc.perform(post("/api/trades")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
@@ -102,7 +102,7 @@ class TradeControllerTest {
         @DisplayName("should return BadRequest when any field is invalid")
         void should_returnBadRequest_when_requestIsInvalid(CreateTradeRequest invalidRequest) throws Exception {
             // Act & Assert
-            mockMvc.perform(post("/api/trade")
+            mockMvc.perform(post("/api/trades")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(invalidRequest)))
                     .andExpect(status().isBadRequest());
@@ -137,7 +137,7 @@ class TradeControllerTest {
                 .thenThrow(new PortfolioNotFoundException(nonExistentPortfolioId));
 
             // Act & Assert
-            mockMvc.perform(post("/api/trade")
+            mockMvc.perform(post("/api/trades")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound());
@@ -154,7 +154,7 @@ class TradeControllerTest {
                 .thenThrow(new InstrumentNotFoundException(nonExistentInstrumentId));
 
             // Act & Assert
-            mockMvc.perform(post("/api/trade")
+            mockMvc.perform(post("/api/trades")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound());
@@ -181,7 +181,7 @@ class TradeControllerTest {
             when(tradeService.retrieveTradeById(TRADE_ID)).thenReturn(response);
 
             // Act & Assert
-            mockMvc.perform(get("/api/trade/{id}", TRADE_ID))
+            mockMvc.perform(get("/api/trades/{id}", TRADE_ID))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(TRADE_ID))
                     .andExpect(jsonPath("$.portfolioId").value(PORTFOLIO_ID))
@@ -204,7 +204,7 @@ class TradeControllerTest {
                     .thenThrow(new TradeNotFoundException(nonExistentId));
 
             // Act & Assert
-            mockMvc.perform(get("/api/trade/{id}", nonExistentId))
+            mockMvc.perform(get("/api/trades/{id}", nonExistentId))
                     .andExpect(status().isNotFound());
         }   
     }
@@ -236,7 +236,7 @@ class TradeControllerTest {
 
             when(tradeService.retrieveAllTrades()).thenReturn(List.of(response1, response2));
 
-            mockMvc.perform(get("/api/trade"))
+            mockMvc.perform(get("/api/trades"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.size()").value(2))
                     .andExpect(jsonPath("$[0].id").value(id1))
