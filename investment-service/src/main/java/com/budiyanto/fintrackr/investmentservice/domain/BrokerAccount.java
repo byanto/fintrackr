@@ -4,26 +4,22 @@ import java.time.Instant;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import jakarta.annotation.Generated;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "portfolio")
+@Table(name = "broker_account")
 @Getter
-@NoArgsConstructor(force = true)
-@EqualsAndHashCode
-public class Portfolio {
+@NoArgsConstructor
+public class BrokerAccount {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,12 +30,17 @@ public class Portfolio {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
+    @Setter
+    @Column(name = "broker_name", nullable = false)
+    private String brokerName;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    public Portfolio(String name) {
+    public BrokerAccount(String name, String brokerName) {
         this.name = name;
+        this.brokerName = brokerName;
     }
-
+    
 }

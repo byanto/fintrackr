@@ -46,6 +46,11 @@ public class Trade {
     @Column(name = "price", nullable = false, updatable = false)
     private final BigDecimal price;
 
+    /*
+    @Column(name = "fee", nullable = false, updatable = false)
+    private final BigDecimal fee;
+     */
+    
     @Column(name = "traded_at", nullable = false, updatable = false)
     private final Instant tradedAt;
 
@@ -56,6 +61,7 @@ public class Trade {
         this.tradeType = tradeType;
         this.quantity = quantity;
         this.price = price;
+        // this.fee = fee;
         this.tradedAt = tradedAt;
     }
     

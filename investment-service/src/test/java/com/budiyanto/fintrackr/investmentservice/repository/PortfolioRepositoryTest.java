@@ -35,6 +35,5 @@ class PortfolioRepositoryTest extends AbstractRepositoryTest{
         assertThat(retrievedPortfolio).isNotNull();
         assertThat(retrievedPortfolio.getName()).isEqualTo(portfolio.getName());
         assertThat(retrievedPortfolio.getCreatedAt()).isNotNull();
-
     }
 }

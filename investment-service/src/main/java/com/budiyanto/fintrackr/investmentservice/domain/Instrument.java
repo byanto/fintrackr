@@ -20,7 +20,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "instrument")
 @Getter
-@NoArgsConstructor (force = true)
+@NoArgsConstructor(force = true)
 @EqualsAndHashCode
 public class Instrument {
 
@@ -34,7 +34,7 @@ public class Instrument {
     private final InstrumentType instrumentType;
     
     @Setter
-    @Column(name = "code", nullable = false, unique = true) // Made mutable as requested
+    @Column(name = "code", nullable = false, unique = true)
     private String code;
     
     @Setter

@@ -252,10 +252,9 @@ class InstrumentServiceTest {
             Long nonExistentId = 99L;
 
             when(instrumentRepository.findById(nonExistentId)).thenReturn(Optional.empty());
-            UpdateInstrumentRequest request = new UpdateInstrumentRequest("BBCA", "Bank Central Asia");
             
             // Act & Assert
-             assertThatThrownBy(() -> instrumentService.updateInstrument(nonExistentId, request))
+             assertThatThrownBy(() -> instrumentService.updateInstrument(nonExistentId, any(UpdateInstrumentRequest.class)))
                 .isInstanceOf(InstrumentNotFoundException.class)
                 .asInstanceOf(InstanceOfAssertFactories.type(InstrumentNotFoundException.class))
                 .satisfies(ex -> {
@@ -264,6 +263,7 @@ class InstrumentServiceTest {
             
             // Verify
             verify(instrumentRepository, never()).save(any(Instrument.class));
+            verify(instrumentMapper, never()).toResponseDto(any(Instrument.class));
             
         }
     }
@@ -279,7 +279,7 @@ class InstrumentServiceTest {
             instrumentService.deleteInstrumentById(INSTRUMENT_ID);
 
             // Assert
-            verify(instrumentRepository, times(1)).deleteById(INSTRUMENT_ID);
+            verify(instrumentRepository).deleteById(INSTRUMENT_ID);
         }
     }
 }

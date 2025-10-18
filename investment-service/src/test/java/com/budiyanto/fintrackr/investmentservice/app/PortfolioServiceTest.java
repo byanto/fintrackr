@@ -89,6 +89,10 @@ class PortfolioServiceTest {
             assertThat(capturedPortfolio.getId()).isNull(); // Should be the transient entity
             assertThat(capturedPortfolio.getName()).isEqualTo(PORTFOLIO_NAME);
             assertThat(capturedPortfolio.getCreatedAt()).isNull(); // Should be the transient entity
+
+            // Verify interactions
+            verify(portfolioMapper).toPortfolio(request);
+            verify(portfolioMapper).toResponseDto(savedPortfolio);
         }
     }
 
@@ -198,7 +202,7 @@ class PortfolioServiceTest {
 
             // Mapper convert the updated entity to a response DTO
             PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, updatedPortfolioName, createdAt);
-            when(portfolioMapper.toResponseDto(any(Portfolio.class))).thenReturn(response);
+            when(portfolioMapper.toResponseDto(existingPortfolio)).thenReturn(response);
             
             // Act
             UpdatePortfolioRequest request = new UpdatePortfolioRequest(updatedPortfolioName);
@@ -210,13 +214,17 @@ class PortfolioServiceTest {
 
             // Assert on the interaction: verify the correct entity was passed to save()
             ArgumentCaptor<Portfolio> captor = ArgumentCaptor.forClass(Portfolio.class);
-            verify(portfolioRepository, times(1)).save(captor.capture());
+            verify(portfolioRepository).save(captor.capture());
             Portfolio capturedPortfolio = captor.getValue();
             
             assertThat(capturedPortfolio).isSameAs(existingPortfolio); // It's the exact same instance
             assertThat(capturedPortfolio.getId()).isEqualTo(PORTFOLIO_ID); // The ID should be preserved
             assertThat(capturedPortfolio.getName()).isEqualTo(updatedPortfolioName); // The name should be updated
             assertThat(capturedPortfolio.getCreatedAt()).isEqualTo(createdAt); // The original createdAt should be preserved
+
+            // Verify interactions
+            verify(portfolioRepository).findById(PORTFOLIO_ID);
+            verify(portfolioMapper).toResponseDto(existingPortfolio);
         }
 
         @Test
@@ -226,18 +234,18 @@ class PortfolioServiceTest {
             Long nonExistentId = 99L;
 
             when(portfolioRepository.findById(nonExistentId)).thenReturn(Optional.empty());
-            UpdatePortfolioRequest request = new UpdatePortfolioRequest("Updated Portfolio");
 
             // Act & Assert
-            assertThatThrownBy(() -> portfolioService.updatePortfolio(nonExistentId, request))
+            assertThatThrownBy(() -> portfolioService.updatePortfolio(nonExistentId, any(UpdatePortfolioRequest.class)))
                 .isInstanceOf(PortfolioNotFoundException.class)
                 .asInstanceOf(InstanceOfAssertFactories.type(PortfolioNotFoundException.class))
                 .satisfies(ex -> {
                     assertThat(ex.getId()).isEqualTo(nonExistentId);
                 });
 
-            // Verify interactions
+            // Verify that no further interactions occurred
             verify(portfolioRepository, never()).save(any(Portfolio.class));
+            verify(portfolioMapper, never()).toResponseDto(any(Portfolio.class));
         }
     }
 
@@ -251,7 +259,7 @@ class PortfolioServiceTest {
             portfolioService.deletePortfolioById(PORTFOLIO_ID);
 
             // Assert
-            verify(portfolioRepository, times(1)).deleteById(PORTFOLIO_ID);
+            verify(portfolioRepository).deleteById(PORTFOLIO_ID);
         }
     }
 }

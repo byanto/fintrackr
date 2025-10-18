@@ -10,7 +10,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-public abstract class AbstractRepositoryTest {
+abstract class AbstractRepositoryTest {
 
     @Container
     @ServiceConnection

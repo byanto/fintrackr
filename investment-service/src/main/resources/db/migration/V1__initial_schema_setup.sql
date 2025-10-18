@@ -24,7 +24,7 @@ CREATE TABLE trade (
     instrument_id BIGINT NOT NULL REFERENCES instrument(id),
     trade_type VARCHAR(10) NOT NULL, -- 'BUY' or 'SELL'
     quantity DECIMAL(19, 4) NOT NULL,
-    price DECIMAL(19, 4) NOT NULL,
+    price DECIMAL(19, 4) NOT NULL,    
     traded_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
 );
 
