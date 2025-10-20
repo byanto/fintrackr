@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.budiyanto.fintrackr.investmentservice.app.exception.BrokerAccountNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.InsufficientHoldingsException;
+import com.budiyanto.fintrackr.investmentservice.app.exception.FeeRuleNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.HoldingNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.InstrumentNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
@@ -43,6 +45,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HoldingNotFoundException.class)
     @ResponseStatus(value = HttpStatus.NOT_FOUND)
     public Map<String, String> handleHoldingNotFound(HoldingNotFoundException ex) {
+        return Map.of("error", ex.getMessage());
+    }
+
+    @ExceptionHandler(FeeRuleNotFoundException.class)
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public Map<String, String> handleFeeRuleNotFound(FeeRuleNotFoundException ex) {
+        return Map.of("error", ex.getMessage());
+    }
+
+    @ExceptionHandler(BrokerAccountNotFoundException.class)
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public Map<String, String> handleBrokerAccountNotFound(BrokerAccountNotFoundException ex) {
         return Map.of("error", ex.getMessage());
     }
 }

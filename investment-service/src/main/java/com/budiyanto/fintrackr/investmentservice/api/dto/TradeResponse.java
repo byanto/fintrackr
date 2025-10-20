@@ -12,5 +12,6 @@ public record TradeResponse(
     TradeType tradeType,
     BigDecimal quantity,
     BigDecimal price,
+    BigDecimal fee,
     Instant tradedAt
 ) {}

@@ -22,7 +22,7 @@ class BrokerAccountRepositoryTest extends AbstractRepositoryTest{
     void should_saveAndRetrieveBrokerAccount() {
         // Arrange: Create a new BrokerAccount object
         String name = "My Broker Account";
-        String brokerName = "My Broker";
+        String brokerName = "Broker A";
         BrokerAccount brokerAccount = new BrokerAccount(name, brokerName);
         
         // Act: Save the broker account using the repository

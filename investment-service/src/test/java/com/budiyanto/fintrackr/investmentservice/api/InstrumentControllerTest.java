@@ -230,19 +230,24 @@ class InstrumentControllerTest {
                     .andExpect(status().isNotFound());
         }
 
-        @Test
-        @DisplayName("should return BadRequest when name is blank")
-        void should_returnBadRequest_when_nameIsBlank() throws Exception {
-            // Arrange
-            // Create a request with a blank name
-            UpdateInstrumentRequest request = new UpdateInstrumentRequest("BBRI", "   ");
-
-            // Act & Assert
+        @ParameterizedTest
+        @MethodSource("provideInvalidUpdateInstrumentRequests")
+        @DisplayName("should return BadRequest when any field is invalid")
+        void should_returnBadRequest_when_requestIsInvalid(UpdateInstrumentRequest invalidRequest) throws Exception {
+            // Act & Assert for invalid requests
             mockMvc.perform(put("/api/instruments/{id}", INSTRUMENT_ID)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                    .content(objectMapper.writeValueAsString(invalidRequest)))
                     .andExpect(status().isBadRequest());
         }
+
+        private static Stream<UpdateInstrumentRequest> provideInvalidUpdateInstrumentRequests() {
+            return Stream.of(
+                new UpdateInstrumentRequest("   ", INSTRUMENT_NAME),
+                new UpdateInstrumentRequest(INSTRUMENT_CODE, "   ")                
+            );
+        }
+
     }
 
     @Nested

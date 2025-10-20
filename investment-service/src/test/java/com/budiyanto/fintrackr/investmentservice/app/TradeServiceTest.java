@@ -29,6 +29,7 @@ import com.budiyanto.fintrackr.investmentservice.app.exception.InstrumentNotFoun
 import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.TradeNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.mapper.TradeMapper;
+import com.budiyanto.fintrackr.investmentservice.domain.BrokerAccount;
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.InstrumentType;
 import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
@@ -56,16 +57,31 @@ class TradeServiceTest {
 
     @Mock
     private TradeMapper tradeMapper;
+
+    @Mock
+    private FeeService feeService;
     
     @InjectMocks
     private TradeService tradeService;
 
     private static final Long TRADE_ID = 1L;
-    private static final Long PORTFOLIO_ID = 1L;
-    private static final Long INSTRUMENT_ID = 1L;
     private static final TradeType TRADE_TYPE = TradeType.BUY;
-    private static final BigDecimal QUANTITY = new BigDecimal(100);
-    private static final BigDecimal PRICE = new BigDecimal(1520);
+    private static final BigDecimal TRADE_QUANTITY = new BigDecimal(100);
+    private static final BigDecimal TRADE_PRICE = new BigDecimal(1520);
+    private static final BigDecimal TRADE_FEE = new BigDecimal(1200);
+
+    private static final Long PORTFOLIO_ID = 1L;
+    private static final String PORTFOLIO_NAME = "Test Portfolio";
+
+    private static final Long INSTRUMENT_ID = 1L;
+    private static final InstrumentType INSTRUMENT_TYPE = InstrumentType.STOCK;
+    private static final String INSTRUMENT_CODE = "BBCA";
+    private static final String INSTRUMENT_NAME = "Bank Central Asia";
+    private static final String INSTRUMENT_CURRENCY = "IDR";
+
+    private static final Long BROKER_ACCOUNT_ID = 1L;
+    private static final String BROKER_ACCOUNT_NAME = "Test Broker Account";
+    private static final String BROKER_NAME = "Broker A";
 
     @Nested
     @DisplayName("createTrade method")
@@ -80,24 +96,30 @@ class TradeServiceTest {
                 PORTFOLIO_ID,
                 INSTRUMENT_ID,
                 TRADE_TYPE,
-                QUANTITY,
-                PRICE,
+                TRADE_QUANTITY,
+                TRADE_PRICE,
                 tradedAt
             );
 
-            Portfolio portfolio = new Portfolio("Test Portfolio");
+            BrokerAccount brokerAccount = new BrokerAccount(BROKER_ACCOUNT_NAME, BROKER_NAME);
+            ReflectionTestUtils.setField(brokerAccount, "id", BROKER_ACCOUNT_ID);
+            ReflectionTestUtils.setField(brokerAccount, "createdAt", tradedAt);
+
+            Portfolio portfolio = new Portfolio(PORTFOLIO_NAME, brokerAccount);
             ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
             when(portfolioRepository.findById(PORTFOLIO_ID)).thenReturn(Optional.of(portfolio));
 
-            Instrument instrument = new Instrument(InstrumentType.STOCK, "BBCA", "Bank Central Asia", "IDR");
+            Instrument instrument = new Instrument(INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY);
             ReflectionTestUtils.setField(instrument, "id", INSTRUMENT_ID);
             when(instrumentRepository.findById(INSTRUMENT_ID)).thenReturn(Optional.of(instrument));
 
-            Trade savedTrade = new Trade(portfolio, instrument, TRADE_TYPE, QUANTITY, PRICE, tradedAt);
+            when(feeService.calculateFee(brokerAccount, instrument, TRADE_TYPE, TRADE_QUANTITY, TRADE_PRICE)).thenReturn(TRADE_FEE);
+
+            Trade savedTrade = new Trade(portfolio, instrument, TRADE_TYPE, TRADE_QUANTITY, TRADE_PRICE, TRADE_FEE, tradedAt);
             ReflectionTestUtils.setField(savedTrade, "id", TRADE_ID);
             when(tradeRepository.save(any(Trade.class))).thenReturn(savedTrade); // any() is fine here as we assert on the captor
 
-            TradeResponse response = new TradeResponse(TRADE_ID, PORTFOLIO_ID, INSTRUMENT_ID, TRADE_TYPE, QUANTITY, PRICE, tradedAt);
+            TradeResponse response = new TradeResponse(TRADE_ID, PORTFOLIO_ID, INSTRUMENT_ID, TRADE_TYPE, TRADE_QUANTITY, TRADE_PRICE, TRADE_FEE, tradedAt);
             when(tradeMapper.toResponseDto(savedTrade)).thenReturn(response);
 
             // Act
@@ -110,19 +132,21 @@ class TradeServiceTest {
             // Assert on the interaction: verify the correct entity was passed to save()
             ArgumentCaptor<Trade> captor = ArgumentCaptor.forClass(Trade.class);
             verify(tradeRepository).save(captor.capture());
-
             Trade capturedTrade = captor.getValue();
+
             assertThat(capturedTrade.getId()).isNull();
             assertThat(capturedTrade.getPortfolio()).isSameAs(portfolio);
             assertThat(capturedTrade.getInstrument()).isSameAs(instrument);
             assertThat(capturedTrade.getTradeType()).isEqualTo(TRADE_TYPE);
-            assertThat(capturedTrade.getQuantity()).isEqualByComparingTo(QUANTITY);
-            assertThat(capturedTrade.getPrice()).isEqualByComparingTo(PRICE);
+            assertThat(capturedTrade.getQuantity()).isEqualByComparingTo(TRADE_QUANTITY);
+            assertThat(capturedTrade.getPrice()).isEqualByComparingTo(TRADE_PRICE);
+            assertThat(capturedTrade.getFee()).isEqualByComparingTo(TRADE_FEE);
             assertThat(capturedTrade.getTradedAt()).isEqualTo(tradedAt);
 
             // Verify interactions
             verify(portfolioRepository).findById(PORTFOLIO_ID);
             verify(instrumentRepository).findById(INSTRUMENT_ID);
+            verify(feeService).calculateFee(brokerAccount, instrument, TRADE_TYPE, TRADE_QUANTITY, TRADE_PRICE);
             verify(holdingService).processTrade(savedTrade);
             verify(tradeMapper).toResponseDto(savedTrade);
         }
@@ -137,8 +161,8 @@ class TradeServiceTest {
                 nonExistentPortfolioId,
                 INSTRUMENT_ID,
                 TRADE_TYPE,
-                QUANTITY,
-                PRICE,
+                TRADE_QUANTITY,
+                TRADE_PRICE,
                 tradedAt
             );
 
@@ -168,13 +192,18 @@ class TradeServiceTest {
                 PORTFOLIO_ID,
                 nonExistentInstrumentId,
                 TRADE_TYPE,
-                QUANTITY,
-                PRICE,
+                TRADE_QUANTITY,
+                TRADE_PRICE,
                 tradedAt
             );
 
-            Portfolio portfolio = new Portfolio("Test Portfolio");
+            BrokerAccount brokerAccount = new BrokerAccount(BROKER_ACCOUNT_NAME, BROKER_NAME);
+            ReflectionTestUtils.setField(brokerAccount, "id", BROKER_ACCOUNT_ID);
+            ReflectionTestUtils.setField(brokerAccount, "createdAt", tradedAt);
+
+            Portfolio portfolio = new Portfolio(PORTFOLIO_NAME, brokerAccount);
             ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
+            ReflectionTestUtils.setField(portfolio, "createdAt", tradedAt);
             when(portfolioRepository.findById(PORTFOLIO_ID)).thenReturn(Optional.of(portfolio));
 
             when(instrumentRepository.findById(nonExistentInstrumentId)).thenReturn(Optional.empty());
@@ -183,8 +212,9 @@ class TradeServiceTest {
             assertThatThrownBy(() -> tradeService.createTrade(request))
                 .isInstanceOf(InstrumentNotFoundException.class)
                 .asInstanceOf(InstanceOfAssertFactories.type(InstrumentNotFoundException.class))
-                .extracting(InstrumentNotFoundException::getId)
-                .isEqualTo(nonExistentInstrumentId);
+                .satisfies(ex -> {
+                    assertThat(ex.getId()).isEqualTo(nonExistentInstrumentId);
+                });                
 
             // Verify that no further interactions occurred
             verify(tradeRepository, never()).save(any());
@@ -201,20 +231,27 @@ class TradeServiceTest {
         void should_returnTrade_when_idExists() {
             
             // Arrange
-            Portfolio portfolio = new Portfolio("Test Portfolio");
-            ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
-
-            Instrument instrument = new Instrument(InstrumentType.STOCK, "BBCA", "Bank Central Asia", "IDR");
-            ReflectionTestUtils.setField(instrument, "id", INSTRUMENT_ID);
-            ReflectionTestUtils.setField(instrument, "createdAt", Instant.now());
-            
             Instant tradedAt = Instant.now();
+
+            BrokerAccount brokerAccount = new BrokerAccount(BROKER_ACCOUNT_NAME, BROKER_NAME);
+            ReflectionTestUtils.setField(brokerAccount, "id", BROKER_ACCOUNT_ID);
+            ReflectionTestUtils.setField(brokerAccount, "createdAt", tradedAt);
+
+            Portfolio portfolio = new Portfolio(PORTFOLIO_NAME, brokerAccount);
+            ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
+            ReflectionTestUtils.setField(portfolio, "createdAt", tradedAt);
+
+            Instrument instrument = new Instrument(INSTRUMENT_TYPE, INSTRUMENT_CODE, INSTRUMENT_NAME, INSTRUMENT_CURRENCY);
+            ReflectionTestUtils.setField(instrument, "id", INSTRUMENT_ID);
+            ReflectionTestUtils.setField(instrument, "createdAt", tradedAt);
+            
             Trade retrievedTrade = new Trade(
                 portfolio,
                 instrument,
                 TRADE_TYPE,
-                QUANTITY,
-                PRICE,
+                TRADE_QUANTITY,
+                TRADE_PRICE,
+                TRADE_FEE,
                 tradedAt
             );
             ReflectionTestUtils.setField(retrievedTrade, "id", TRADE_ID);
@@ -225,8 +262,9 @@ class TradeServiceTest {
                 PORTFOLIO_ID, 
                 INSTRUMENT_ID, 
                 TRADE_TYPE, 
-                QUANTITY, 
-                PRICE, 
+                TRADE_QUANTITY, 
+                TRADE_PRICE,
+                TRADE_FEE,
                 tradedAt
             );
             when(tradeMapper.toResponseDto(retrievedTrade)).thenReturn(response);
@@ -270,19 +308,25 @@ class TradeServiceTest {
         @DisplayName("should return a list of all trades")
         void should_returnAllTrades() {
             // Arrange
-            Portfolio portfolio1 = new Portfolio("Portfolio 1");
-            Instrument instrument1 = new Instrument(InstrumentType.STOCK, "CODE1", "Instrument 1", "IDR");
-            Trade trade1 = new Trade(portfolio1, instrument1, TradeType.BUY, BigDecimal.ONE, BigDecimal.TEN, Instant.now());
+            Instant createdAt = Instant.now();
 
-            Portfolio portfolio2 = new Portfolio("Portfolio 2");
+            BrokerAccount brokerAccount = new BrokerAccount(BROKER_ACCOUNT_NAME, BROKER_NAME);
+            ReflectionTestUtils.setField(brokerAccount, "id", BROKER_ACCOUNT_ID);
+            ReflectionTestUtils.setField(brokerAccount, "createdAt", createdAt);
+
+            Portfolio portfolio1 = new Portfolio("Portfolio 1", brokerAccount);
+            Instrument instrument1 = new Instrument(InstrumentType.STOCK, "CODE1", "Instrument 1", "IDR");
+            Trade trade1 = new Trade(portfolio1, instrument1, TradeType.BUY, BigDecimal.ONE, BigDecimal.TEN, BigDecimal.TWO, createdAt);
+
+            Portfolio portfolio2 = new Portfolio("Portfolio 2", brokerAccount);
             Instrument instrument2 = new Instrument(InstrumentType.BOND, "CODE2", "Instrument 2", "IDR");
-            Trade trade2 = new Trade(portfolio2, instrument2, TradeType.SELL, BigDecimal.ONE, BigDecimal.TEN, Instant.now());
+            Trade trade2 = new Trade(portfolio2, instrument2, TradeType.SELL, BigDecimal.ONE, BigDecimal.TEN, BigDecimal.ZERO, createdAt);
 
             List<Trade> tradeList = List.of(trade1, trade2);
             when(tradeRepository.findAll()).thenReturn(tradeList);
 
-            TradeResponse response1 = new TradeResponse(1L, 1L, 1L, TradeType.BUY, BigDecimal.ONE, BigDecimal.TEN, Instant.now());
-            TradeResponse response2 = new TradeResponse(2L, 2L, 2L, TradeType.SELL, BigDecimal.ONE, BigDecimal.TEN, Instant.now());
+            TradeResponse response1 = new TradeResponse(1L, 1L, 1L, TradeType.BUY, BigDecimal.ONE, BigDecimal.TEN, BigDecimal.TWO, createdAt);
+            TradeResponse response2 = new TradeResponse(2L, 2L, 2L, TradeType.SELL, BigDecimal.ONE, BigDecimal.TEN, BigDecimal.ZERO, createdAt);
             List<TradeResponse> responseList = List.of(response1, response2);
             when(tradeMapper.toResponseDtoList(tradeList)).thenReturn(responseList);
 

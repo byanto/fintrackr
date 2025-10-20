@@ -8,9 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.budiyanto.fintrackr.investmentservice.api.dto.CreatePortfolioRequest;
 import com.budiyanto.fintrackr.investmentservice.api.dto.PortfolioResponse;
 import com.budiyanto.fintrackr.investmentservice.api.dto.UpdatePortfolioRequest;
+import com.budiyanto.fintrackr.investmentservice.app.exception.BrokerAccountNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.mapper.PortfolioMapper;
+import com.budiyanto.fintrackr.investmentservice.domain.BrokerAccount;
 import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
+import com.budiyanto.fintrackr.investmentservice.repository.BrokerAccountRepository;
 import com.budiyanto.fintrackr.investmentservice.repository.PortfolioRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -20,11 +23,14 @@ import lombok.RequiredArgsConstructor;
 public class PortfolioService {
 
     private final PortfolioRepository portfolioRepository;
+    private final BrokerAccountRepository brokerAccountRepository;
     private final PortfolioMapper portfolioMapper;
 
     @Transactional
     public PortfolioResponse createPortfolio(CreatePortfolioRequest request) {
-        Portfolio portfolio = portfolioMapper.toPortfolio(request);
+        BrokerAccount brokerAccount = brokerAccountRepository.findById(request.brokerAccountId())
+            .orElseThrow(() -> new BrokerAccountNotFoundException(request.brokerAccountId()));
+        Portfolio portfolio = new Portfolio(request.name(), brokerAccount);
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);
         return portfolioMapper.toResponseDto(savedPortfolio);
     }

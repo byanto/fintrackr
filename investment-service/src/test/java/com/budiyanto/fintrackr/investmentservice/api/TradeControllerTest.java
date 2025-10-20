@@ -51,6 +51,7 @@ class TradeControllerTest {
     private static final TradeType TRADE_TYPE = TradeType.BUY;
     private static final BigDecimal QUANTITY = new BigDecimal(100);
     private static final BigDecimal PRICE = new BigDecimal(1520);
+    private static final BigDecimal FEE = new BigDecimal(1200);
 
     @Nested
     @DisplayName("createTrade method")
@@ -76,6 +77,7 @@ class TradeControllerTest {
                 TRADE_TYPE,
                 QUANTITY,
                 PRICE,
+                FEE,
                 tradedAt
             );
             when(tradeService.createTrade(request)).thenReturn(response);
@@ -91,6 +93,7 @@ class TradeControllerTest {
                     .andExpect(jsonPath("$.tradeType").value(TRADE_TYPE.toString()))
                     .andExpect(jsonPath("$.quantity").value(QUANTITY.toPlainString()))
                     .andExpect(jsonPath("$.price").value(PRICE.toPlainString()))
+                    .andExpect(jsonPath("$.fee").value(FEE.toPlainString()))
                     .andExpect(jsonPath("$.tradedAt").value(tradedAt.toString()));
 
             // Verify that the service method was called with the correct argument
@@ -175,7 +178,8 @@ class TradeControllerTest {
                 INSTRUMENT_ID, 
                 TRADE_TYPE, 
                 QUANTITY, 
-                PRICE, 
+                PRICE,
+                FEE,
                 tradedAt
             );
             when(tradeService.retrieveTradeById(TRADE_ID)).thenReturn(response);
@@ -189,6 +193,7 @@ class TradeControllerTest {
                     .andExpect(jsonPath("$.tradeType").value(TRADE_TYPE.toString()))
                     .andExpect(jsonPath("$.quantity").value(QUANTITY.toPlainString()))
                     .andExpect(jsonPath("$.price").value(PRICE.toPlainString()))
+                    .andExpect(jsonPath("$.fee").value(FEE.toPlainString()))
                     .andExpect(jsonPath("$.tradedAt").value(tradedAt.toString()));
 
             // Verify that the service method was called with the correct argument
@@ -228,11 +233,13 @@ class TradeControllerTest {
             BigDecimal quantity2 = new BigDecimal(200);
             BigDecimal price1 = new BigDecimal(1500);
             BigDecimal price2 = new BigDecimal(1800);
+            BigDecimal fee1 = new BigDecimal(1200);
+            BigDecimal fee2 = new BigDecimal(1800);
             Instant tradedAt1 = Instant.now();
             Instant tradedAt2 = Instant.now();
 
-            TradeResponse response1 = new TradeResponse(id1, portfolioId1, instrumentId1, tradeType1, quantity1, price1, tradedAt1);
-            TradeResponse response2 = new TradeResponse(id2, portfolioId2, instrumentId2, tradeType2, quantity2, price2, tradedAt2);
+            TradeResponse response1 = new TradeResponse(id1, portfolioId1, instrumentId1, tradeType1, quantity1, price1, fee1, tradedAt1);
+            TradeResponse response2 = new TradeResponse(id2, portfolioId2, instrumentId2, tradeType2, quantity2, price2, fee2, tradedAt2);
 
             when(tradeService.retrieveAllTrades()).thenReturn(List.of(response1, response2));
 
@@ -245,6 +252,7 @@ class TradeControllerTest {
                     .andExpect(jsonPath("$[0].tradeType").value(tradeType1.toString()))
                     .andExpect(jsonPath("$[0].quantity").value(quantity1.toPlainString()))
                     .andExpect(jsonPath("$[0].price").value(price1.toPlainString()))
+                    .andExpect(jsonPath("$[0].fee").value(fee1.toPlainString()))
                     .andExpect(jsonPath("$[0].tradedAt").value(tradedAt1.toString()))
                     .andExpect(jsonPath("$[1].id").value(id2))
                     .andExpect(jsonPath("$[1].portfolioId").value(portfolioId2))
@@ -252,6 +260,7 @@ class TradeControllerTest {
                     .andExpect(jsonPath("$[1].tradeType").value(tradeType2.toString()))
                     .andExpect(jsonPath("$[1].quantity").value(quantity2.toPlainString()))
                     .andExpect(jsonPath("$[1].price").value(price2.toPlainString()))
+                    .andExpect(jsonPath("$[1].fee").value(fee2.toPlainString()))
                     .andExpect(jsonPath("$[1].tradedAt").value(tradedAt2.toString()));
 
             // Verify that the service method was called with the correct argument

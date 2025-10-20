@@ -20,8 +20,8 @@ CREATE TABLE instrument (
 -- Trade Table: Records every buy or sell transaction. This is an immutable event log.
 CREATE TABLE trade (
     id BIGSERIAL PRIMARY KEY,
-    portfolio_id BIGINT NOT NULL REFERENCES portfolio(id),
-    instrument_id BIGINT NOT NULL REFERENCES instrument(id),
+    portfolio_id BIGINT NOT NULL REFERENCES portfolio(id) ON DELETE CASCADE,
+    instrument_id BIGINT NOT NULL REFERENCES instrument(id) ON DELETE RESTRICT,
     trade_type VARCHAR(10) NOT NULL, -- 'BUY' or 'SELL'
     quantity DECIMAL(19, 4) NOT NULL,
     price DECIMAL(19, 4) NOT NULL,    
@@ -31,12 +31,12 @@ CREATE TABLE trade (
 -- Holding Table: A materialized view of the current position for an instrument in a portfolio.
 CREATE TABLE holding (
     id BIGSERIAL PRIMARY KEY,
-    portfolio_id BIGINT NOT NULL REFERENCES portfolio(id),
-    instrument_id BIGINT NOT NULL REFERENCES instrument(id),
+    portfolio_id BIGINT NOT NULL REFERENCES portfolio(id) ON DELETE CASCADE,
+    instrument_id BIGINT NOT NULL REFERENCES instrument(id) ON DELETE RESTRICT,
     quantity DECIMAL(19, 4) NOT NULL,
     average_price DECIMAL(19, 4) NOT NULL,
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    CONSTRAINT unq_portfolio_instrument UNIQUE (portfolio_id, instrument_id)
+    UNIQUE (portfolio_id, instrument_id)
 );
 
 -- Add comments for clarity

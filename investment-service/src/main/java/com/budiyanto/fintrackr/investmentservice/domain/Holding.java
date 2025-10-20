@@ -16,13 +16,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "holding", uniqueConstraints = @UniqueConstraint(columnNames = {"portfolio_id", "instrument_id"}))
 @Getter
-@NoArgsConstructor(force = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED, force = true) // Only for JPA
 public class Holding {
 
     @Id
@@ -60,9 +61,10 @@ public class Holding {
      * @param quantity The quantity of the instrument bought.
      * @param price The price per unit of the instrument bought.
      */
-    public void add(BigDecimal quantity, BigDecimal price) {
+    public void add(BigDecimal quantity, BigDecimal price, BigDecimal fee) {
         BigDecimal currentTotalValue = this.quantity.multiply(this.averagePrice);
-        BigDecimal tradeTotalValue = quantity.multiply(price);
+        // The total cost of the trade is (quantity * price) + fee
+        BigDecimal tradeTotalValue = quantity.multiply(price).add(fee);
         BigDecimal newTotalValue = currentTotalValue.add(tradeTotalValue);
         BigDecimal newTotalQuantity = this.quantity.add(quantity);
 
@@ -72,7 +74,6 @@ public class Holding {
 
     /**
      * Subtracts a specified quantity from the holding.
-     * 
      * @param quantity The quantity to be subtracted.
      */
     public void subtract(BigDecimal quantity) {

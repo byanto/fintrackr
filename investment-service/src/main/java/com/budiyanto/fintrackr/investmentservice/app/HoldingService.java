@@ -35,7 +35,7 @@ public class HoldingService {
                 .orElse(new Holding(trade.getPortfolio(), trade.getInstrument(), BigDecimal.ZERO, BigDecimal.ZERO));
         
         if (trade.getTradeType() == TradeType.BUY) {
-            holding.add(trade.getQuantity(), trade.getPrice());
+            holding.add(trade.getQuantity(), trade.getPrice(), trade.getFee());
         } else if (trade.getTradeType() == TradeType.SELL) {
             if (holding.getQuantity().compareTo(trade.getQuantity()) < 0) {
                 throw new InsufficientHoldingsException(

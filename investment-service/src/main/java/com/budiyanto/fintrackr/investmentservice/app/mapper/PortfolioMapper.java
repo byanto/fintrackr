@@ -4,15 +4,12 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 
-import com.budiyanto.fintrackr.investmentservice.api.dto.CreatePortfolioRequest;
 import com.budiyanto.fintrackr.investmentservice.api.dto.PortfolioResponse;
 import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
 
 @Mapper(componentModel = "spring")
 public interface PortfolioMapper {
 
-    Portfolio toPortfolio(CreatePortfolioRequest request);
-    Portfolio toPortfolio(PortfolioResponse reponse);
     PortfolioResponse toResponseDto(Portfolio portfolio);
     List<PortfolioResponse> toReponseDtoList(List<Portfolio> portfolios);
     

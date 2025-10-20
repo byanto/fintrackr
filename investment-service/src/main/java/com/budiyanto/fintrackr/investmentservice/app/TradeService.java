@@ -1,5 +1,6 @@
 package com.budiyanto.fintrackr.investmentservice.app;
 
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class TradeService {
     private final PortfolioRepository portfolioRepository;
     private final InstrumentRepository instrumentRepository;
     private final HoldingService holdingService;
+    private final FeeService feeService;
     private final TradeMapper tradeMapper;
 
     @Transactional
@@ -36,6 +38,11 @@ public class TradeService {
             .orElseThrow(() -> new PortfolioNotFoundException(request.portfolioId()));
         Instrument instrument = instrumentRepository.findById(request.instrumentId())
             .orElseThrow(() -> new InstrumentNotFoundException(request.instrumentId()));
+
+        // Calculate the fee using the FeeService
+        BigDecimal fee = feeService.calculateFee(
+            portfolio.getBrokerAccount(), instrument, request.tradeType(), request.quantity(), request.price()
+        );
         
         // Create the new Trade entity
         Trade trade = new Trade(
@@ -44,6 +51,7 @@ public class TradeService {
             request.tradeType(),
             request.quantity(),
             request.price(),
+            fee, 
             request.tradedAt()
         );
 

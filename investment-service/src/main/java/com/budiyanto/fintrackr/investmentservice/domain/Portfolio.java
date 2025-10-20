@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,7 +22,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "portfolio")
 @Getter
-@NoArgsConstructor(force = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED, force = true) // Only for JPA
 @EqualsAndHashCode
 public class Portfolio {
 
@@ -34,12 +35,17 @@ public class Portfolio {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "broker_account_id", nullable = false, updatable = false)
+    private final BrokerAccount brokerAccount;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    public Portfolio(String name) {
+    public Portfolio(String name, BrokerAccount brokerAccount) {
         this.name = name;
+        this.brokerAccount = brokerAccount;
     }
 
 }

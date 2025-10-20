@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.budiyanto.fintrackr.investmentservice.domain.BrokerAccount;
 import com.budiyanto.fintrackr.investmentservice.domain.Holding;
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.InstrumentType;
@@ -19,20 +20,25 @@ class HoldingRepositoryTest extends AbstractRepositoryTest {
     private final HoldingRepository holdingRepository;
     private final PortfolioRepository portfolioRepository;
     private final InstrumentRepository instrumentRepository;
+    private final BrokerAccountRepository brokerAccountRepository;
 
     @Autowired
     HoldingRepositoryTest(HoldingRepository holdingRepository, PortfolioRepository portfolioRepository,
-            InstrumentRepository instrumentRepository) {
+            InstrumentRepository instrumentRepository, BrokerAccountRepository brokerAccountRepository) {
         this.holdingRepository = holdingRepository;
         this.portfolioRepository = portfolioRepository;
-        this.instrumentRepository = instrumentRepository;    
+        this.instrumentRepository = instrumentRepository;
+        this.brokerAccountRepository = brokerAccountRepository;   
     }
 
     @Test
     @DisplayName("should save and retrieve holding")
     void should_saveAndRetrieveHolding() {
         // Arrange: Create a new Holding object
-        Portfolio portfolio = new Portfolio("My Portfolio");
+        BrokerAccount brokerAccount = new BrokerAccount("My Broker Account", "Broker A");
+        BrokerAccount savedBrokerAccount = brokerAccountRepository.save(brokerAccount);
+
+        Portfolio portfolio = new Portfolio("My Portfolio", savedBrokerAccount);
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);     
     
         Instrument instrument = new Instrument(InstrumentType.STOCK, "BBCA", "Bank Central Asia", "IDR");

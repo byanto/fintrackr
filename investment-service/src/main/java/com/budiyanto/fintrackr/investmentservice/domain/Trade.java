@@ -14,13 +14,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "trade")
 @Getter
-@NoArgsConstructor(force = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED, force = true) // Only for JPA
 public class Trade {
 
     @Id
@@ -46,22 +47,25 @@ public class Trade {
     @Column(name = "price", nullable = false, updatable = false)
     private final BigDecimal price;
 
-    /*
     @Column(name = "fee", nullable = false, updatable = false)
     private final BigDecimal fee;
-     */
     
     @Column(name = "traded_at", nullable = false, updatable = false)
     private final Instant tradedAt;
 
     public Trade(Portfolio portfolio, Instrument instrument, TradeType tradeType, BigDecimal quantity, BigDecimal price,
             Instant tradedAt) {
+        this(portfolio, instrument, tradeType, quantity, price, BigDecimal.ZERO, tradedAt);
+    }
+
+    public Trade(Portfolio portfolio, Instrument instrument, TradeType tradeType, BigDecimal quantity, BigDecimal price,
+            BigDecimal fee, Instant tradedAt) {
         this.portfolio = portfolio;
         this.instrument = instrument;
         this.tradeType = tradeType;
         this.quantity = quantity;
         this.price = price;
-        // this.fee = fee;
+        this.fee = fee;
         this.tradedAt = tradedAt;
     }
     

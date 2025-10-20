@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,9 +25,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.budiyanto.fintrackr.investmentservice.api.dto.CreatePortfolioRequest;
 import com.budiyanto.fintrackr.investmentservice.api.dto.PortfolioResponse;
 import com.budiyanto.fintrackr.investmentservice.api.dto.UpdatePortfolioRequest;
+import com.budiyanto.fintrackr.investmentservice.app.exception.BrokerAccountNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.mapper.PortfolioMapper;
+import com.budiyanto.fintrackr.investmentservice.domain.BrokerAccount;
 import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
+import com.budiyanto.fintrackr.investmentservice.repository.BrokerAccountRepository;
 import com.budiyanto.fintrackr.investmentservice.repository.PortfolioRepository;
 
 
@@ -40,6 +42,9 @@ class PortfolioServiceTest {
     private PortfolioRepository portfolioRepository;
 
     @Mock
+    private BrokerAccountRepository brokerAccountRepository;
+
+    @Mock
     private PortfolioMapper portfolioMapper;
 
     @InjectMocks
@@ -47,6 +52,10 @@ class PortfolioServiceTest {
 
     private static final Long PORTFOLIO_ID = 1L;
     private static final String PORTFOLIO_NAME = "Test Portfolio";
+    private static final Long BROKER_ACCOUNT_ID = 1L;
+    private static final String ACCOUNT_NAME = "Test Broker Account";
+    private static final String BROKER_NAME = "Broker A";
+
 
     @Nested
     @DisplayName("createPortfolio method")
@@ -57,20 +66,21 @@ class PortfolioServiceTest {
         void should_createAndReturnNewPortfolio() {
             // Arrange
             Instant createdAt = Instant.now();
+            CreatePortfolioRequest request = new CreatePortfolioRequest(PORTFOLIO_NAME, BROKER_ACCOUNT_ID);
             
-            // Mapper converts request DTO to a transient entity (no ID yet)
-            CreatePortfolioRequest request = new CreatePortfolioRequest(PORTFOLIO_NAME);
-            Portfolio transientPortfolio = new Portfolio(PORTFOLIO_NAME);
-            when(portfolioMapper.toPortfolio(request)).thenReturn(transientPortfolio);
+            BrokerAccount brokerAccount = new BrokerAccount(ACCOUNT_NAME, BROKER_NAME);
+            ReflectionTestUtils.setField(brokerAccount, "id", BROKER_ACCOUNT_ID);
+            when(brokerAccountRepository.findById(BROKER_ACCOUNT_ID)).thenReturn(Optional.of(brokerAccount));
 
             // Repository saves the transient entity and returns a persisted one (with an ID)
-            Portfolio savedPortfolio = new Portfolio(PORTFOLIO_NAME);
+            Portfolio savedPortfolio = new Portfolio(PORTFOLIO_NAME, brokerAccount);
             ReflectionTestUtils.setField(savedPortfolio, "id", PORTFOLIO_ID);
             ReflectionTestUtils.setField(savedPortfolio, "createdAt", createdAt);
-            when(portfolioRepository.save(transientPortfolio)).thenReturn(savedPortfolio);
+            when(portfolioRepository.save(any(Portfolio.class))).thenReturn(savedPortfolio); // any() is fine here as we assert on the captor
 
             // Mapper converts the persisted entity to a response DTO
-            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, createdAt);
+            var brokerDto = new PortfolioResponse.BrokerAccountInPortfolioResponse(BROKER_ACCOUNT_ID, ACCOUNT_NAME, BROKER_NAME);
+            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, brokerDto, createdAt);
             when(portfolioMapper.toResponseDto(savedPortfolio)).thenReturn(response);
             
             // Act
@@ -82,17 +92,37 @@ class PortfolioServiceTest {
 
             // Assert on the interaction: verify the correct entity was passed to save()
             ArgumentCaptor<Portfolio> captor = ArgumentCaptor.forClass(Portfolio.class);
-            verify(portfolioRepository, times(1)).save(captor.capture());
+            verify(portfolioRepository).save(captor.capture());
             Portfolio capturedPortfolio = captor.getValue();
 
-            assertThat(capturedPortfolio).isSameAs(transientPortfolio); // It's the exact same instance
             assertThat(capturedPortfolio.getId()).isNull(); // Should be the transient entity
             assertThat(capturedPortfolio.getName()).isEqualTo(PORTFOLIO_NAME);
+            assertThat(capturedPortfolio.getBrokerAccount()).isSameAs(brokerAccount);
             assertThat(capturedPortfolio.getCreatedAt()).isNull(); // Should be the transient entity
 
             // Verify interactions
-            verify(portfolioMapper).toPortfolio(request);
             verify(portfolioMapper).toResponseDto(savedPortfolio);
+        }
+
+        @Test
+        @DisplayName("should throw exception when broker account not found")
+        void should_throwException_when_brokerAccountNotFound() {
+            // Arrange
+            Long nonExistentId = 99L;
+            CreatePortfolioRequest request = new CreatePortfolioRequest(PORTFOLIO_NAME, nonExistentId);
+            when(brokerAccountRepository.findById(nonExistentId)).thenReturn(Optional.empty());        
+
+            // Act & Assert
+            assertThatThrownBy(() -> portfolioService.createPortfolio(request))
+                .isInstanceOf(BrokerAccountNotFoundException.class)
+                .asInstanceOf(InstanceOfAssertFactories.type(BrokerAccountNotFoundException.class))
+                .satisfies(ex -> {
+                    assertThat(ex.getId()).isEqualTo(nonExistentId);
+                });
+
+            // Verify further interactions never occured
+            verify(portfolioRepository, never()).save(any(Portfolio.class));
+            verify(portfolioMapper, never()).toResponseDto(any(Portfolio.class));
         }
     }
 
@@ -105,14 +135,19 @@ class PortfolioServiceTest {
         void should_returnPortfolio_when_idExists() {
             // Arrange            
             Instant createdAt = Instant.now();
+            BrokerAccount brokerAccount = new BrokerAccount(ACCOUNT_NAME, BROKER_NAME);
+            ReflectionTestUtils.setField(brokerAccount, "id", BROKER_ACCOUNT_ID);
+            ReflectionTestUtils.setField(brokerAccount, "createdAt", createdAt);
+
             // Repository finds the portfolio based on the given ID
-            Portfolio retrievedPortfolio = new Portfolio(PORTFOLIO_NAME);
+            Portfolio retrievedPortfolio = new Portfolio(PORTFOLIO_NAME, brokerAccount);
             ReflectionTestUtils.setField(retrievedPortfolio, "id", PORTFOLIO_ID);
             ReflectionTestUtils.setField(retrievedPortfolio, "createdAt", createdAt);
             when(portfolioRepository.findById(PORTFOLIO_ID)).thenReturn(Optional.of(retrievedPortfolio));
             
             // Mapper converts the retrieved entity to a response DTO
-            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, createdAt);
+            var brokerDto = new PortfolioResponse.BrokerAccountInPortfolioResponse(BROKER_ACCOUNT_ID, ACCOUNT_NAME, BROKER_NAME);
+            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, brokerDto, createdAt);
             when(portfolioMapper.toResponseDto(retrievedPortfolio)).thenReturn(response);  
 
             // Act
@@ -142,7 +177,7 @@ class PortfolioServiceTest {
                     assertThat(ex.getId()).isEqualTo(nonExistentId);
                 });
 
-            // Verify interactions
+            // Verify further interactions never occured
             verify(portfolioMapper, never()).toResponseDto(any(Portfolio.class));
         }
     }
@@ -154,16 +189,30 @@ class PortfolioServiceTest {
         @DisplayName("should return a list of all portfolios")
         void should_returnAllPortfolios() {
             // Arrange
-            String portfolioName1 = "Test Portfolio 1";
-            String portfolioName2 = "Test Portfolio 2";
+            BrokerAccount brokerAccount = new BrokerAccount(ACCOUNT_NAME, BROKER_NAME);
+            ReflectionTestUtils.setField(brokerAccount, "id", BROKER_ACCOUNT_ID);
+            ReflectionTestUtils.setField(brokerAccount, "createdAt", Instant.now());
+            
+            Instant createdAt = Instant.now();
 
-            Portfolio portfolio1 = new Portfolio(portfolioName1);
-            Portfolio portfolio2 = new Portfolio(portfolioName2);
+            Long portfolioId1 = 1L;
+            String portfolioName1 = "Test Portfolio 1";
+            Portfolio portfolio1 = new Portfolio(portfolioName1, brokerAccount);
+            ReflectionTestUtils.setField(portfolio1, "id", portfolioId1);
+            ReflectionTestUtils.setField(portfolio1, "createdAt", createdAt);
+
+            Long portfolioId2 = 2L;
+            String portfolioName2 = "Test Portfolio 2";
+            Portfolio portfolio2 = new Portfolio(portfolioName2, brokerAccount);
+            ReflectionTestUtils.setField(portfolio2, "id", portfolioId2);
+            ReflectionTestUtils.setField(portfolio2, "createdAt", createdAt);
+
             List<Portfolio> portfolioList = List.of(portfolio1, portfolio2);
             when(portfolioRepository.findAll()).thenReturn(portfolioList);
 
-            PortfolioResponse response1 = new PortfolioResponse(1L, portfolioName1, Instant.now());
-            PortfolioResponse response2 = new PortfolioResponse(2L, portfolioName2, Instant.now());
+            var brokerDto = new PortfolioResponse.BrokerAccountInPortfolioResponse(BROKER_ACCOUNT_ID, ACCOUNT_NAME, BROKER_NAME);
+            PortfolioResponse response1 = new PortfolioResponse(portfolioId1, portfolioName1, brokerDto, createdAt);
+            PortfolioResponse response2 = new PortfolioResponse(portfolioId2, portfolioName2, brokerDto, createdAt);
             List<PortfolioResponse> responseList = List.of(response1, response2);
             when(portfolioMapper.toReponseDtoList(portfolioList)).thenReturn(responseList);  
             
@@ -175,8 +224,8 @@ class PortfolioServiceTest {
             assertThat(result).containsExactlyInAnyOrder(response1, response2);
             
             // Verify interactions
-            verify(portfolioRepository, times(1)).findAll();
-            verify(portfolioMapper, times(1)).toReponseDtoList(portfolioList);
+            verify(portfolioRepository).findAll();
+            verify(portfolioMapper).toReponseDtoList(portfolioList);
         }
     }
 
@@ -190,8 +239,12 @@ class PortfolioServiceTest {
             String updatedPortfolioName = "Updated Portfolio";
             Instant createdAt = Instant.now();
             
+            BrokerAccount brokerAccount = new BrokerAccount(ACCOUNT_NAME, BROKER_NAME);
+            ReflectionTestUtils.setField(brokerAccount, "id", BROKER_ACCOUNT_ID);
+            ReflectionTestUtils.setField(brokerAccount, "createdAt", createdAt);
+            
             // Repository find the Entity by id
-            Portfolio existingPortfolio = new Portfolio(PORTFOLIO_NAME);
+            Portfolio existingPortfolio = new Portfolio(PORTFOLIO_NAME, brokerAccount);
             ReflectionTestUtils.setField(existingPortfolio, "id", PORTFOLIO_ID);
             ReflectionTestUtils.setField(existingPortfolio, "createdAt", createdAt);
             when(portfolioRepository.findById(PORTFOLIO_ID)).thenReturn(Optional.of(existingPortfolio));
@@ -201,7 +254,8 @@ class PortfolioServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
             // Mapper convert the updated entity to a response DTO
-            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, updatedPortfolioName, createdAt);
+            var brokerDto = new PortfolioResponse.BrokerAccountInPortfolioResponse(BROKER_ACCOUNT_ID, ACCOUNT_NAME, BROKER_NAME);
+            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, updatedPortfolioName, brokerDto, createdAt);
             when(portfolioMapper.toResponseDto(existingPortfolio)).thenReturn(response);
             
             // Act

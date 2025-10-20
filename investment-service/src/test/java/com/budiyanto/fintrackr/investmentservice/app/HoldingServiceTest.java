@@ -30,6 +30,7 @@ import com.budiyanto.fintrackr.investmentservice.app.exception.HoldingNotFoundEx
 import com.budiyanto.fintrackr.investmentservice.app.exception.InsufficientHoldingsException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.mapper.HoldingMapper;
+import com.budiyanto.fintrackr.investmentservice.domain.BrokerAccount;
 import com.budiyanto.fintrackr.investmentservice.domain.Holding;
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.InstrumentType;
@@ -61,27 +62,32 @@ class HoldingServiceTest {
     private static final Long INSTRUMENT_ID = 1L;
     private static final BigDecimal TRADE_QUANTITY = new BigDecimal(500);
     private static final BigDecimal TRADE_PRICE = new BigDecimal(1500);
+    private static final BigDecimal TRADE_FEE = new BigDecimal("150");
     private static final Long HOLDING_ID = 1L;
     private static final BigDecimal HOLDING_QUANTITY = new BigDecimal(2000);
     private static final BigDecimal HOLDING_AVERAGE_PRICE = new BigDecimal(1800);
 
     @BeforeEach
     void setUp() {
-        portfolio = new Portfolio("Test Portfolio");
+        Instant createdAt = Instant.now();
+        BrokerAccount brokerAccount = new BrokerAccount("Test Broker Account", "Broker A");
+        portfolio = new Portfolio("Test Portfolio", brokerAccount);
         ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
+        ReflectionTestUtils.setField(portfolio, "createdAt", createdAt);
 
         instrument = new Instrument(InstrumentType.STOCK, "BBCA", "Bank Central Asia", "IDR");
         ReflectionTestUtils.setField(instrument, "id", INSTRUMENT_ID);
-        ReflectionTestUtils.setField(instrument, "createdAt", Instant.now());
+        ReflectionTestUtils.setField(instrument, "createdAt", createdAt);
     }
 
     @Nested
     @DisplayName("processTrade method")
     class ProcessTrade {
         @Test
-        @DisplayName("should create new holding when first buy trade is processed")
+        @DisplayName("should create new holding with fee when first buy trade is processed")
         void should_createNewHolding_when_firstBuyTradeIsProcessed() {
-            Trade trade = new Trade(portfolio, instrument, TradeType.BUY, TRADE_QUANTITY, TRADE_PRICE, Instant.now());
+            
+            Trade trade = new Trade(portfolio, instrument, TradeType.BUY, TRADE_QUANTITY, TRADE_PRICE, TRADE_FEE, Instant.now());
             when(holdingRepository.findByPortfolioIdAndInstrumentId(portfolio.getId(), instrument.getId())).thenReturn(Optional.empty());
             
             // Act
@@ -92,19 +98,23 @@ class HoldingServiceTest {
             verify(holdingRepository).save(captor.capture());
             Holding capturedHolding = captor.getValue();
 
+            // Total cost = (500 * 1500) + 150 = 750150. Avg Price = 750150 / 500 = 1500.3
+            BigDecimal expectedAveragePrice = TRADE_QUANTITY.multiply(TRADE_PRICE).add(TRADE_FEE)
+                    .divide(TRADE_QUANTITY, 4, RoundingMode.HALF_UP);
+
             assertThat(capturedHolding).isNotNull();
             assertThat(capturedHolding.getPortfolio()).isEqualTo(portfolio);
             assertThat(capturedHolding.getInstrument()).isEqualTo(instrument);
             assertThat(capturedHolding.getQuantity()).isEqualByComparingTo(TRADE_QUANTITY);
-            assertThat(capturedHolding.getAveragePrice()).isEqualByComparingTo(TRADE_PRICE);
+            assertThat(capturedHolding.getAveragePrice()).isEqualByComparingTo(expectedAveragePrice);
             assertThat(capturedHolding.getUpdatedAt()).isNull();
         }
 
         @Test
-        @DisplayName("should update existing holding when subsequent buy trade is processed")
+        @DisplayName("should update existing holding with fee when subsequent buy trade is processed")
         void should_updateExistingHolding_when_subsequentBuyTradeIsProcessed() {
             // Arrange
-            Trade trade = new Trade(portfolio, instrument, TradeType.BUY, TRADE_QUANTITY, TRADE_PRICE, Instant.now());
+            Trade trade = new Trade(portfolio, instrument, TradeType.BUY, TRADE_QUANTITY, TRADE_PRICE, TRADE_FEE, Instant.now());
             Holding existingHolding = new Holding(portfolio, instrument, HOLDING_QUANTITY, HOLDING_AVERAGE_PRICE);
             when(holdingRepository.findByPortfolioIdAndInstrumentId(portfolio.getId(), instrument.getId())).thenReturn(Optional.of(existingHolding));
             
@@ -117,7 +127,9 @@ class HoldingServiceTest {
             Holding capturedHolding = captor.getValue();
 
             BigDecimal newQuantity = HOLDING_QUANTITY.add(TRADE_QUANTITY);
-            BigDecimal newAveragePrice = HOLDING_QUANTITY.multiply(HOLDING_AVERAGE_PRICE).add(TRADE_QUANTITY.multiply(TRADE_PRICE)).divide(newQuantity, 4, RoundingMode.HALF_UP);
+            BigDecimal newAveragePrice = HOLDING_QUANTITY.multiply(HOLDING_AVERAGE_PRICE)
+                    .add(TRADE_QUANTITY.multiply(TRADE_PRICE)).add(TRADE_FEE)
+                    .divide(newQuantity, 4, RoundingMode.HALF_UP);
             assertThat(capturedHolding).isNotNull();
             assertThat(capturedHolding.getPortfolio()).isEqualTo(portfolio);
             assertThat(capturedHolding.getInstrument()).isEqualTo(instrument);
@@ -130,7 +142,7 @@ class HoldingServiceTest {
         @DisplayName("should update existing holding when sell trade is processed")
         void should_updateExistingHolding_when_sellTradeIsProcessed() {
             // Arrange
-            Trade trade = new Trade(portfolio, instrument, TradeType.SELL, TRADE_QUANTITY, TRADE_PRICE, Instant.now());
+            Trade trade = new Trade(portfolio, instrument, TradeType.SELL, TRADE_QUANTITY, TRADE_PRICE, TRADE_FEE, Instant.now());
             Holding existingHolding = new Holding(portfolio, instrument, HOLDING_QUANTITY, HOLDING_AVERAGE_PRICE);
             when(holdingRepository.findByPortfolioIdAndInstrumentId(portfolio.getId(), instrument.getId())).thenReturn(Optional.of(existingHolding));
             
@@ -155,7 +167,7 @@ class HoldingServiceTest {
         @DisplayName("should delete holding when quantity is zero after sell")
         void should_deleteHolding_when_quantityIsZeroAfterSell() {
             // Arrange
-            Trade trade = new Trade(portfolio, instrument, TradeType.SELL, HOLDING_QUANTITY, TRADE_PRICE, Instant.now());
+            Trade trade = new Trade(portfolio, instrument, TradeType.SELL, HOLDING_QUANTITY, TRADE_PRICE, TRADE_FEE, Instant.now());
             Holding existingHolding = new Holding(portfolio, instrument, HOLDING_QUANTITY, HOLDING_AVERAGE_PRICE);
             ReflectionTestUtils.setField(existingHolding, "id", HOLDING_ID);
             when(holdingRepository.findByPortfolioIdAndInstrumentId(portfolio.getId(), instrument.getId())).thenReturn(Optional.of(existingHolding));
@@ -173,7 +185,7 @@ class HoldingServiceTest {
         void should_throwException_when_sellingMoreThanHoldingQuantity() {
             // Arrange
             BigDecimal sellQuantity = HOLDING_QUANTITY.add(BigDecimal.TEN);
-            Trade trade = new Trade(portfolio, instrument, TradeType.SELL, sellQuantity, TRADE_PRICE, Instant.now());
+            Trade trade = new Trade(portfolio, instrument, TradeType.SELL, sellQuantity, TRADE_PRICE, TRADE_FEE, Instant.now());
             Holding existingHolding = new Holding(portfolio, instrument, HOLDING_QUANTITY, HOLDING_AVERAGE_PRICE);
             ReflectionTestUtils.setField(existingHolding, "id", HOLDING_ID);
             when(holdingRepository.findByPortfolioIdAndInstrumentId(portfolio.getId(), instrument.getId())).thenReturn(Optional.of(existingHolding));
@@ -198,7 +210,7 @@ class HoldingServiceTest {
         @DisplayName("should throw exception when selling with no holding quantity")
         void should_throwException_when_sellingWithNoHoldingQuantity() {
             // Arrange
-            Trade trade = new Trade(portfolio, instrument, TradeType.SELL, TRADE_QUANTITY, TRADE_PRICE, Instant.now());
+            Trade trade = new Trade(portfolio, instrument, TradeType.SELL, TRADE_QUANTITY, TRADE_PRICE, TRADE_FEE, Instant.now());
             when(holdingRepository.findByPortfolioIdAndInstrumentId(portfolio.getId(), instrument.getId())).thenReturn(Optional.empty());
             
             // Act & Assert

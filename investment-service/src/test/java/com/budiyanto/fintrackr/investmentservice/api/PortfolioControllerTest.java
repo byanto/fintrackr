@@ -14,10 +14,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -28,6 +31,7 @@ import com.budiyanto.fintrackr.investmentservice.api.dto.CreatePortfolioRequest;
 import com.budiyanto.fintrackr.investmentservice.api.dto.PortfolioResponse;
 import com.budiyanto.fintrackr.investmentservice.api.dto.UpdatePortfolioRequest;
 import com.budiyanto.fintrackr.investmentservice.app.PortfolioService;
+import com.budiyanto.fintrackr.investmentservice.app.exception.BrokerAccountNotFoundException;
 import com.budiyanto.fintrackr.investmentservice.app.exception.PortfolioNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -47,17 +51,21 @@ class PortfolioControllerTest {
 
     private static final Long PORTFOLIO_ID = 1L;
     private static final String PORTFOLIO_NAME = "Test Portfolio";
+    private static final Long BROKER_ACCOUNT_ID = 1L;
+    private static final String ACCOUNT_NAME = "Test Broker Account";
+    private static final String BROKER_NAME = "Broker A";
 
     @Nested
     @DisplayName("createPortfolio method")
     class CreatePortfolio {
         @Test
-        @DisplayName("should create portfolio")
-        void should_createPortfolio() throws Exception {
+        @DisplayName("should create portfolio when request is valid")
+        void should_createPortfolio_when_requestIsValid() throws Exception {
             // Arrange
             Instant createdAt = Instant.now();
-            CreatePortfolioRequest request = new CreatePortfolioRequest(PORTFOLIO_NAME);
-            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, createdAt);
+            CreatePortfolioRequest request = new CreatePortfolioRequest(PORTFOLIO_NAME, BROKER_ACCOUNT_ID);
+            var brokerAccountDto = new PortfolioResponse.BrokerAccountInPortfolioResponse(BROKER_ACCOUNT_ID, ACCOUNT_NAME, BROKER_NAME);
+            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, brokerAccountDto, createdAt);
     
             when(portfolioService.createPortfolio(request)).thenReturn(response);
 
@@ -68,24 +76,47 @@ class PortfolioControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(PORTFOLIO_ID))
                     .andExpect(jsonPath("$.name").value(PORTFOLIO_NAME))
+                    .andExpect(jsonPath("$.brokerAccount.id").value(BROKER_ACCOUNT_ID))
+                    .andExpect(jsonPath("$.brokerAccount.name").value(ACCOUNT_NAME))
+                    .andExpect(jsonPath("$.brokerAccount.brokerName").value(BROKER_NAME))
                     .andExpect(jsonPath("$.createdAt").value(createdAt.toString()));
 
             // Verify that the service method was called with the correct argument
             verify(portfolioService).createPortfolio(request);
         }
 
-        @Test
-        @DisplayName("should return BadRequest when name is blank")
-        void should_returnBadRequest_when_nameIsBlank() throws Exception {
-            // Arrange
-            // Create a request with a blank name
-            CreatePortfolioRequest request = new CreatePortfolioRequest("   ");
+        @ParameterizedTest
+        @MethodSource("provideInvalidCreatePortfolioRequests")
+        @DisplayName("should return BadRequest when any field is invalid")
+        void should_returnBadRequest_when_requestIsInvalid(CreatePortfolioRequest invalidRequest) throws Exception {
+            // Act & Assert for invalid requests
+            mockMvc.perform(post("/api/portfolios")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidRequest)))
+                    .andExpect(status().isBadRequest());
+        }
 
+        private static Stream<CreatePortfolioRequest> provideInvalidCreatePortfolioRequests() {
+            return Stream.of(
+                new CreatePortfolioRequest("   ", BROKER_ACCOUNT_ID),
+                new CreatePortfolioRequest(PORTFOLIO_NAME, null)                
+            );
+        }
+
+        @Test
+        @DisplayName("should return NotFound when broker account not found")
+        void should_returnNotFound_when_creatingPortfolioWithNonExistentBrokerAccount() throws Exception {
+            // Arrange
+            Long nonExistentId = 99L;
+            CreatePortfolioRequest request = new CreatePortfolioRequest(PORTFOLIO_NAME, nonExistentId);
+            when(portfolioService.createPortfolio(request))
+                .thenThrow(new BrokerAccountNotFoundException(nonExistentId));
+            
             // Act & Assert
             mockMvc.perform(post("/api/portfolios")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNotFound());
         }
     }
    
@@ -98,7 +129,8 @@ class PortfolioControllerTest {
             // Arrange
             Instant createdAt = Instant.now();
             
-            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, createdAt);
+            var brokerAccountDto = new PortfolioResponse.BrokerAccountInPortfolioResponse(BROKER_ACCOUNT_ID, ACCOUNT_NAME, BROKER_NAME);
+            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, PORTFOLIO_NAME, brokerAccountDto, createdAt);
             when(portfolioService.retrievePortfolioById(PORTFOLIO_ID)).thenReturn(response);
         
             // Act & Assert
@@ -106,6 +138,9 @@ class PortfolioControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(PORTFOLIO_ID))
                     .andExpect(jsonPath("$.name").value(PORTFOLIO_NAME))
+                    .andExpect(jsonPath("$.brokerAccount.id").value(BROKER_ACCOUNT_ID))
+                    .andExpect(jsonPath("$.brokerAccount.name").value(ACCOUNT_NAME))
+                    .andExpect(jsonPath("$.brokerAccount.brokerName").value(BROKER_NAME))
                     .andExpect(jsonPath("$.createdAt").value(createdAt.toString()));
 
             // Verify that the service method was called with the correct argument
@@ -133,12 +168,13 @@ class PortfolioControllerTest {
         @DisplayName("should return a list of all portfolios")
         void should_returnAllPortfolios() throws Exception {
             // Arrange
+            var brokerAccountDto = new PortfolioResponse.BrokerAccountInPortfolioResponse(BROKER_ACCOUNT_ID, ACCOUNT_NAME, BROKER_NAME);
             Long portfolioId1 = 1L;
             Long portfolioId2 = 2L;
             String portfolioName1 = "Test Portfolio 1";
             String portfolioName2 = "Test Portfolio 2";
-            PortfolioResponse response1 = new PortfolioResponse(portfolioId1, portfolioName1, Instant.now());
-            PortfolioResponse response2 = new PortfolioResponse(portfolioId2, portfolioName2, Instant.now());
+            PortfolioResponse response1 = new PortfolioResponse(portfolioId1, portfolioName1, brokerAccountDto, Instant.now());
+            PortfolioResponse response2 = new PortfolioResponse(portfolioId2, portfolioName2, brokerAccountDto, Instant.now());
             when(portfolioService.retrieveAllPortfolios()).thenReturn(List.of(response1, response2));
 
             // Act & Assert
@@ -147,8 +183,10 @@ class PortfolioControllerTest {
                     .andExpect(jsonPath("$.size()").value(2))
                     .andExpect(jsonPath("$[0].id").value(portfolioId1))
                     .andExpect(jsonPath("$[0].name").value(portfolioName1))
+                    .andExpect(jsonPath("$[0].brokerAccount.id").value(BROKER_ACCOUNT_ID))
                     .andExpect(jsonPath("$[1].id").value(portfolioId2))
-                    .andExpect(jsonPath("$[1].name").value(portfolioName2));
+                    .andExpect(jsonPath("$[1].name").value(portfolioName2))
+                    .andExpect(jsonPath("$[1].brokerAccount.id").value(BROKER_ACCOUNT_ID));
 
             // Verify that the service method was called with the correct argument
             verify(portfolioService).retrieveAllPortfolios();
@@ -166,7 +204,8 @@ class PortfolioControllerTest {
             String updatedPortfolioName = "Updated Portfolio Name";
 
             UpdatePortfolioRequest request = new UpdatePortfolioRequest(updatedPortfolioName);
-            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, updatedPortfolioName, createdAt);
+            var brokerAccountDto = new PortfolioResponse.BrokerAccountInPortfolioResponse(BROKER_ACCOUNT_ID, ACCOUNT_NAME, BROKER_NAME);
+            PortfolioResponse response = new PortfolioResponse(PORTFOLIO_ID, updatedPortfolioName, brokerAccountDto, createdAt);
             when(portfolioService.updatePortfolio(PORTFOLIO_ID, request)).thenReturn(response);
 
             // Act & Assert
@@ -176,6 +215,7 @@ class PortfolioControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(PORTFOLIO_ID))
                     .andExpect(jsonPath("$.name").value(updatedPortfolioName))
+                    .andExpect(jsonPath("$.brokerAccount.id").value(BROKER_ACCOUNT_ID))
                     .andExpect(jsonPath("$.createdAt").value(createdAt.toString()));
 
             // Verify that the service method was called with the correct arguments
@@ -213,7 +253,6 @@ class PortfolioControllerTest {
                     .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
         }
-
     }
 
     @Nested
