@@ -9,7 +9,10 @@ import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
+import com.budiyanto.fintrackr.investmentservice.TestcontainersConfiguration;
 import com.budiyanto.fintrackr.investmentservice.domain.BrokerAccount;
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.InstrumentType;
@@ -17,8 +20,10 @@ import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
 import com.budiyanto.fintrackr.investmentservice.domain.Trade;
 import com.budiyanto.fintrackr.investmentservice.domain.TradeType;
 
+@DataJpaTest
+@Import(TestcontainersConfiguration.class)
 @DisplayName("TradeRepository Tests")
-class TradeRepositoryTest extends AbstractRepositoryTest{
+class TradeRepositoryTest {
 
     private final TradeRepository tradeRepository;
     private final PortfolioRepository portfolioRepository;

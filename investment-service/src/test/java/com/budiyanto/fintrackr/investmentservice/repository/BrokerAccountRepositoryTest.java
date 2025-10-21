@@ -5,10 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
+import com.budiyanto.fintrackr.investmentservice.TestcontainersConfiguration;
 import com.budiyanto.fintrackr.investmentservice.domain.BrokerAccount;
 
-class BrokerAccountRepositoryTest extends AbstractRepositoryTest{
+@DataJpaTest
+@Import(TestcontainersConfiguration.class)
+@DisplayName("BrokerAccountRepository Tests")
+class BrokerAccountRepositoryTest {
 
     private final BrokerAccountRepository brokerAccountRepository;
 

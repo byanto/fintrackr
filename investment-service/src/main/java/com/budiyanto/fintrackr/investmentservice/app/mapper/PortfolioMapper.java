@@ -11,6 +11,6 @@ import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
 public interface PortfolioMapper {
 
     PortfolioResponse toResponseDto(Portfolio portfolio);
-    List<PortfolioResponse> toReponseDtoList(List<Portfolio> portfolios);
+    List<PortfolioResponse> toResponseDtoList(List<Portfolio> portfolios);
     
 }

@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/fintrackr_db
+    username: fintrackrdb_user
+    password: fintrackrdb_password
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true

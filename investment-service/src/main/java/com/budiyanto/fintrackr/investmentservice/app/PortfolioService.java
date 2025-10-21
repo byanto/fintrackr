@@ -45,7 +45,7 @@ public class PortfolioService {
     @Transactional(readOnly = true)
     public List<PortfolioResponse> retrieveAllPortfolios() {
         List<Portfolio> allPortfolios = portfolioRepository.findAll();
-        return portfolioMapper.toReponseDtoList(allPortfolios);
+        return portfolioMapper.toResponseDtoList(allPortfolios);
     }
 
     @Transactional

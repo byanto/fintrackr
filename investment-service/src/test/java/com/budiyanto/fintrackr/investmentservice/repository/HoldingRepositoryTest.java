@@ -7,15 +7,20 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
+import com.budiyanto.fintrackr.investmentservice.TestcontainersConfiguration;
 import com.budiyanto.fintrackr.investmentservice.domain.BrokerAccount;
 import com.budiyanto.fintrackr.investmentservice.domain.Holding;
 import com.budiyanto.fintrackr.investmentservice.domain.Instrument;
 import com.budiyanto.fintrackr.investmentservice.domain.InstrumentType;
 import com.budiyanto.fintrackr.investmentservice.domain.Portfolio;
 
+@DataJpaTest
+@Import(TestcontainersConfiguration.class)
 @DisplayName("HoldingRepository Tests")
-class HoldingRepositoryTest extends AbstractRepositoryTest {
+class HoldingRepositoryTest {
 
     private final HoldingRepository holdingRepository;
     private final PortfolioRepository portfolioRepository;

@@ -214,7 +214,7 @@ class PortfolioServiceTest {
             PortfolioResponse response1 = new PortfolioResponse(portfolioId1, portfolioName1, brokerDto, createdAt);
             PortfolioResponse response2 = new PortfolioResponse(portfolioId2, portfolioName2, brokerDto, createdAt);
             List<PortfolioResponse> responseList = List.of(response1, response2);
-            when(portfolioMapper.toReponseDtoList(portfolioList)).thenReturn(responseList);  
+            when(portfolioMapper.toResponseDtoList(portfolioList)).thenReturn(responseList);  
             
             // Act
             List<PortfolioResponse> result = portfolioService.retrieveAllPortfolios();
@@ -225,7 +225,7 @@ class PortfolioServiceTest {
             
             // Verify interactions
             verify(portfolioRepository).findAll();
-            verify(portfolioMapper).toReponseDtoList(portfolioList);
+            verify(portfolioMapper).toResponseDtoList(portfolioList);
         }
     }
 

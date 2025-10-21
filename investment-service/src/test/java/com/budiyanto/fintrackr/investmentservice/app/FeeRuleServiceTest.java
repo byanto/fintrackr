@@ -102,7 +102,7 @@ class FeeRuleServiceTest {
 
             // Assert on the interaction: verify the correct entity was passed to save()
             ArgumentCaptor<FeeRule> captor = ArgumentCaptor.forClass(FeeRule.class);
-            when(feeRuleRepository.save(captor.capture())).thenReturn(savedFeeRule);
+            verify(feeRuleRepository).save(captor.capture());
             FeeRule capturedFeeRule = captor.getValue();
 
             assertThat(capturedFeeRule.getId()).isNull(); // Should be the transient entity
