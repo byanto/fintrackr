@@ -103,7 +103,7 @@ The database schema is managed by Flyway migrations and consists of the followin
 - `holding`: A materialized view of the current position (quantity, average price) of an instrument within a portfolio. It is automatically updated when a new trade is processed.
 - `fee_rule`: Defines the fee structure for a specific broker, instrument type, and trade type.
 
-!Database Schema
+![Database Schema](docs/images/db-schema.png)
 
 ## Running Tests
 
