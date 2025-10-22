@@ -1,0 +1,17 @@
+server:
+  port: 8761 # Standard port for Eureka
+
+spring:
+  application:
+    name: service-registry
+
+eureka:
+  client:
+    register-with-eureka: false # Don't register yourself as a client
+    fetch-registry: false # Don't fetch the registry from yourself
+  instance:
+    prefer-ip-address: true
+  #server:
+    # Optional: Disable self-preservation in development if needed
+    # enable-self-preservation: false
+    # wait-time-in-ms-when-sync-empty: 0

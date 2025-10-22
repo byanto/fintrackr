@@ -1,0 +1,26 @@
+server:
+  port: 9090 # The public-facing port for our entire system
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # Route requests for the investment-service
+            - id: investment-service-route # A unique ID for this route
+              uri: lb://investment-service # "lb" stands for load-balanced. Routes to the service named "investment-service"
+              predicates:
+                - Path=/api/** # Match any request starting with /api/ and forward it
+              #filters:
+                 # Remove the first path segment (/api/investments) before forwarding
+                #- StripPrefix=2
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
