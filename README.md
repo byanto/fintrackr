@@ -1,7 +1,7 @@
 # FinTrackr - Personal Finance Tracking Application
 
 ![Build Status](https://github.com/byanto/fintrackr/actions/workflows/build.yml/badge.svg)
-[![codecov](https://codecov.io/gh/byanto/fintrackr/branch/main/graph/badge.svg)](https://codecov.io/gh/byanto/fintrackr)
+[![codecov](https://codecov.io/gh/byanto/fintrackr/graph/badge.svg)](https://codecov.io/gh/byanto/fintrackr)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen.svg)
 ![Java](https://img.shields.io/badge/Java-21-blue.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
@@ -14,31 +14,28 @@
 
 The project is a multi-module Maven project consisting of several microservices:
 
-*   `service-registry`: A Netflix Eureka server that acts as the "phone book" for the system. All other services register here, allowing for dynamic service discovery.
-*   `api-gateway`: A Spring Cloud Gateway that serves as the single entry point for all external API requests. It handles routing, and is the place for cross-cutting concerns like security and rate limiting.
-*   `investment-service`: The core microservice responsible for managing all investment-related data, including instruments, portfolios, trades, and holdings.
+* `service-registry`: A Netflix Eureka server that acts as the "phone book" for the system. All other services register here, allowing for dynamic service discovery.
+* `api-gateway`: A Spring Cloud Gateway that serves as the single entry point for all external API requests. It handles routing, and is the place for cross-cutting concerns like security and rate limiting.
+* `investment-service`: The core microservice responsible for managing all investment-related data, including instruments, portfolios, trades, and holdings.
 
 ## Features
 
-- **Broker Account Management:** Create and manage multiple broker accounts.
-- **Portfolio Tracking:** Organize and manage investments within various portfolios, linked to specific broker accounts.
-- **Instrument Definition:** Maintain a comprehensive master list of financial instruments (e.g., stocks, bonds, mutual funds).
+- **Portfolio & Instrument Management:** Create and track multiple portfolios and financial instruments.
 - **Immutable Trade Log:** Securely record every buy and sell transaction as an immutable event, ensuring data integrity.
 - **Automated Holding Calculation:** Automatically calculate and update current holdings (quantity and average price) based on processed trades.
-- **Dynamic Fee Engine:** Configure and apply flexible transaction fees (percentage-based with a minimum threshold) for different brokers, instrument types, and trade types.
 - **RESTful API:** Expose a clean, well-documented, and comprehensive REST API for all core functionalities, enabling seamless integration.
 
-## Technologies Used
+## Technology Stack
 
 - **Backend:** Java 21+, Spring Boot 3.x, Spring Cloud 2025.x
 - **Data:** Spring Data JPA, Hibernate, PostgreSQL
 - **Database Migrations:** Flyway
+- **Containerization:** Docker, Docker Compose, Jib
 - **Testing:** JUnit 5, Mockito, AssertJ, Testcontainers
+- **CI/CD:** GitHub Actions
+- **Code Quality:**: JaCoCo, Codecov
 - **Dependency Management:** Maven
 - **Tooling:** Lombok, MapStruct
-- **Containerization:** Docker, Docker Compose
-- **Continuous Integration:** GitHub Actions
-- **Code Coverage Reporting:**: JaCoCo, Codecov
 
 ## Getting Started
 
@@ -46,29 +43,56 @@ The project is a multi-module Maven project consisting of several microservices:
 
 - JDK 21 or higher
 - Apache Maven 3.8+
-- Docker (for running the PostgreSQL database)
+- Docker & Docker Compose
 
 ### Installation & Running
 
-#### 1.  Clone the repository
-    
+First, clone the repository and navigate into the directory:
 ```bash
 git clone https://github.com/byanto/fintrackr.git
 cd fintrackr
 ```
 
-#### 2.  Start the database
-    
-The `investment-service` requires a PostgreSQL database to run. A `docker-compose.yml` file is provided for convenience to start it.
+This project offers two options to run the application stack, depending on your needs.
+
+#### Option 1: Docker Compose (Recommended)
+
+This is the simplest way to run the entire microservice stack. It uses **Jib** to build container images and **Docker Compose** to orchestrate all services, including the database. 
+
+##### 1. Build Container Images with Jib
+
+From the project root, run the following command. `Jib` will compile the code and build an optimized container image for each service directly into your local Docker daemon.
+
+```bash
+# From the root directory
+mvn compile jib:dockerBuild
+docker-compose up -d
+```
+
+##### 2. Start All Services
+
+Once the images are built, start the entire stack with Docker Compose.
+
+```bash
+docker-compose up -d
+```
+
+#### Option 2: Local Maven (for Development)
+
+This method is ideal for developing and debugging a specific service directly in your terminal or IDE.
+
+##### 1. Start the Database
+
+The `investment-service` requires a PostgreSQL database. A `docker-compose.yml` file is provided for convenience to start it.
 
 ```bash
 # From the root directory
 docker-compose -f investment-service/docker-compose.yml up -d
 ```
 
-This will start a PostgreSQL container on `localhost:5432`. The application is pre-configured to connect to it.
+This will start a PostgreSQL container on `localhost:5432`. The application is pre-configured to connect to it. 
 
-#### 3.  Build and run the application
+##### 2.  Build the application
     
 Build all the microservices using the parent POM file from the project's root directory.
 
@@ -76,11 +100,11 @@ Build all the microservices using the parent POM file from the project's root di
 mvn clean install
 ```
 
-#### 4. Run the services
+##### 3. Run the services
 
-The services must be started in a specific order to allow for proper registration and discovery. **Run all the following commands from the project's root directory.**
+The services must be started in a specific order to allow for proper registration and discovery. Open a new terminal for each command and run them from the project's root directory:
 
-**1. Start the Service Registry**
+**a. Start the Service Registry**
 
 ```bash
 mvn spring-boot:run -pl service-registry
@@ -88,7 +112,7 @@ mvn spring-boot:run -pl service-registry
 
 Wait for it to start, then you can view the Eureka dashboard at `http://localhost:8761`.
 
-**2. Start the Investment Service**
+**b. Start the Investment Service**
 
 For local development, it's recommended to activate the `dev` profile, which uses credentials defined in `application-dev.yml`.
     
@@ -105,7 +129,7 @@ Alternatively, you can run it without a profile, but you must provide the databa
 
 Refresh the Eureka dashboard to see `INVESTMENT-SERVICE` appear in the list of registered instances.
 
-**3. Start the API Gateway**
+**c. Start the API Gateway**
 
 ```bash
 mvn spring-boot:run -pl api-gateway
@@ -115,9 +139,11 @@ Refresh the Eureka dashboard again to see `API-GATEWAY` also registered.
 
 ## API Usage
 
-With all services running, all API requests should be sent to the **API Gateway** on port `9090`, not directly to the `investment-service`.
+Once all services are running (using either method), following services can be accessed:
+- **Eureka Dashboard:** `http://localhost:8761`
+- **API Gateway:** `http://localhost:9090` (all API requests should go here)
 
-For example, to get all portfolios: 
+For example, to get all portfolios, send a request to the `API Gateway`: 
 
 ```bash 
 curl http://localhost:9090/api/portfolios
@@ -162,6 +188,8 @@ The following is a summary of the available API endpoints.
 | `PUT`       | `/api/fee-rules/{id}`                  | Update an existing fee rule.                    |
 | `DELETE`    | `/api/fee-rules/{id}`                  | Delete a fee rule.                              |
 
+*For a detailed API specification, please refer to the Postman collection or OpenAPI documentation (coming soon).*
+
 ## Database Schema
 
 The database schema is managed by Flyway migrations and consists of the following core tables:
@@ -181,7 +209,7 @@ The project has a comprehensive suite of unit and integration tests. The integra
 
 ### Running Tests
 
-To run all tests, execute the following Maven command from the `investment-service` directory:
+To run all tests for the entire project, execute the following command from the root directory:
 ```bash
 mvn test
 ```

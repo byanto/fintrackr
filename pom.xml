@@ -36,6 +36,8 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <jacoco.version>0.8.14</jacoco.version>
         <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <jib-maven-plugin.version>3.4.6</jib-maven-plugin.version>
+        <jib.from.image>eclipse-temurin:21-jre-alpine</jib.from.image>
     </properties>
 
     <modules>
@@ -83,7 +85,34 @@
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>${jacoco.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>com.google.cloud.tools</groupId>
+                    <artifactId>jib-maven-plugin</artifactId>
+                    <version>${jib-maven-plugin.version}</version>
+                    <configuration>
+                        <from>
+                            <image>${jib.from.image}</image>
+                        </from>
+                        <to>
+                            <image>byanto/${project.artifactId}:${project.version}</image>
+                        </to>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>dockerBuild</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
     </build>
 </project>

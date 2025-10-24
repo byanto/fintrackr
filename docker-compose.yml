@@ -1,0 +1,56 @@
+services:
+  #Investment Service Database
+  investment-db:
+    image: postgres:17-alpine
+    container_name: fintrackr-investment-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${DB_USER:-fintrackrdb_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-fintrackrdb_password}
+      - POSTGRES_DB=${DB_NAME:-fintrackr_investment_db}
+    volumes:
+      - investment-db-data:/var/lib/postgresql/data
+
+  # Service Registry
+  service-registry:
+    # Use the image built by Jib. The version matches the module's pom.xml.
+    image: byanto/service-registry:0.0.1-SNAPSHOT
+    container_name: fintrackr-service-registry
+    ports:
+      - "8761:8761"
+
+  #Investment Service Application
+  investment-service:
+    # Use the image built by Jib. The version matches the module's pom.xml.
+    image: byanto/investment-service:0.0.1-SNAPSHOT
+    container_name: fintrackr-investment-service
+    ports:
+      - "8080:8080" # Expose service port to host (optional, mainly for direct testing)
+    environment:
+      # Set profile for Docker environment
+      - SPRING_PROFILES_ACTIVE=docker
+      # Pass database credentials to the service
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      - investment-db
+      - service-registry
+
+  # API Gateway
+  api-gateway:
+    # Use the image built by Jib. The version matches the module's pom.xml.
+    image: byanto/api-gateway:0.0.1-SNAPSHOT
+    container_name: fintrackr-api-gateway
+    ports:
+      - "9090:9090" # Expose gateway port to host (this is the main entry point)
+    environment:
+      # Set profile for Docker environment
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - service-registry
+      - investment-service
+
+volumes:
+  investment-db-data: # Define the named volume for DB persistence

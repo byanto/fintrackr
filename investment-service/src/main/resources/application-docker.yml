@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    # Use the service name 'investment-db' as the hostname within the Docker network
+    url: jdbc:postgresql://investment-db:5432/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+eureka:
+  client:
+    # Use the service name 'service-registry' as the hostname within the Docker network
+    service-url:
+      defaultZone: http://service-registry:8761/eureka
