@@ -33,7 +33,7 @@ The project is a multi-module Maven project consisting of several microservices:
 - **Containerization:** Docker, Docker Compose, Jib
 - **Testing:** JUnit 5, Mockito, AssertJ, Testcontainers
 - **CI/CD:** GitHub Actions
-- **Code Quality:**: JaCoCo, Codecov
+- **Code Quality:** JaCoCo, Codecov
 - **Dependency Management:** Maven
 - **Tooling:** Lombok, MapStruct
 
@@ -59,7 +59,7 @@ This project offers two options to run the application stack, depending on your 
 
 This is the simplest way to run the entire microservice stack. It uses **Jib** to build container images and **Docker Compose** to orchestrate all services, including the database. 
 
-##### 1. Build Container Images with Jib
+**1. Build Container Images with Jib**
 
 From the project root, run the following command. `Jib` will compile the code and build an optimized container image for each service directly into your local Docker daemon.
 
@@ -69,7 +69,7 @@ mvn compile jib:dockerBuild
 docker-compose up -d
 ```
 
-##### 2. Start All Services
+**2. Start All Services**
 
 Once the images are built, start the entire stack with Docker Compose.
 
@@ -81,7 +81,7 @@ docker-compose up -d
 
 This method is ideal for developing and debugging a specific service directly in your terminal or IDE.
 
-##### 1. Start the Database
+**1. Start the Database**
 
 The `investment-service` requires a PostgreSQL database. A `docker-compose.yml` file is provided for convenience to start it.
 
@@ -92,7 +92,7 @@ docker-compose -f investment-service/docker-compose.yml up -d
 
 This will start a PostgreSQL container on `localhost:5432`. The application is pre-configured to connect to it. 
 
-##### 2.  Build the application
+**2. Build the application**
     
 Build all the microservices using the parent POM file from the project's root directory.
 
@@ -100,7 +100,7 @@ Build all the microservices using the parent POM file from the project's root di
 mvn clean install
 ```
 
-##### 3. Run the services
+**3. Run the services**
 
 The services must be started in a specific order to allow for proper registration and discovery. Open a new terminal for each command and run them from the project's root directory:
 

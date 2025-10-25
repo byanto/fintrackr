@@ -25,3 +25,14 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}} # Create unique IDs if multiple instances run
+
+jwt:
+  # This is a default secret key for development.
+  # In a production environment, this MUST be overridden with a strong, securely-stored secret,
+  # for example, via environment variables or a configuration server.
+  # A good practice is to use a long, randomly generated string.
+  # You can generate one here: https://www.allkeysgenerator.com/Random/Security-Encryption-Key-Generator.aspx
+  secret: "413F4428472B4B6250655368566D5970337336763979244226452948404D6351"
+  expiration:
+    # Token validity in milliseconds. 86400000ms = 24 hours
+    ms: 86400000
