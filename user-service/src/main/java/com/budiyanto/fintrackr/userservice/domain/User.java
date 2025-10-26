@@ -33,7 +33,7 @@ public class User {
     private Long id;
 
     @Setter
-    @Column(name = "username", length = 255, unique = true, nullable = false)
+    @Column(name = "username", length = 40, unique = true, nullable = false)
     private String username;
 
     @Setter
