@@ -23,10 +23,9 @@ public class SecurityConfig {
         return http
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint((swe, e) ->
-                                Mono.fromRunnable(() -> swe.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED))
-                        ).accessDeniedHandler((swe, e) ->
-                                Mono.fromRunnable(() -> swe.getResponse().setStatusCode(HttpStatus.FORBIDDEN))
-                        ))
+                                Mono.fromRunnable(() -> swe.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED)))
+                        .accessDeniedHandler((swe, e) ->
+                                Mono.fromRunnable(() -> swe.getResponse().setStatusCode(HttpStatus.FORBIDDEN))))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)

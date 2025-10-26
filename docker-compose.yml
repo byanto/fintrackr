@@ -1,4 +1,17 @@
 services:
+  #User Service Database
+  user-db:
+    image: postgres:17-alpine
+    container_name: fintrackr-user-db
+    ports:
+      - "5433:5432" # Expose on a different host port to avoid conflict
+    environment:
+      - POSTGRES_USER=${USER_DB_USER:-fintrackr_userdb_user}
+      - POSTGRES_PASSWORD=${USER_DB_PASSWORD:-fintrackr_userdb_password}
+      - POSTGRES_DB=${USER_DB_NAME:-fintrackr_user_db}
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+
   #Investment Service Database
   investment-db:
     image: postgres:17-alpine
@@ -6,9 +19,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=${DB_USER:-fintrackrdb_user}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-fintrackrdb_password}
-      - POSTGRES_DB=${DB_NAME:-fintrackr_investment_db}
+      - POSTGRES_USER=${INVESTMENT_DB_USER:-fintrackr_investmentdb_user}
+      - POSTGRES_PASSWORD=${INVESTMENT_DB_PASSWORD:-fintrackr_investmentdb_password}
+      - POSTGRES_DB=${INVESTMENT_DB_NAME:-fintrackr_investment_db}
     volumes:
       - investment-db-data:/var/lib/postgresql/data
 
@@ -31,11 +44,28 @@ services:
       # Set profile for Docker environment
       - SPRING_PROFILES_ACTIVE=docker
       # Pass database credentials to the service
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${INVESTMENT_DB_NAME}
+      - DB_USER=${INVESTMENT_DB_USER}
+      - DB_PASSWORD=${INVESTMENT_DB_PASSWORD}
     depends_on:
       - investment-db
+      - service-registry
+
+  # User Service Application
+  user-service:
+    image: byanto/user-service:0.0.1-SNAPSHOT
+    container_name: fintrackr-user-service
+    ports:
+      - "8081:8081"
+    environment:
+      # Set profile for Docker environment
+      - SPRING_PROFILES_ACTIVE=docker
+      # Pass database credentials to the service
+      - DB_NAME=${USER_DB_NAME}
+      - DB_USER=${USER_DB_USER}
+      - DB_PASSWORD=${USER_DB_PASSWORD}
+    depends_on:
+      - user-db
       - service-registry
 
   # API Gateway
@@ -51,6 +81,10 @@ services:
     depends_on:
       - service-registry
       - investment-service
+      - user-service
 
 volumes:
   investment-db-data: # Define the named volume for DB persistence
+  user-db-data: # Define the named volume for DB persistence
+
+

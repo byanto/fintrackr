@@ -17,6 +17,7 @@ The project is a multi-module Maven project consisting of several microservices:
 * `service-registry`: A Netflix Eureka server that acts as the "phone book" for the system. All other services register here, allowing for dynamic service discovery.
 * `api-gateway`: A Spring Cloud Gateway that serves as the single entry point for all external API requests. It handles routing, and is the place for cross-cutting concerns like security and rate limiting.
 * `investment-service`: The core microservice responsible for managing all investment-related data, including instruments, portfolios, trades, and holdings.
+* `user-service`: A microservice dedicated to user management, including registration, authentication, and role management.
 
 ## Features
 

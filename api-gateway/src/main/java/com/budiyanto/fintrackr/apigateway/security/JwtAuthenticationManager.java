@@ -26,7 +26,7 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
         String username;
         try {
             username = jwtUtil.getUsernameFromToken(authToken);
-        } catch (Exception e) {
+        } catch (Exception ex) {
             return Mono.empty(); // Token is invalid
         }
 
