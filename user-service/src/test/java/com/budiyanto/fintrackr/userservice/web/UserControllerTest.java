@@ -1,6 +1,7 @@
 package com.budiyanto.fintrackr.userservice.web;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -9,10 +10,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -44,6 +48,12 @@ class UserControllerTest {
     @MockitoBean
     private UserService userService;
 
+    private static final Long USER_ID = 1L;
+    private static final String USERNAME = "testuser";
+    private static final String EMAIL = "test@email.com";
+    private static final String PASSWORD = "password123";
+    private static final String ROLE_USER = "ROLE_USER";
+
     @Nested
     @DisplayName("POST /api/users/register")
     class RegisterEndpoint {
@@ -52,49 +62,60 @@ class UserControllerTest {
         @DisplayName("should return 201 Created on successful registration")
         void should_return201_when_registrationSuccess() throws Exception {
             // Arrange
-            RegisterRequest request = new RegisterRequest("testuser", "test@email.com", "password123");
-            UserResponse response = new UserResponse(1L, "testuser", "test@email.com", Instant.now());
-            when(userService.registerUser(any(RegisterRequest.class))).thenReturn(response);
+            RegisterRequest request = new RegisterRequest(USERNAME, EMAIL, PASSWORD);
+            UserResponse response = new UserResponse(USER_ID, USERNAME, EMAIL, Instant.now());
+            when(userService.registerUser(request)).thenReturn(response);
 
             // Act & Assert
             mockMvc.perform(post("/api/users/register")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request))
-                            )
+                            .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.username").value("testuser"));
+                    .andExpect(jsonPath("$.id").value(USER_ID))
+                    .andExpect(jsonPath("$.username").value(USERNAME))
+                    .andExpect(jsonPath("$.email").value(EMAIL));
+
+            // Verify that the service method was called with the correct argument
+            verify(userService).registerUser(request);
+        }
+
+        @ParameterizedTest
+        @MethodSource("provideInvalidRegisterRequests")
+        @DisplayName("should return 400 BadRequest when any field is invalid")
+        void should_returnBadRequest_when_requestIsInvalid(RegisterRequest invalidRequest) throws Exception {
+            // Act & Assert for invalid requests
+            mockMvc.perform(post("/api/users/register")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidRequest)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        private static Stream<RegisterRequest> provideInvalidRegisterRequests() {
+            return Stream.of(
+                new RegisterRequest("   ", EMAIL, PASSWORD),
+                new RegisterRequest(USERNAME, "   ", PASSWORD),
+                new RegisterRequest(USERNAME, EMAIL, "   "),
+                new RegisterRequest("ab", EMAIL, PASSWORD),
+                new RegisterRequest("a very long username that exceeds the limit", EMAIL, PASSWORD),
+                new RegisterRequest(USERNAME, EMAIL, "abc"),
+                new RegisterRequest(USERNAME, EMAIL, "a very long password that exceeds the limit")
+            );
         }
 
         @Test
         @DisplayName("should return 409 Conflict when username is taken")
         void should_return409_when_usernameIsTaken() throws Exception {
             // Arrange
-            RegisterRequest request = new RegisterRequest("testuser", "test@email.com", "password123");
-            when(userService.registerUser(any(RegisterRequest.class))).thenThrow(new UserAlreadyExistsException("testuser"));
+            RegisterRequest request = new RegisterRequest(USERNAME, EMAIL, PASSWORD);
+            when(userService.registerUser(request)).thenThrow(new UserAlreadyExistsException(USERNAME));
 
             // Act & Assert
             mockMvc.perform(post("/api/users/register")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request))
-                            )
+                            .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.error").value("Username 'testuser' is already taken."));
-        }
-
-        @Test
-        @DisplayName("should return 400 Bad Request for invalid request body")
-        void should_return400_when_invalidRequestBody() throws Exception {
-            // Arrange: username is blank
-            RegisterRequest request = new RegisterRequest("", "test@email.com", "password123");
-
-            // Act & Assert
-            mockMvc.perform(post("/api/users/register")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request))
-                            )
-                    .andExpect(status().isBadRequest());
         }
     }
 
@@ -106,9 +127,9 @@ class UserControllerTest {
         @DisplayName("should return 200 OK on successful login")
         void should_return200_when_loginSuccess() throws Exception {
             // Arrange
-            LoginRequest request = new LoginRequest("testuser", "password123");
-            LoginResponse response = new LoginResponse("testuser", List.of("ROLE_USER"));
-            when(userService.authenticate(any(LoginRequest.class))).thenReturn(response);
+            LoginRequest request = new LoginRequest(USERNAME, PASSWORD);
+            LoginResponse response = new LoginResponse(USERNAME, List.of(ROLE_USER));
+            when(userService.authenticate(request)).thenReturn(response);
 
             // Act & Assert
             mockMvc.perform(post("/api/users/login")
@@ -117,16 +138,20 @@ class UserControllerTest {
                             )
                     .andExpect(status().isOk())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(jsonPath("$.username").value("testuser"))
-                    .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
+                    .andExpect(jsonPath("$.username").value(USERNAME))
+                    .andExpect(jsonPath("$.roles.size()").value(1))
+                    .andExpect(jsonPath("$.roles[0]").value(ROLE_USER));
+            
+            // Verify that the service method was called with the correct argument
+            verify(userService).authenticate(request);
         }
 
         @Test
         @DisplayName("should return 401 Unauthorized for bad credentials")
         void should_return401_when_badCredentials() throws Exception {
             // Arrange
-            LoginRequest request = new LoginRequest("testuser", "wrongpassword");
-            when(userService.authenticate(any(LoginRequest.class))).thenThrow(new BadCredentialsException("Invalid username or password"));
+            LoginRequest request = new LoginRequest(USERNAME, "wrongpassword");
+            when(userService.authenticate(request)).thenThrow(new BadCredentialsException("Invalid username or password"));
 
             // Act & Assert
             mockMvc.perform(post("/api/users/login")
@@ -137,18 +162,22 @@ class UserControllerTest {
                     .andExpect(jsonPath("$.error").value("Invalid username or password"));
         }
 
-        @Test
-        @DisplayName("should return 400 Bad Request for invalid request body")
-        void should_return400_when_invalidRequestBody() throws Exception {
-            // Arrange: password is blank
-            LoginRequest request = new LoginRequest("testuser", "");
-
-            // Act & Assert
-            mockMvc.perform(post("/api/users/login")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request))
-                            )
+        @ParameterizedTest
+        @MethodSource("provideInvalidLoginRequests")
+        @DisplayName("should return 400 BadRequest when any field is invalid")
+        void should_returnBadRequest_when_requestIsInvalid(LoginRequest invalidRequest) throws Exception {
+            // Act & Assert for invalid requests
+            mockMvc.perform(post("/api/users/register")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidRequest)))
                     .andExpect(status().isBadRequest());
+        }
+
+        private static Stream<LoginRequest> provideInvalidLoginRequests() {
+            return Stream.of(
+                new LoginRequest("   ", PASSWORD),
+                new LoginRequest(USERNAME, "   ")
+            );
         }
     }
 }

@@ -3,9 +3,9 @@ package com.budiyanto.fintrackr.userservice.dto;
 import jakarta.validation.constraints.NotBlank;
 
 public record LoginRequest(
-        @NotBlank 
+        @NotBlank (message = "Username cannot be blank")
         String username,
         
-        @NotBlank 
+        @NotBlank (message = "Password cannot be blank")
         String password
 ) {}

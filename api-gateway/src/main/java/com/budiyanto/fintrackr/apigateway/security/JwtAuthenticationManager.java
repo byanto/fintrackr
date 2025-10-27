@@ -23,19 +23,19 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
     @SuppressWarnings("unchecked")
     public Mono<Authentication> authenticate(Authentication authentication) {
         String authToken = authentication.getCredentials().toString();
-        String username;
-        try {
-            username = jwtUtil.getUsernameFromToken(authToken);
-        } catch (Exception ex) {
-            return Mono.empty(); // Token is invalid
-        }
 
-        if (username != null && jwtUtil.validateToken(authToken)) {
+        try {
+            // The jjwt library's parse method validates the token's signature and expiration.
+            // If it fails, it throws an exception, and we return an empty Mono.
             Claims claims = jwtUtil.getAllClaimsFromToken(authToken);
+            String username = claims.getSubject();
             List<String> roles = claims.get("roles", List.class);
-            List<SimpleGrantedAuthority> authorities = roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+            List<SimpleGrantedAuthority> authorities = roles.stream()
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toList());
             return Mono.just(new UsernamePasswordAuthenticationToken(username, null, authorities));
+        } catch (Exception ex) {
+            return Mono.empty(); // Token is invalid, authentication fails.
         }
-        return Mono.empty();
     }
 }

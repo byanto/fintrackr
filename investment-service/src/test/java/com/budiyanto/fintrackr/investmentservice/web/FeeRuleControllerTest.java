@@ -61,7 +61,7 @@ class FeeRuleControllerTest {
     private static final BigDecimal MIN_FEE = new BigDecimal("10000");
 
     @Nested
-    @DisplayName("createFeeRule method")
+    @DisplayName("POST /api/fee-rules")
     class CreateFeeRule {
         
         @Test
@@ -77,8 +77,9 @@ class FeeRuleControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/fee-rules")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(FEE_RULE_ID))
                     .andExpect(jsonPath("$.brokerAccount.id").value(BROKER_ACCOUNT_ID))
@@ -100,8 +101,9 @@ class FeeRuleControllerTest {
         void should_returnBadRequest_when_requestIsInvalid(CreateFeeRuleRequest invalidRequest) throws Exception {
             // Act & Assert for invalid requests
             mockMvc.perform(post("/api/fee-rules")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(invalidRequest)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidRequest))
+                            )
                     .andExpect(status().isBadRequest());
         }
 
@@ -123,7 +125,7 @@ class FeeRuleControllerTest {
     }
     
     @Nested
-    @DisplayName("retrieveFeeRuleById method")
+    @DisplayName("GET /api/fee-rules/{id}")
     class RetrieveFeeRuleById {
         @Test
         @DisplayName("should return fee rule when ID exists")
@@ -165,7 +167,7 @@ class FeeRuleControllerTest {
     }
 
     @Nested
-    @DisplayName("retrieveAllFeeRules method")
+    @DisplayName("GET /api/fee-rules")
     class RetrieveAllFeeRules {
         @Test
         @DisplayName("should return a list of all fee rules")
@@ -189,7 +191,7 @@ class FeeRuleControllerTest {
     }    
     
     @Nested
-    @DisplayName("updateFeeRule method")
+    @DisplayName("PUT /api/fee-rules/{id}")
     class UpdateFeeRule {
         @Test
         @DisplayName("should update fee rule when ID exists")
@@ -206,8 +208,9 @@ class FeeRuleControllerTest {
 
             // Act & Assert
             mockMvc.perform(put("/api/fee-rules/{id}", FEE_RULE_ID)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(FEE_RULE_ID))
                     .andExpect(jsonPath("$.feePercentage").value(updatedFeePercentage.toPlainString()))
@@ -228,8 +231,9 @@ class FeeRuleControllerTest {
 
             // Act & Assert
             mockMvc.perform(put("/api/fee-rules/{id}", nonExistentId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isNotFound());
         }
 
@@ -239,8 +243,9 @@ class FeeRuleControllerTest {
         void should_returnBadRequest_when_requestIsInvalid(UpdateFeeRuleRequest invalidRequest) throws Exception {
             // Act & Assert for invalid requests
             mockMvc.perform(put("/api/fee-rules/{id}", FEE_RULE_ID)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(invalidRequest)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidRequest))
+                            )
                     .andExpect(status().isBadRequest());
         }
 
@@ -255,7 +260,7 @@ class FeeRuleControllerTest {
     }
 
     @Nested
-    @DisplayName("deleteFeeRuleById method")
+    @DisplayName("DELETE /api/fee-rules/{id}")
     class DeleteFeeRule {
         @Test
         @DisplayName("should delete fee rule")

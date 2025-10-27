@@ -34,5 +34,5 @@ jwt:
   # You can generate one here: https://www.allkeysgenerator.com/Random/Security-Encryption-Key-Generator.aspx
   secret: "413F4428472B4B6250655368566D5970337336763979244226452948404D6351"
   expiration:
-    # Token validity in milliseconds. 86400000ms = 24 hours
-    ms: 86400000
+    # Token validity in milliseconds. 900000ms = 15 minutes
+    ms: 900000

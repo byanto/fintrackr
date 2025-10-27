@@ -43,7 +43,7 @@ public class HoldingControllerTest {
     private static final BigDecimal AVERAGE_PRICE = new BigDecimal(1500);
 
     @Nested
-    @DisplayName("retrieveHoldingById method")
+    @DisplayName("GET /api/holdings/{id}")
     class RetrieveHoldingById {
         
         @Test
@@ -56,14 +56,14 @@ public class HoldingControllerTest {
 
             // Act & Assert
             mockMvc.perform(get("/api/holdings/{id}", HOLDING_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(HOLDING_ID))
-                .andExpect(jsonPath("$.portfolioId").value(PORTFOLIO_ID))
-                .andExpect(jsonPath("$.instrument.id").value(INSTRUMENT_ID))
-                .andExpect(jsonPath("$.instrument.code").value(INSTRUMENT_CODE))
-                .andExpect(jsonPath("$.instrument.name").value(INSTRUMENT_NAME))
-                .andExpect(jsonPath("$.quantity").value(QUANTITY.toPlainString()))
-                .andExpect(jsonPath("$.averagePrice").value(AVERAGE_PRICE.toPlainString()));
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(HOLDING_ID))
+                    .andExpect(jsonPath("$.portfolioId").value(PORTFOLIO_ID))
+                    .andExpect(jsonPath("$.instrument.id").value(INSTRUMENT_ID))
+                    .andExpect(jsonPath("$.instrument.code").value(INSTRUMENT_CODE))
+                    .andExpect(jsonPath("$.instrument.name").value(INSTRUMENT_NAME))
+                    .andExpect(jsonPath("$.quantity").value(QUANTITY.toPlainString()))
+                    .andExpect(jsonPath("$.averagePrice").value(AVERAGE_PRICE.toPlainString()));
             
             // Verify that the service method was called with the correct argument
             verify(holdingService).retrieveHoldingById(HOLDING_ID);
@@ -78,12 +78,12 @@ public class HoldingControllerTest {
 
             // Act & Assert
             mockMvc.perform(get("/api/holdings/{id}", nonExistentId))
-                .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound());
         }
     }
 
     @Nested
-    @DisplayName("retrieveHoldingsByPortfolioId method")
+    @DisplayName("GET /api/portfolios/{portfolioId}/holdings")
     class RetrieveHoldingsByPortfolioId {
 
         @Test
@@ -114,18 +114,18 @@ public class HoldingControllerTest {
             
             // Act & Assert
             mockMvc.perform(get("/api/portfolios/{portfolioId}/holdings", PORTFOLIO_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()").value(2))
-                .andExpect(jsonPath("$[0].id").value(holdingId1))
-                .andExpect(jsonPath("$[0].portfolioId").value(PORTFOLIO_ID))
-                .andExpect(jsonPath("$[0].instrument.id").value(instrumentId1))
-                .andExpect(jsonPath("$[0].instrument.code").value(instrumentCode1))
-                .andExpect(jsonPath("$[0].instrument.name").value(instrumentName1))
-                .andExpect(jsonPath("$[1].id").value(holdingId2))
-                .andExpect(jsonPath("$[1].portfolioId").value(PORTFOLIO_ID))
-                .andExpect(jsonPath("$[1].instrument.id").value(instrumentId2))
-                .andExpect(jsonPath("$[1].instrument.code").value(instrumentCode2))
-                .andExpect(jsonPath("$[1].instrument.name").value(instrumentName2));
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.size()").value(2))
+                    .andExpect(jsonPath("$[0].id").value(holdingId1))
+                    .andExpect(jsonPath("$[0].portfolioId").value(PORTFOLIO_ID))
+                    .andExpect(jsonPath("$[0].instrument.id").value(instrumentId1))
+                    .andExpect(jsonPath("$[0].instrument.code").value(instrumentCode1))
+                    .andExpect(jsonPath("$[0].instrument.name").value(instrumentName1))
+                    .andExpect(jsonPath("$[1].id").value(holdingId2))
+                    .andExpect(jsonPath("$[1].portfolioId").value(PORTFOLIO_ID))
+                    .andExpect(jsonPath("$[1].instrument.id").value(instrumentId2))
+                    .andExpect(jsonPath("$[1].instrument.code").value(instrumentCode2))
+                    .andExpect(jsonPath("$[1].instrument.name").value(instrumentName2));
 
             // Verify interactions
             verify(holdingService).retrieveHoldingsByPortfolioId(PORTFOLIO_ID);
@@ -141,8 +141,7 @@ public class HoldingControllerTest {
 
             // Act & Assert
             mockMvc.perform(get("/api/portfolios/{portfolioId}/holdings", nonExistentId))
-                .andExpect(status().isNotFound());
-                        
+                    .andExpect(status().isNotFound());                        
         }
     }
 }

@@ -54,7 +54,7 @@ class TradeControllerTest {
     private static final BigDecimal FEE = new BigDecimal(1200);
 
     @Nested
-    @DisplayName("createTrade method")
+    @DisplayName("POST /api/trades")
     class CreateTrade {
         @Test
         @DisplayName("should create trade")
@@ -84,8 +84,9 @@ class TradeControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/trades")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(TRADE_ID))
                     .andExpect(jsonPath("$.portfolioId").value(PORTFOLIO_ID))
@@ -106,8 +107,9 @@ class TradeControllerTest {
         void should_returnBadRequest_when_requestIsInvalid(CreateTradeRequest invalidRequest) throws Exception {
             // Act & Assert
             mockMvc.perform(post("/api/trades")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(invalidRequest)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidRequest))
+                            )
                     .andExpect(status().isBadRequest());
         }
 
@@ -141,8 +143,9 @@ class TradeControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/trades")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isNotFound());
         }
 
@@ -158,14 +161,15 @@ class TradeControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/trades")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isNotFound());
         }
     }
 
     @Nested
-    @DisplayName("retrieveTradeById method")
+    @DisplayName("GET /api/trades/{id}")
     class RetrieveTradeById {
         @Test
         @DisplayName("should return trade when ID exists")
@@ -206,7 +210,7 @@ class TradeControllerTest {
             // Arrange
             Long nonExistentId = 99L;
             when(tradeService.retrieveTradeById(nonExistentId))
-                    .thenThrow(new TradeNotFoundException(nonExistentId));
+                .thenThrow(new TradeNotFoundException(nonExistentId));
 
             // Act & Assert
             mockMvc.perform(get("/api/trades/{id}", nonExistentId))
@@ -215,7 +219,7 @@ class TradeControllerTest {
     }
 
     @Nested
-    @DisplayName("retrieveAllTrades method")
+    @DisplayName("GET /api/trades")
     class RetrieveAllTrades {
         @Test
         @DisplayName("should return a list of all trades")
@@ -267,6 +271,4 @@ class TradeControllerTest {
             verify(tradeService).retrieveAllTrades();
         }
     }
-
-
 }

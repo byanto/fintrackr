@@ -56,7 +56,7 @@ class PortfolioControllerTest {
     private static final String BROKER_NAME = "Broker A";
 
     @Nested
-    @DisplayName("createPortfolio method")
+    @DisplayName("POST /api/portfolios")
     class CreatePortfolio {
         @Test
         @DisplayName("should create portfolio when request is valid")
@@ -71,8 +71,9 @@ class PortfolioControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/portfolios")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(PORTFOLIO_ID))
                     .andExpect(jsonPath("$.name").value(PORTFOLIO_NAME))
@@ -91,8 +92,9 @@ class PortfolioControllerTest {
         void should_returnBadRequest_when_requestIsInvalid(CreatePortfolioRequest invalidRequest) throws Exception {
             // Act & Assert for invalid requests
             mockMvc.perform(post("/api/portfolios")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(invalidRequest)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidRequest))
+                            )
                     .andExpect(status().isBadRequest());
         }
 
@@ -114,14 +116,15 @@ class PortfolioControllerTest {
             
             // Act & Assert
             mockMvc.perform(post("/api/portfolios")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isNotFound());
         }
     }
    
     @Nested
-    @DisplayName("retrievePortfolioById method")
+    @DisplayName("GET /api/portfolios/{id}")
     class RetrievePortfolioById {
         @Test
         @DisplayName("should return portfolio when ID exists")
@@ -162,7 +165,7 @@ class PortfolioControllerTest {
     }
 
     @Nested
-    @DisplayName("retrieveAllPortfolios method")
+    @DisplayName("GET /api/portfolios")
     class RetrieveAllPortfolios {
         @Test
         @DisplayName("should return a list of all portfolios")
@@ -194,7 +197,7 @@ class PortfolioControllerTest {
     }
 
     @Nested
-    @DisplayName("updatePortfolio method")
+    @DisplayName("PUT /api/portfolios/{id}")
     class UpdatePortfolio {
         @Test
         @DisplayName("should update portfolio when ID exists")
@@ -210,8 +213,9 @@ class PortfolioControllerTest {
 
             // Act & Assert
             mockMvc.perform(put("/api/portfolios/{id}", PORTFOLIO_ID)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(PORTFOLIO_ID))
                     .andExpect(jsonPath("$.name").value(updatedPortfolioName))
@@ -235,8 +239,9 @@ class PortfolioControllerTest {
 
             // Act & Assert
             mockMvc.perform(put("/api/portfolios/{id}", nonExistentId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isNotFound());
         }
 
@@ -249,14 +254,15 @@ class PortfolioControllerTest {
 
             // Act & Assert
             mockMvc.perform(put("/api/portfolios/{id}", PORTFOLIO_ID)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isBadRequest());
         }
     }
 
     @Nested
-    @DisplayName("deletePortfolioById method")
+    @DisplayName("DELETE /api/portfolios/{id}")
     class DeletePortfolio {
         @Test
         @DisplayName("should delete portfolio")
@@ -266,7 +272,7 @@ class PortfolioControllerTest {
 
             // Act & Assert
             mockMvc.perform(delete("/api/portfolios/{id}", PORTFOLIO_ID))
-                .andExpect(status().isNoContent());
+                    .andExpect(status().isNoContent());
         
             // Verify that the service method was called with the correct argument
             verify(portfolioService).deletePortfolioById(PORTFOLIO_ID);

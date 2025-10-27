@@ -51,7 +51,7 @@ class BrokerAccountControllerTest {
 
 
     @Nested
-    @DisplayName("createBrokerAccount method")
+    @DisplayName("POST /api/broker-accounts")
     class CreateBrokerAccount {
         @Test
         @DisplayName("should create broker account when request is valid")
@@ -64,8 +64,9 @@ class BrokerAccountControllerTest {
             
             // Act
             mockMvc.perform(post("/api/broker-accounts")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(BROKER_ACCOUNT_ID))
                     .andExpect(jsonPath("$.name").value(ACCOUNT_NAME))
@@ -82,8 +83,9 @@ class BrokerAccountControllerTest {
         void should_returnBadRequest_when_requestIsInvalid(CreateBrokerAccountRequest invalidRequest) throws Exception {
             // Act & Assert for invalid requests
             mockMvc.perform(post("/api/broker-accounts")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(invalidRequest)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidRequest))
+                            )
                     .andExpect(status().isBadRequest());
         }
 
@@ -96,7 +98,7 @@ class BrokerAccountControllerTest {
     }
 
     @Nested
-    @DisplayName("retrieveBrokerAccountById method")
+    @DisplayName("GET /api/broker-accounts/{id}")
     class RetrieveBrokerAccountById {
         @Test
         @DisplayName("should return broker account when ID exists")
@@ -129,12 +131,11 @@ class BrokerAccountControllerTest {
             // Act & Assert
             mockMvc.perform(get("/api/broker-accounts/{id}", nonExistentId))
                     .andExpect(status().isNotFound());
-
         }
     }
 
     @Nested
-    @DisplayName("retrieveAllBrokerAccounts method")
+    @DisplayName("GET /api/broker-accounts")
     class RetrieveAllBrokerAccounts {
         @Test
         @DisplayName("should return a list of all broker accounts")
@@ -174,7 +175,7 @@ class BrokerAccountControllerTest {
     }
 
     @Nested
-    @DisplayName("updateBrokerAccount method")
+    @DisplayName("PUT /api/broker-accounts/{id}")
     class UpdateBrokerAccount {
         @Test
         @DisplayName("should update broker account when ID exists")
@@ -190,8 +191,9 @@ class BrokerAccountControllerTest {
             
             // Act & Assert
             mockMvc.perform(put("/api/broker-accounts/{id}", BROKER_ACCOUNT_ID)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(BROKER_ACCOUNT_ID))
                     .andExpect(jsonPath("$.name").value(updatedAccountName))
@@ -215,8 +217,9 @@ class BrokerAccountControllerTest {
 
             // Act & Assert
             mockMvc.perform(put("/api/broker-accounts/{id}", nonExistentId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isNotFound());
 
         }
@@ -227,8 +230,9 @@ class BrokerAccountControllerTest {
         void should_returnBadRequest_when_requestIsInvalid(UpdateBrokerAccountRequest invalidRequest) throws Exception {
             // Act & Assert for invalid requests
             mockMvc.perform(put("/api/broker-accounts/{id}", BROKER_ACCOUNT_ID)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(invalidRequest)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidRequest))
+                            )
                     .andExpect(status().isBadRequest());
         }
 
@@ -241,7 +245,7 @@ class BrokerAccountControllerTest {
     }
 
     @Nested
-    @DisplayName("deleteBrokerAccountById method")
+    @DisplayName("DELETE /api/broker-accounts/{id}")
     class DeleteBrokerAccountById {
         @Test
         @DisplayName("should delete broker account")
@@ -251,7 +255,7 @@ class BrokerAccountControllerTest {
 
             // Act & Assert
             mockMvc.perform(delete("/api/broker-accounts/{id}", BROKER_ACCOUNT_ID))
-                .andExpect(status().isNoContent());
+                    .andExpect(status().isNoContent());
         
             // Verify that the service method was called with the correct argument
             verify(brokerAccountService).deleteBrokerAccountById(BROKER_ACCOUNT_ID);

@@ -51,21 +51,10 @@ public class JwtUtil {
         return getClaimFromToken(token, Claims::getExpiration);
     }
 
-    private Boolean isTokenExpired(String token) {
-        final Date expiration = getExpirationDateFromToken(token);
-        return expiration.before(new Date());
-    }
-
-    public Boolean validateToken(String token) {
-        // In a real app, you'd also check against a user details service.
-        // For now, we just check if it's expired.
-        return !isTokenExpired(token);
-    }
-
-    public String generateToken(String username) {
+    public String generateToken(String username, List<String> roles) {
         var claims = new HashMap<String, Object>();
-        // Add roles to the token. In a real app, these would come from the user's details.
-        claims.put("roles", List.of("ROLE_USER"));
+        // Add roles to the token
+        claims.put("roles", roles);
 
         long nowMillis = System.currentTimeMillis();
         Date now = new Date(nowMillis);

@@ -55,7 +55,7 @@ class InstrumentControllerTest {
     private static final String INSTRUMENT_CURRENCY = "IDR";
 
     @Nested
-    @DisplayName("createInstrument method")
+    @DisplayName("POST /api/instruments")
     class CreateInstrument {
         @Test
         @DisplayName("should create instrument")
@@ -69,8 +69,9 @@ class InstrumentControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/instruments")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(INSTRUMENT_ID))
                     .andExpect(jsonPath("$.instrumentType").value(INSTRUMENT_TYPE.toString()))
@@ -89,8 +90,9 @@ class InstrumentControllerTest {
         void should_returnBadRequest_when_requestIsInvalid(CreateInstrumentRequest invalidRequest) throws Exception {
             // Act & Assert for invalid requests
             mockMvc.perform(post("/api/instruments")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(invalidRequest)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidRequest))
+                            )
                     .andExpect(status().isBadRequest());
         }
 
@@ -106,7 +108,7 @@ class InstrumentControllerTest {
     }
    
     @Nested
-    @DisplayName("retrieveInstrumentById method")
+    @DisplayName("GET /api/instruments/{id}")
     class RetrieveInstrumentById {
         @Test
         @DisplayName("should return instrument when ID exists")
@@ -142,13 +144,13 @@ class InstrumentControllerTest {
 
             // Act & Assert
             mockMvc.perform(get("/api/instruments/{id}", nonExistentId))
-                .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound());
 
         }
     }
 
     @Nested
-    @DisplayName("retrieveAllInstruments method")
+    @DisplayName("GET /api/instruments")
     class RetrieveAllInstruments {
         @Test
         @DisplayName("should return a list of all instruments")
@@ -167,14 +169,14 @@ class InstrumentControllerTest {
 
             // Act & Assert
             mockMvc.perform(get("/api/instruments"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()").value(2))
-                .andExpect(jsonPath("$[0].id").value(id1))
-                .andExpect(jsonPath("$[0].code").value(code1))
-                .andExpect(jsonPath("$[0].name").value(name1))
-                .andExpect(jsonPath("$[1].id").value(id2))
-                .andExpect(jsonPath("$[1].code").value(code2))
-                .andExpect(jsonPath("$[1].name").value(name2));
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.size()").value(2))
+                    .andExpect(jsonPath("$[0].id").value(id1))
+                    .andExpect(jsonPath("$[0].code").value(code1))
+                    .andExpect(jsonPath("$[0].name").value(name1))
+                    .andExpect(jsonPath("$[1].id").value(id2))
+                    .andExpect(jsonPath("$[1].code").value(code2))
+                    .andExpect(jsonPath("$[1].name").value(name2));
 
             // Verify that the service method was called with the correct argument
             verify(instrumentService).retrieveAllInstruments();
@@ -182,7 +184,7 @@ class InstrumentControllerTest {
     }
 
     @Nested
-    @DisplayName("updateInstrument method")
+    @DisplayName("PUT /api/instruments/{id}")
     class UpdateInstrument {
         @Test
         @DisplayName("should update instrument when ID exists")
@@ -198,8 +200,9 @@ class InstrumentControllerTest {
 
             // Act & Assert
             mockMvc.perform(put("/api/instruments/{id}", INSTRUMENT_ID)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(INSTRUMENT_ID))
                     .andExpect(jsonPath("$.instrumentType").value(INSTRUMENT_TYPE.toString()))
@@ -225,8 +228,9 @@ class InstrumentControllerTest {
 
             // Act & Assert
             mockMvc.perform(put("/api/instruments/{id}", nonExistentId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request))
+                            )
                     .andExpect(status().isNotFound());
         }
 
@@ -236,8 +240,9 @@ class InstrumentControllerTest {
         void should_returnBadRequest_when_requestIsInvalid(UpdateInstrumentRequest invalidRequest) throws Exception {
             // Act & Assert for invalid requests
             mockMvc.perform(put("/api/instruments/{id}", INSTRUMENT_ID)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(invalidRequest)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidRequest))
+                            )
                     .andExpect(status().isBadRequest());
         }
 
@@ -247,11 +252,10 @@ class InstrumentControllerTest {
                 new UpdateInstrumentRequest(INSTRUMENT_CODE, "   ")                
             );
         }
-
     }
 
     @Nested
-    @DisplayName("deleteInstrumentById method")
+    @DisplayName("DELETE /api/instruments/{id}")
     class DeleteInstrument {
         @Test
         @DisplayName("should delete instrument")
@@ -261,12 +265,10 @@ class InstrumentControllerTest {
 
             // Act & Assert
             mockMvc.perform(delete("/api/instruments/{id}", INSTRUMENT_ID))
-                .andExpect(status().isNoContent());
+                    .andExpect(status().isNoContent());
             
             // Verify that the service method was called with the correct argument
             verify(instrumentService).deleteInstrumentById(INSTRUMENT_ID);
         }
     }
-    
-
 }
