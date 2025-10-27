@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import com.budiyanto.fintrackr.userservice.domain.User;
 
 @DataJpaTest
 @Import(TestcontainersConfiguration.class)
-@DisplayName("UserRepository Test")
+@DisplayName("UserRepository Tests")
 class UserRepositoryTest {
 
     private final UserRepository userRepository;
@@ -30,6 +31,11 @@ class UserRepositoryTest {
     UserRepositoryTest(UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+    }
+
+    @BeforeEach
+    void setUp() {
+        userRepository.deleteAll();
     }
 
     @Test

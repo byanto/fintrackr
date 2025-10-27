@@ -14,7 +14,7 @@ import com.budiyanto.fintrackr.userservice.domain.Role;
 
 @DataJpaTest
 @Import(TestcontainersConfiguration.class)
-@DisplayName("RoleRepository Test")
+@DisplayName("RoleRepository Tests")
 class RoleRepositoryTest {
     
     private final RoleRepository roleRepository;
