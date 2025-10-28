@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.apigateway.security;
+package com.budiyanto.fintrackr.userservice.security;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -15,10 +15,11 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class JwtUtil {
-
     @Value("${fintrackr.jwt.secret}")
     private String secret;
 

@@ -114,6 +114,4 @@ class UserRepositoryTest {
         assertThat(savedUser.getRoles()).hasSize(1);
         assertThat(savedUser.getRoles()).extracting(Role::getName).containsExactly("ROLE_USER");
     }
-
-
 }

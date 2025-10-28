@@ -23,6 +23,12 @@ eureka:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}} # Create unique IDs if multiple instances run
 
-  refreshtoken:
+refreshtoken:
+  expiration:
+    ms: 604800000 # 7 days
+
+fintrackr:
+  jwt:
+    secret: V2VsbCBIZWxsbyBUaGVyZSEgVGhpcyBpcyBhIFRlc3RpbmcgU2VjcmV0IEtleSBGb3IgSldUIFNpZ25pbmc=
     expiration:
-      ms: 604800000 # 7 days
+      ms: 3600000 # 1 hour

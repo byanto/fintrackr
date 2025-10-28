@@ -24,12 +24,12 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.budiyanto.fintrackr.userservice.config.SecurityConfig;
 import com.budiyanto.fintrackr.userservice.dto.LoginRequest;
 import com.budiyanto.fintrackr.userservice.dto.LoginResponse;
 import com.budiyanto.fintrackr.userservice.dto.RegisterRequest;
 import com.budiyanto.fintrackr.userservice.dto.UserResponse;
 import com.budiyanto.fintrackr.userservice.exception.UserAlreadyExistsException;
+import com.budiyanto.fintrackr.userservice.security.SecurityConfig;
 import com.budiyanto.fintrackr.userservice.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

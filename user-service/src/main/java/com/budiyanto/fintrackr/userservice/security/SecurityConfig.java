@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.userservice.config;
+package com.budiyanto.fintrackr.userservice.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
