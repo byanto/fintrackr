@@ -8,6 +8,7 @@ import com.budiyanto.fintrackr.userservice.dto.RegisterRequest;
 import com.budiyanto.fintrackr.userservice.dto.UserResponse;
 import com.budiyanto.fintrackr.userservice.exception.RoleNotFoundException;
 import com.budiyanto.fintrackr.userservice.exception.UserAlreadyExistsException;
+import com.budiyanto.fintrackr.userservice.mapper.AuthMapper;
 import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
 import com.budiyanto.fintrackr.userservice.repository.RoleRepository;
 import com.budiyanto.fintrackr.userservice.repository.UserRepository;
@@ -51,6 +52,9 @@ class UserServiceTest {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private AuthMapper authMapper;
+
     @InjectMocks
     private UserService userService;
 
@@ -59,7 +63,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        registerRequest = new RegisterRequest("testuser", "test@email.com", "password123");
+        registerRequest = new RegisterRequest("testuser", "password123", "test@email.com");
         userRole = new Role("ROLE_USER");
     }
 
@@ -78,12 +82,15 @@ class UserServiceTest {
             // Mock
             when(userRepository.findByUsername(registerRequest.username())).thenReturn(Optional.empty());
             when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(userRole));
-            when(passwordEncoder.encode(registerRequest.password())).thenReturn(encodedPassword);
-
-            User savedUser = new User(registerRequest.username(), encodedPassword, registerRequest.email());
+            
+            User user = new User(registerRequest.username(), encodedPassword, registerRequest.email());
+            when(userMapper.toUser(registerRequest)).thenReturn(user);
+            
+            User savedUser = new User(registerRequest.username(), "encodedPassword", registerRequest.email());
             ReflectionTestUtils.setField(savedUser, "id", id);
             ReflectionTestUtils.setField(savedUser, "createdAt", createdAt);
             ReflectionTestUtils.setField(savedUser, "updatedAt", createdAt);
+            savedUser.addRole(userRole);
             when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
             UserResponse response = new UserResponse(savedUser.getId(), registerRequest.username(), registerRequest.email(), createdAt);
@@ -101,16 +108,13 @@ class UserServiceTest {
             verify(userRepository).save(userCaptor.capture());
             User capturedUser = userCaptor.getValue();
             assertThat(capturedUser.getId()).isNull();
-            assertThat(capturedUser.getUsername()).isEqualTo(registerRequest.username());
-            assertThat(capturedUser.getPassword()).isEqualTo(encodedPassword);
-            assertThat(capturedUser.getCreatedAt()).isNull();
-            assertThat(capturedUser.getUpdatedAt()).isNull();
+            assertThat(capturedUser).isEqualTo(user);
             assertThat(capturedUser.getRoles()).contains(userRole);
 
             // Verify interactions
             verify(userRepository).findByUsername(registerRequest.username());
             verify(roleRepository).findByName("ROLE_USER");
-            verify(passwordEncoder).encode(registerRequest.password());
+            verify(userMapper).toUser(registerRequest);
             verify(userMapper).toUserResponse(savedUser);
         }
 
@@ -131,7 +135,7 @@ class UserServiceTest {
 
             // Verify further interactions never occured
             verify(roleRepository, never()).findByName("ROLE_USER");
-            verify(passwordEncoder, never()).encode(registerRequest.password());
+            verify(userMapper, never()).toUser(any(RegisterRequest.class));
             verify(userRepository, never()).save(any(User.class));
             verify(userMapper, never()).toUserResponse(any(User.class));
         }
@@ -149,7 +153,7 @@ class UserServiceTest {
                     .hasMessageContaining("Default role ROLE_USER not found.");
 
             // Verify further interactions never occured
-            verify(passwordEncoder, never()).encode(registerRequest.password());
+            verify(userMapper, never()).toUser(any(RegisterRequest.class));
             verify(userRepository, never()).save(any(User.class));
             verify(userMapper, never()).toUserResponse(any(User.class));
         }
@@ -180,7 +184,7 @@ class UserServiceTest {
             when(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true);
 
             LoginResponse expectedResponse = new LoginResponse(existingUser.getUsername(), List.of("ROLE_USER"));
-            when(userMapper.toLoginResponse(existingUser)).thenReturn(expectedResponse);
+            when(authMapper.toLoginResponse(existingUser)).thenReturn(expectedResponse);
 
             // Act
             LoginResponse result = userService.authenticate(loginRequest);
@@ -192,7 +196,7 @@ class UserServiceTest {
             // Verify interactions
             verify(userRepository).findByUsername(loginRequest.username());
             verify(passwordEncoder).matches(rawPassword, encodedPassword);
-            verify(userMapper).toLoginResponse(existingUser);
+            verify(authMapper).toLoginResponse(existingUser);
         }
 
         @Test
@@ -208,7 +212,7 @@ class UserServiceTest {
 
             // Verify further interactions never occured
             verify(passwordEncoder, never()).matches(anyString(), anyString());
-            verify(userMapper, never()).toLoginResponse(any(User.class));
+            verify(authMapper, never()).toLoginResponse(any(User.class));
         }
 
         @Test
@@ -224,7 +228,7 @@ class UserServiceTest {
                     .hasMessage("Invalid username or password");
 
             // Verify further interactions never occured
-            verify(userMapper, never()).toLoginResponse(any(User.class));
+            verify(authMapper, never()).toLoginResponse(any(User.class));
         }
     }
 }
