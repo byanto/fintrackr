@@ -3,6 +3,7 @@ package com.budiyanto.fintrackr.userservice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,9 +45,12 @@ class RefreshTokenServiceTest {
     @InjectMocks
     private RefreshTokenService refreshTokenService;
 
+    private User user;
+
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(refreshTokenService, "refreshTokenDurationMs", 604800000L);
+        this.user = new User("testuser", "password", "test@email.com");
     }
 
     @Nested
@@ -57,18 +61,16 @@ class RefreshTokenServiceTest {
         @DisplayName("should create and save a new refresh token for an existing user")
         void should_createAndSaveToken_when_userExists() {
             // Arrange
-            String username = "testuser";
-            User user = new User(username, "password", "test@email.com");
-            when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+            when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
             when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
-            RefreshToken result = refreshTokenService.createRefreshToken(username);
+            RefreshToken result = refreshTokenService.createToken(user.getUsername());
 
             // Assert
             assertThat(result).isNotNull();
             assertThat(result.getUser()).isEqualTo(user);
-            assertThat(result.getToken()).isNotNull();
+            assertThat(result.getValue()).isNotNull();
             assertThat(result.getExpiryDate()).isAfter(Instant.now());
 
             ArgumentCaptor<RefreshToken> tokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
@@ -78,7 +80,8 @@ class RefreshTokenServiceTest {
             assertThat(capturedToken.getUser()).isEqualTo(user);
 
             // Verify interactions
-            verify(userRepository).findByUsername(username);
+            verify(userRepository).findByUsername(user.getUsername());
+            verify(refreshTokenRepository).save(any(RefreshToken.class));
         }
 
         @Test
@@ -89,7 +92,7 @@ class RefreshTokenServiceTest {
             when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThatThrownBy(() -> refreshTokenService.createRefreshToken(username))
+            assertThatThrownBy(() -> refreshTokenService.createToken(username))
                     .isInstanceOf(UserNotFoundException.class)
                     .asInstanceOf(InstanceOfAssertFactories.type(UserNotFoundException.class))
                     .satisfies(ex -> {
@@ -102,8 +105,8 @@ class RefreshTokenServiceTest {
     }
 
     @Nested
-    @DisplayName("findByToken method")
-    class FindByToken {
+    @DisplayName("findByTokenValue method")
+    class FindByTokenValue {
         @Test
         @DisplayName("should call repository method")
         void should_callRepository() {
@@ -112,7 +115,7 @@ class RefreshTokenServiceTest {
             when(refreshTokenRepository.findByToken(tokenValue)).thenReturn(Optional.empty());
 
             // Act
-            refreshTokenService.findByToken(tokenValue);
+            refreshTokenService.findByTokenValue(tokenValue);
 
             // Assert
             verify(refreshTokenRepository).findByToken(tokenValue);
@@ -127,8 +130,9 @@ class RefreshTokenServiceTest {
         @DisplayName("should return the token if it is not expired")
         void should_returnToken_when_notExpired() {
             // Arrange
-            RefreshToken token = new RefreshToken();
-            token.setExpiryDate(Instant.now().plus(1, ChronoUnit.DAYS));
+            String tokenValue = UUID.randomUUID().toString();
+            Instant expiryDate = Instant.now().plus(1, ChronoUnit.DAYS);
+            RefreshToken token = new RefreshToken(user, tokenValue, expiryDate);
 
             // Act
             RefreshToken result = refreshTokenService.verifyExpiration(token);
@@ -145,21 +149,50 @@ class RefreshTokenServiceTest {
         void should_throwException_when_expired() {
             // Arrange
             String tokenValue = UUID.randomUUID().toString();
-            RefreshToken token = new RefreshToken();
-            token.setToken(tokenValue);
-            token.setExpiryDate(Instant.now().minus(1, ChronoUnit.DAYS));
+            Instant expiryDate = Instant.now().minus(1, ChronoUnit.DAYS);
+            RefreshToken token = new RefreshToken(user, tokenValue, expiryDate);
 
             // Act & Assert
             assertThatThrownBy(() -> refreshTokenService.verifyExpiration(token))
                     .isInstanceOf(RefreshTokenExpiredException.class)
                     .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenExpiredException.class))
                     .satisfies(ex -> {
-                        assertThat(ex.getToken()).isEqualTo(tokenValue);
+                        assertThat(ex.getTokenValue()).isEqualTo(tokenValue);
                     });
                     
-            // Verify interactions
+            // Verify that the expired Token is deleted
             verify(refreshTokenRepository).delete(token);
         }
-    }    
+    } 
+
+    @Nested
+    @DisplayName("rotateToken method")
+    class RotateToken {
+
+        @Test
+        @DisplayName("should delete the old token and create a new one for the same user")
+        void should_returnNewToken_when_rotationSuccess() {
+            // Arrange
+            String oldTokenValue = UUID.randomUUID().toString();
+            RefreshToken oldToken = new RefreshToken(user, oldTokenValue, Instant.now());
+            
+            String newTokenValue = UUID.randomUUID().toString();
+            RefreshToken newToken = new RefreshToken(user, newTokenValue, Instant.now());
+            when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
+            when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(newToken);
+
+            // Act
+            RefreshToken result = refreshTokenService.rotateToken(oldToken);
+            
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result).isEqualTo(newToken);
+
+            // Verify interactions
+            verify(refreshTokenRepository).delete(oldToken);
+            verify(userRepository).findByUsername(user.getUsername());
+            verify(refreshTokenRepository).save(any(RefreshToken.class));
+        }
+    }
 
 }

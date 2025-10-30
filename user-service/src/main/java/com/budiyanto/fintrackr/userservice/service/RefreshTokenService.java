@@ -18,18 +18,14 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
-    @Value("${jwt.refreshtoken.expiration.ms}")
+    @Value("${fintrackr.jwt.refreshtoken.expiration.ms}")
     private Long refreshTokenDurationMs;
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
-    public Optional<RefreshToken> findByToken(String token) {
-        return refreshTokenRepository.findByToken(token);
-    }
-
     @Transactional
-    public RefreshToken createRefreshToken(String username) {
+    public RefreshToken createToken(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
 
@@ -42,11 +38,24 @@ public class RefreshTokenService {
         return refreshTokenRepository.save(refreshToken);
     }
 
+    public Optional<RefreshToken> findByTokenValue(String tokenValue) {
+        return refreshTokenRepository.findByToken(tokenValue);
+    }
+
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().isBefore(Instant.now())) {
             refreshTokenRepository.delete(token);
-            throw new RefreshTokenExpiredException(token.getToken());
+            throw new RefreshTokenExpiredException(token.getValue());
         }
         return token;
+    }
+    
+    @Transactional
+    public RefreshToken rotateToken(RefreshToken oldToken) {
+        // Invalidate the old token
+        refreshTokenRepository.delete(oldToken);
+        
+        // Create and save a new one for the same user
+        return createToken(oldToken.getUser().getUsername());
     }
 }

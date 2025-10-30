@@ -16,6 +16,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(Map.of("error", ex.getMessage()), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleUserNotFoundException(UserNotFoundException ex) {
+        return new ResponseEntity<>(Map.of("error", ex.getMessage()), HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(RoleNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleRoleNotFoundException(RoleNotFoundException ex) {
         return new ResponseEntity<>(Map.of("error", ex.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -27,12 +32,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(RefreshTokenExpiredException.class)
-    public ResponseEntity<Map<String, String>> handleTokenRefreshException(RefreshTokenExpiredException ex) {
+    public ResponseEntity<Map<String, String>> handleRefreshTokenExpiredception(RefreshTokenExpiredException ex) {
         return new ResponseEntity<>(Map.of("error", ex.getMessage()), HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleUserNotFoundException(UserNotFoundException ex) {
-        return new ResponseEntity<>(Map.of("error", ex.getMessage()), HttpStatus.NOT_FOUND);
+    @ExceptionHandler(RefreshTokenNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleRefreshTokenNotFoundException(RefreshTokenNotFoundException ex) {
+        return new ResponseEntity<>(Map.of("error", ex.getMessage()), HttpStatus.FORBIDDEN);
     }
+
 }

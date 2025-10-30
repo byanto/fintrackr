@@ -1,9 +1,5 @@
 package com.budiyanto.fintrackr.userservice.domain;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import java.time.Instant;
 
 import jakarta.persistence.Column;
@@ -14,11 +10,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "refresh_tokens")
 @Getter
-@Setter
 @NoArgsConstructor
 public class RefreshToken {
     @Id
@@ -30,15 +27,15 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
-    @Column(nullable = false, unique = true)
-    private String token;
+    @Column(name = "value", nullable = false, unique = true)
+    private String value;
 
-    @Column(nullable = false)
+    @Column(name = "expiry_date", nullable = false)
     private Instant expiryDate;
 
-    public RefreshToken(User user, String token, Instant expiryDate) {
+    public RefreshToken(User user, String value, Instant expiryDate) {
         this.user = user;
-        this.token = token;
+        this.value = value;
         this.expiryDate = expiryDate;
     }
 }

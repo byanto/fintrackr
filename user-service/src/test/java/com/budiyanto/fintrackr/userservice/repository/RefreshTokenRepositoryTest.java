@@ -63,7 +63,7 @@ class RefreshTokenRepositoryTest {
 
             // Assert
             assertThat(foundToken).isPresent();
-            assertThat(foundToken.get().getToken()).isEqualTo(tokenValue);
+            assertThat(foundToken.get().getValue()).isEqualTo(tokenValue);
             assertThat(foundToken.get().getUser().getUsername()).isEqualTo(username1);
         }
 
@@ -98,8 +98,8 @@ class RefreshTokenRepositoryTest {
 
             // Assert
             assertThat(deletedCount).isEqualTo(1);
-            assertThat(refreshTokenRepository.findByToken(token1.getToken())).isNotPresent();
-            assertThat(refreshTokenRepository.findByToken(token2.getToken())).isPresent();
+            assertThat(refreshTokenRepository.findByToken(token1.getValue())).isNotPresent();
+            assertThat(refreshTokenRepository.findByToken(token2.getValue())).isPresent();
         }
 
     }

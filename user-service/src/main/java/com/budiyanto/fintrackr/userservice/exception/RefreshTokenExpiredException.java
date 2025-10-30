@@ -5,12 +5,12 @@ import lombok.Getter;
 @Getter
 public class RefreshTokenExpiredException extends RuntimeException {
     
-    private String token;
+    private String tokenValue;
     
-    public RefreshTokenExpiredException(String token) {
+    public RefreshTokenExpiredException(String tokenValue) {
         super(String.format("Failed for [%s]: %s", 
-            token, "Refresh token was expired. Please make a new sign-in request"));
-        this.token = token;
+            tokenValue, "Refresh token was expired. Please make a new sign-in request"));
+        this.tokenValue = tokenValue;
     }
 
 }

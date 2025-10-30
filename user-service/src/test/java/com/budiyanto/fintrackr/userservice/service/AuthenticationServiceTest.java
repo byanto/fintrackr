@@ -1,17 +1,20 @@
 package com.budiyanto.fintrackr.userservice.service;
 
-import com.budiyanto.fintrackr.userservice.domain.Role;
-import com.budiyanto.fintrackr.userservice.domain.User;
-import com.budiyanto.fintrackr.userservice.dto.LoginRequest;
-import com.budiyanto.fintrackr.userservice.dto.LoginResponse;
-import com.budiyanto.fintrackr.userservice.dto.RegisterRequest;
-import com.budiyanto.fintrackr.userservice.dto.UserResponse;
-import com.budiyanto.fintrackr.userservice.exception.RoleNotFoundException;
-import com.budiyanto.fintrackr.userservice.exception.UserAlreadyExistsException;
-import com.budiyanto.fintrackr.userservice.mapper.AuthMapper;
-import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
-import com.budiyanto.fintrackr.userservice.repository.RoleRepository;
-import com.budiyanto.fintrackr.userservice.repository.UserRepository;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,18 +30,28 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import com.budiyanto.fintrackr.userservice.domain.RefreshToken;
+import com.budiyanto.fintrackr.userservice.domain.Role;
+import com.budiyanto.fintrackr.userservice.domain.User;
+import com.budiyanto.fintrackr.userservice.dto.AuthTokenRequest;
+import com.budiyanto.fintrackr.userservice.dto.AuthTokenResponse;
+import com.budiyanto.fintrackr.userservice.dto.LoginRequest;
+import com.budiyanto.fintrackr.userservice.dto.LoginResponse;
+import com.budiyanto.fintrackr.userservice.dto.RegisterRequest;
+import com.budiyanto.fintrackr.userservice.dto.UserResponse;
+import com.budiyanto.fintrackr.userservice.exception.RefreshTokenExpiredException;
+import com.budiyanto.fintrackr.userservice.exception.RefreshTokenNotFoundException;
+import com.budiyanto.fintrackr.userservice.exception.RoleNotFoundException;
+import com.budiyanto.fintrackr.userservice.exception.UserAlreadyExistsException;
+import com.budiyanto.fintrackr.userservice.mapper.AuthMapper;
+import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
+import com.budiyanto.fintrackr.userservice.repository.RoleRepository;
+import com.budiyanto.fintrackr.userservice.repository.UserRepository;
+import com.budiyanto.fintrackr.userservice.security.JwtUtil;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("UserService Tests")
-class UserServiceTest {
+@DisplayName("AuthenticationService Tests")
+class AuthenticationServiceTest {
 
     @Mock
     private UserRepository userRepository;
@@ -55,16 +68,25 @@ class UserServiceTest {
     @Mock
     private AuthMapper authMapper;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+    
+    @Mock
+    private JwtUtil jwtUtil;
+    
     @InjectMocks
-    private UserService userService;
+    private AuthenticationService authenticationService;
 
+    private User user;
     private RegisterRequest registerRequest;
     private Role userRole;
+    private static final Long ACCESS_TOKEN_EXPIRATION_MS = 900000L;
 
     @BeforeEach
     void setUp() {
         registerRequest = new RegisterRequest("testuser", "password123", "test@email.com");
         userRole = new Role("ROLE_USER");
+        this.user = new User("testuser", "password", "test@email.com");
     }
 
     @Nested
@@ -97,7 +119,7 @@ class UserServiceTest {
             when(userMapper.toUserResponse(savedUser)).thenReturn(response);
 
             // Act
-            UserResponse result = userService.registerUser(registerRequest);
+            UserResponse result = authenticationService.registerUser(registerRequest);
 
             // Assert
             assertThat(result).isNotNull();
@@ -126,7 +148,7 @@ class UserServiceTest {
             when(userRepository.findByUsername(registerRequest.username())).thenReturn(Optional.of(user));
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.registerUser(registerRequest))
+            assertThatThrownBy(() -> authenticationService.registerUser(registerRequest))
                     .isInstanceOf(UserAlreadyExistsException.class)
                     .asInstanceOf(InstanceOfAssertFactories.type(UserAlreadyExistsException.class))
                     .satisfies(ex -> {
@@ -148,7 +170,7 @@ class UserServiceTest {
             when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.registerUser(registerRequest))
+            assertThatThrownBy(() -> authenticationService.registerUser(registerRequest))
                     .isInstanceOf(RoleNotFoundException.class)
                     .hasMessageContaining("Default role ROLE_USER not found.");
 
@@ -187,7 +209,7 @@ class UserServiceTest {
             when(authMapper.toLoginResponse(existingUser)).thenReturn(expectedResponse);
 
             // Act
-            LoginResponse result = userService.authenticate(loginRequest);
+            LoginResponse result = authenticationService.authenticate(loginRequest);
 
             // Assert
             assertThat(result).isNotNull();
@@ -206,7 +228,7 @@ class UserServiceTest {
             when(userRepository.findByUsername(loginRequest.username())).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.authenticate(loginRequest))
+            assertThatThrownBy(() -> authenticationService.authenticate(loginRequest))
                     .isInstanceOf(BadCredentialsException.class)
                     .hasMessage("Invalid username or password");
 
@@ -223,7 +245,7 @@ class UserServiceTest {
             when(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(false);
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.authenticate(loginRequest))
+            assertThatThrownBy(() -> authenticationService.authenticate(loginRequest))
                     .isInstanceOf(BadCredentialsException.class)
                     .hasMessage("Invalid username or password");
 
@@ -231,4 +253,93 @@ class UserServiceTest {
             verify(authMapper, never()).toLoginResponse(any(User.class));
         }
     }
+
+    @Nested
+    @DisplayName("renewAuthToken method")
+    class renewAuthToken {
+
+        @Test
+        @DisplayName("should return new auth token")
+        void should_returnNewToken() {
+            // Arrange
+            String oldRefreshTokenValue = UUID.randomUUID().toString();
+            AuthTokenRequest request = new AuthTokenRequest(oldRefreshTokenValue);
+            RefreshToken oldRefreshToken = new RefreshToken(user, oldRefreshTokenValue, Instant.now());
+            when(refreshTokenService.findByTokenValue(oldRefreshTokenValue)).thenReturn(Optional.of(oldRefreshToken));
+            when(refreshTokenService.verifyExpiration(oldRefreshToken)).thenReturn(oldRefreshToken);
+
+            String newRefreshTokenValue = UUID.randomUUID().toString();
+            RefreshToken newRefreshToken = new RefreshToken(user, newRefreshTokenValue, Instant.now());
+            when(refreshTokenService.rotateToken(oldRefreshToken)).thenReturn(newRefreshToken);
+
+            String newAccessTokenValue = "new.access.token";
+            when(jwtUtil.generateAccessToken(eq(user.getUsername()), anyList())).thenReturn(newAccessTokenValue);
+            when(jwtUtil.getAccessTokenExpirationMs()).thenReturn(ACCESS_TOKEN_EXPIRATION_MS);
+
+            // Act
+            AuthTokenResponse result = authenticationService.renewAuthToken(request);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.accessToken()).isEqualTo(newAccessTokenValue);
+            assertThat(result.refreshToken()).isEqualTo(newRefreshTokenValue);
+            assertThat(result.tokenType()).isEqualTo("Bearer");
+            assertThat(result.expiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRATION_MS);
+
+            // Verify interactions
+            verify(refreshTokenService).findByTokenValue(oldRefreshTokenValue);
+            verify(refreshTokenService).verifyExpiration(oldRefreshToken);
+            verify(refreshTokenService).rotateToken(oldRefreshToken);
+            verify(jwtUtil).generateAccessToken(eq(user.getUsername()), anyList());
+            verify(jwtUtil).getAccessTokenExpirationMs();
+
+        }
+
+        @Test
+        @DisplayName("should throw RefreshTokenNotFoundException when refresh token is not found")
+        void should_throwException_when_refreshTokenNotFound() {
+            // Arrange
+            String oldRefreshTokenValue = UUID.randomUUID().toString();
+            AuthTokenRequest request = new AuthTokenRequest(oldRefreshTokenValue);
+            when(refreshTokenService.findByTokenValue(oldRefreshTokenValue)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThatThrownBy(() -> authenticationService.renewAuthToken(request))
+                    .isInstanceOf(RefreshTokenNotFoundException.class)
+                    .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenNotFoundException.class))
+                    .satisfies(ex -> {
+                        assertThat(ex.getTokenValue()).isEqualTo(oldRefreshTokenValue);
+                    });
+
+            // Verify no further interactions occured
+            verify(refreshTokenService, never()).verifyExpiration(any(RefreshToken.class));
+            verify(refreshTokenService, never()).rotateToken(any(RefreshToken.class));
+            verify(jwtUtil, never()).generateAccessToken(anyString(), anyList());
+            verify(jwtUtil, never()).getAccessTokenExpirationMs();
+        }
+
+        @Test
+        @DisplayName("should throw RefreshTokenExpiredException when refresh token is expired")
+        void should_throwException_when_refreshTokenIsExpired() {
+            // Arrange
+            String oldRefreshTokenValue = UUID.randomUUID().toString();
+            AuthTokenRequest request = new AuthTokenRequest(oldRefreshTokenValue);          
+            RefreshToken oldRefreshToken = new RefreshToken(user, oldRefreshTokenValue, Instant.now());
+            when(refreshTokenService.findByTokenValue(oldRefreshTokenValue)).thenReturn(Optional.of(oldRefreshToken));
+            when(refreshTokenService.verifyExpiration(oldRefreshToken)).thenThrow(new RefreshTokenExpiredException(oldRefreshTokenValue));
+
+            // Act & Assert
+            assertThatThrownBy(() -> authenticationService.renewAuthToken(request))
+                    .isInstanceOf(RefreshTokenExpiredException.class)
+                    .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenExpiredException.class))
+                    .satisfies(ex -> {
+                        assertThat(ex.getTokenValue()).isEqualTo(oldRefreshTokenValue);
+                    });
+
+            // Verify no further interactions occured
+            verify(refreshTokenService, never()).rotateToken(any(RefreshToken.class));
+            verify(jwtUtil, never()).generateAccessToken(anyString(), anyList());
+            verify(jwtUtil, never()).getAccessTokenExpirationMs();
+        }   
+    }   
 }
