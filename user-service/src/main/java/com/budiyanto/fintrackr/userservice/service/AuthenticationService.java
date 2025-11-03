@@ -20,7 +20,7 @@ import com.budiyanto.fintrackr.userservice.mapper.AuthMapper;
 import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
 import com.budiyanto.fintrackr.userservice.repository.RoleRepository;
 import com.budiyanto.fintrackr.userservice.repository.UserRepository;
-import com.budiyanto.fintrackr.userservice.security.JwtUtil;
+import com.budiyanto.fintrackr.userservice.security.JwtService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,7 +34,7 @@ public class AuthenticationService {
     private final UserMapper userMapper;
     private final AuthMapper authMapper;
     private final RefreshTokenService refreshTokenService;
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
 
     @Transactional
     public UserResponse registerUser(RegisterRequest request) {
@@ -71,8 +71,8 @@ public class AuthenticationService {
                     User user = oldToken.getUser();
                     var newRefreshToken = refreshTokenService.rotateToken(oldToken);
                     var roles = user.getRoles().stream().map(Role::getName).toList();
-                    String newAccessToken = jwtUtil.generateAccessToken(user.getUsername(), roles);
-                    return new AuthTokenResponse(newAccessToken, newRefreshToken.getValue(), jwtUtil.getAccessTokenExpirationMs());
+                    String newAccessToken = jwtService.generateAccessToken(user.getUsername(), roles);
+                    return new AuthTokenResponse(newAccessToken, newRefreshToken.getValue(), jwtService.getAccessTokenExpirationMs());
                 })
                 .orElseThrow(() -> new RefreshTokenNotFoundException(oldTokenRequest.refreshToken())); // Throws if token was not found
     }

@@ -2,7 +2,6 @@ package com.budiyanto.fintrackr.userservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -47,7 +46,7 @@ import com.budiyanto.fintrackr.userservice.mapper.AuthMapper;
 import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
 import com.budiyanto.fintrackr.userservice.repository.RoleRepository;
 import com.budiyanto.fintrackr.userservice.repository.UserRepository;
-import com.budiyanto.fintrackr.userservice.security.JwtUtil;
+import com.budiyanto.fintrackr.userservice.security.JwtService;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthenticationService Tests")
@@ -72,7 +71,7 @@ class AuthenticationServiceTest {
     private RefreshTokenService refreshTokenService;
     
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
     
     @InjectMocks
     private AuthenticationService authenticationService;
@@ -273,8 +272,8 @@ class AuthenticationServiceTest {
             when(refreshTokenService.rotateToken(oldRefreshToken)).thenReturn(newRefreshToken);
 
             String newAccessTokenValue = "new.access.token";
-            when(jwtUtil.generateAccessToken(eq(user.getUsername()), anyList())).thenReturn(newAccessTokenValue);
-            when(jwtUtil.getAccessTokenExpirationMs()).thenReturn(ACCESS_TOKEN_EXPIRATION_MS);
+            when(jwtService.generateAccessToken(eq(user.getUsername()), anyList())).thenReturn(newAccessTokenValue);
+            when(jwtService.getAccessTokenExpirationMs()).thenReturn(ACCESS_TOKEN_EXPIRATION_MS);
 
             // Act
             AuthTokenResponse result = authenticationService.renewAuthToken(request);
@@ -290,8 +289,8 @@ class AuthenticationServiceTest {
             verify(refreshTokenService).findByTokenValue(oldRefreshTokenValue);
             verify(refreshTokenService).verifyExpiration(oldRefreshToken);
             verify(refreshTokenService).rotateToken(oldRefreshToken);
-            verify(jwtUtil).generateAccessToken(eq(user.getUsername()), anyList());
-            verify(jwtUtil).getAccessTokenExpirationMs();
+            verify(jwtService).generateAccessToken(eq(user.getUsername()), anyList());
+            verify(jwtService).getAccessTokenExpirationMs();
 
         }
 
@@ -314,8 +313,8 @@ class AuthenticationServiceTest {
             // Verify no further interactions occured
             verify(refreshTokenService, never()).verifyExpiration(any(RefreshToken.class));
             verify(refreshTokenService, never()).rotateToken(any(RefreshToken.class));
-            verify(jwtUtil, never()).generateAccessToken(anyString(), anyList());
-            verify(jwtUtil, never()).getAccessTokenExpirationMs();
+            verify(jwtService, never()).generateAccessToken(anyString(), anyList());
+            verify(jwtService, never()).getAccessTokenExpirationMs();
         }
 
         @Test
@@ -338,8 +337,8 @@ class AuthenticationServiceTest {
 
             // Verify no further interactions occured
             verify(refreshTokenService, never()).rotateToken(any(RefreshToken.class));
-            verify(jwtUtil, never()).generateAccessToken(anyString(), anyList());
-            verify(jwtUtil, never()).getAccessTokenExpirationMs();
+            verify(jwtService, never()).generateAccessToken(anyString(), anyList());
+            verify(jwtService, never()).getAccessTokenExpirationMs();
         }   
     }   
 }
