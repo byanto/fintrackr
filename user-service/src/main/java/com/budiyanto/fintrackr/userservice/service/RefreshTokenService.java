@@ -38,10 +38,12 @@ public class RefreshTokenService {
         return refreshTokenRepository.save(refreshToken);
     }
 
+    @Transactional(readOnly = true)
     public Optional<RefreshToken> findByTokenValue(String tokenValue) {
         return refreshTokenRepository.findByToken(tokenValue);
     }
 
+    @Transactional
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().isBefore(Instant.now())) {
             refreshTokenRepository.delete(token);
