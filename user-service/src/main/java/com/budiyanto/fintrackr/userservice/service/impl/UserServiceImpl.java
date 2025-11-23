@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.userservice.service;
+package com.budiyanto.fintrackr.userservice.service.impl;
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.budiyanto.fintrackr.userservice.dto.UserResponse;
 import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
 import com.budiyanto.fintrackr.userservice.repository.UserRepository;
+import com.budiyanto.fintrackr.userservice.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 

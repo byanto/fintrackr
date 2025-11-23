@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.userservice.service;
+package com.budiyanto.fintrackr.userservice.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,14 +17,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import com.budiyanto.fintrackr.userservice.domain.User;
 import com.budiyanto.fintrackr.userservice.dto.UserResponse;
+import com.budiyanto.fintrackr.userservice.entity.User;
 import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
 import com.budiyanto.fintrackr.userservice.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService Tests")
-class UserServiceTest {
+class UserServiceImplTest {
 
     @Mock
     private UserRepository userRepository;

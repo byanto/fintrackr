@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.userservice.domain;
+package com.budiyanto.fintrackr.userservice.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

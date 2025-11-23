@@ -1,8 +1,10 @@
-package com.budiyanto.fintrackr.userservice.service;
+package com.budiyanto.fintrackr.userservice.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,10 +24,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.budiyanto.fintrackr.userservice.domain.RefreshToken;
-import com.budiyanto.fintrackr.userservice.domain.User;
+import com.budiyanto.fintrackr.userservice.entity.RefreshToken;
+import com.budiyanto.fintrackr.userservice.entity.User;
 import com.budiyanto.fintrackr.userservice.exception.RefreshTokenExpiredException;
 import com.budiyanto.fintrackr.userservice.exception.UserNotFoundException;
 import com.budiyanto.fintrackr.userservice.repository.RefreshTokenRepository;
@@ -33,28 +36,31 @@ import com.budiyanto.fintrackr.userservice.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RefreshTokenService Tests")
-class RefreshTokenServiceTest {
+class RefreshTokenServiceImplTest {
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
     
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
     
     @InjectMocks
-    private RefreshTokenService refreshTokenService;
+    private RefreshTokenServiceImpl refreshTokenService;
 
     private User user;
 
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(refreshTokenService, "refreshTokenDurationMs", 604800000L);
-        this.user = new User("testuser", "password", "test@email.com");
+        user = new User("testuser", "password", "test@email.com");
     }
 
     @Nested
-    @DisplayName("createRefreshToken method")
-    class CreateRefreshToken {
+    @DisplayName("createToken method")
+    class CreateToken {
 
         @Test
         @DisplayName("should create and save a new refresh token for an existing user")
@@ -62,24 +68,26 @@ class RefreshTokenServiceTest {
             // Arrange
             when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
             when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            
+            String encodedTokenValue = "encodedTokenValue";
+            when(passwordEncoder.encode(anyString())).thenReturn(encodedTokenValue);
 
             // Act
-            RefreshToken result = refreshTokenService.createToken(user.getUsername());
+            String result = refreshTokenService.createToken(user);
 
             // Assert
-            assertThat(result).isNotNull();
-            assertThat(result.getUser()).isEqualTo(user);
-            assertThat(result.getValue()).isNotNull();
-            assertThat(result.getExpiryDate()).isAfter(Instant.now());
+            assertThat(result).isNotEmpty();
 
             ArgumentCaptor<RefreshToken> tokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
             verify(refreshTokenRepository).save(tokenCaptor.capture());
             RefreshToken capturedToken = tokenCaptor.getValue();
 
             assertThat(capturedToken.getUser()).isEqualTo(user);
+            assertThat(capturedToken.getValue()).isEqualTo(encodedTokenValue);
 
             // Verify interactions
             verify(userRepository).findByUsername(user.getUsername());
+            verify(passwordEncoder).encode(anyString());
             verify(refreshTokenRepository).save(any(RefreshToken.class));
         }
 
@@ -87,37 +95,38 @@ class RefreshTokenServiceTest {
         @DisplayName("should throw UserNotFoundException when user does not exist")
         void should_throwException_when_userDoesNotExist() {
             // Arrange
-            String username = "nonexistent";
-            when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+            String nonExistentUsername = "nonexistent";
+            User nonExistentUser = new User(nonExistentUsername, "password", "no@email.com");
+            when(userRepository.findByUsername(nonExistentUsername)).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThatThrownBy(() -> refreshTokenService.createToken(username))
+            assertThatThrownBy(() -> refreshTokenService.createToken(nonExistentUser))
                     .isInstanceOf(UserNotFoundException.class)
                     .asInstanceOf(InstanceOfAssertFactories.type(UserNotFoundException.class))
                     .satisfies(ex -> {
-                        assertThat(ex.getUsername()).isEqualTo(username);
+                        assertThat(ex.getUsername()).isEqualTo(nonExistentUser.getUsername());
                     });
 
             // Verify no further interactions occured
+            verify(passwordEncoder, never()).encode(anyString());
             verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
         }        
     }
 
     @Nested
-    @DisplayName("findByTokenValue method")
-    class FindByTokenValue {
+    @DisplayName("findByUser method")
+    class FindByUser {
         @Test
         @DisplayName("should call repository method")
         void should_callRepository() {
             // Arrange
-            String tokenValue = UUID.randomUUID().toString();
-            when(refreshTokenRepository.findByToken(tokenValue)).thenReturn(Optional.empty());
+            when(refreshTokenRepository.findByUser(user)).thenReturn(anyList());
 
             // Act
-            refreshTokenService.findByTokenValue(tokenValue);
+            refreshTokenService.findByUser(user);
 
             // Assert
-            verify(refreshTokenRepository).findByToken(tokenValue);
+            verify(refreshTokenRepository).findByUser(user);
         }
     }
 
@@ -175,23 +184,42 @@ class RefreshTokenServiceTest {
             String oldTokenValue = UUID.randomUUID().toString();
             RefreshToken oldToken = new RefreshToken(user, oldTokenValue, Instant.now());
             
-            String newTokenValue = UUID.randomUUID().toString();
-            RefreshToken newToken = new RefreshToken(user, newTokenValue, Instant.now());
+            // Let the real createToken method do its job. We only mock the dependencies.
             when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
-            when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(newToken);
+            when(passwordEncoder.encode(anyString())).thenReturn("some-encoded-value");
+            when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // Act
-            RefreshToken result = refreshTokenService.rotateToken(oldToken);
+            String result = refreshTokenService.rotateToken(oldToken);
             
             // Assert
-            assertThat(result).isNotNull();
-            assertThat(result).isEqualTo(newToken);
+            // We don't know the exact UUID, but we can assert that a valid, non-empty string was returned.
+            assertThat(result).isNotEmpty();
 
             // Verify interactions
             verify(refreshTokenRepository).delete(oldToken);
             verify(userRepository).findByUsername(user.getUsername());
             verify(refreshTokenRepository).save(any(RefreshToken.class));
         }
+    }
+
+    @Nested
+    @DisplayName("invalidateAllTokensByUser method")    
+    class InvalidateAllTokensByUser {
+
+        @Test
+        @DisplayName("should delete all refresh tokens associated with a user")
+        void should_deleteAllTokens_when_userExists() {
+            // Arrange
+            // No specific arrangement needed for this test, as it primarily verifies method invocation
+
+            // Act
+            refreshTokenService.invalidateAllTokensForUser(user);
+
+            // Assert
+            verify(refreshTokenRepository).deleteByUser(user);
+        }
+
     }
 
 }

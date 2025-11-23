@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.userservice.domain;
+package com.budiyanto.fintrackr.userservice.entity;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -33,11 +33,11 @@ public class User {
     private Long id;
 
     @Setter
-    @Column(name = "username", length = 40, unique = true, nullable = false)
+    @Column(name = "username", length = 20, unique = true, nullable = false)
     private String username;
 
     @Setter
-    @Column(name = "password", length = 255, nullable = false)
+    @Column(name = "password", length = 40, nullable = false)
     private String password;
 
     @Setter

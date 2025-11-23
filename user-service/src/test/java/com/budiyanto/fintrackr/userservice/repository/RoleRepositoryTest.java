@@ -10,7 +10,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 import com.budiyanto.fintrackr.userservice.TestcontainersConfiguration;
-import com.budiyanto.fintrackr.userservice.domain.Role;
+import com.budiyanto.fintrackr.userservice.entity.Role;
 
 @DataJpaTest
 @Import(TestcontainersConfiguration.class)

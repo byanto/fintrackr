@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.userservice.service;
+package com.budiyanto.fintrackr.userservice.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,28 +28,28 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.budiyanto.fintrackr.userservice.domain.RefreshToken;
-import com.budiyanto.fintrackr.userservice.domain.Role;
-import com.budiyanto.fintrackr.userservice.domain.User;
-import com.budiyanto.fintrackr.userservice.dto.AuthTokenRequest;
-import com.budiyanto.fintrackr.userservice.dto.AuthTokenResponse;
-import com.budiyanto.fintrackr.userservice.dto.LoginRequest;
-import com.budiyanto.fintrackr.userservice.dto.LoginResponse;
-import com.budiyanto.fintrackr.userservice.dto.RegisterRequest;
+import com.budiyanto.fintrackr.userservice.dto.AuthenticationTokenRequest;
+import com.budiyanto.fintrackr.userservice.dto.AuthenticationTokenResponse;
+import com.budiyanto.fintrackr.userservice.dto.UserLoginRequest;
+import com.budiyanto.fintrackr.userservice.dto.UserLoginResponse;
+import com.budiyanto.fintrackr.userservice.dto.UserRegistrationRequest;
 import com.budiyanto.fintrackr.userservice.dto.UserResponse;
+import com.budiyanto.fintrackr.userservice.entity.RefreshToken;
+import com.budiyanto.fintrackr.userservice.entity.Role;
+import com.budiyanto.fintrackr.userservice.entity.User;
 import com.budiyanto.fintrackr.userservice.exception.RefreshTokenExpiredException;
 import com.budiyanto.fintrackr.userservice.exception.RefreshTokenNotFoundException;
 import com.budiyanto.fintrackr.userservice.exception.RoleNotFoundException;
 import com.budiyanto.fintrackr.userservice.exception.UserAlreadyExistsException;
-import com.budiyanto.fintrackr.userservice.mapper.AuthMapper;
 import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
 import com.budiyanto.fintrackr.userservice.repository.RoleRepository;
 import com.budiyanto.fintrackr.userservice.repository.UserRepository;
 import com.budiyanto.fintrackr.userservice.security.JwtService;
+import com.budiyanto.fintrackr.userservice.service.RefreshTokenService;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthenticationService Tests")
-class AuthenticationServiceTest {
+class AuthenticationServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
@@ -65,32 +64,31 @@ class AuthenticationServiceTest {
     private UserMapper userMapper;
 
     @Mock
-    private AuthMapper authMapper;
-
-    @Mock
     private RefreshTokenService refreshTokenService;
     
     @Mock
     private JwtService jwtService;
     
     @InjectMocks
-    private AuthenticationService authenticationService;
+    private AuthenticationServiceImpl authenticationService;
 
-    private User user;
-    private RegisterRequest registerRequest;
-    private Role userRole;
-    private static final Long ACCESS_TOKEN_EXPIRATION_MS = 900000L;
-
-    @BeforeEach
-    void setUp() {
-        registerRequest = new RegisterRequest("testuser", "password123", "test@email.com");
-        userRole = new Role("ROLE_USER");
-        this.user = new User("testuser", "password", "test@email.com");
-    }
-
+    private static final Long ID = 1L;
+    private static final String USERNAME = "testuser";
+    private static final String EMAIL = "test@email.com";
+    private static final String RAW_PASSWORD = "password123";
+    private static final String ENCODED_PASSWORD = "encodedPassword123";
+    private static final String ROLE_USER = "ROLE_USER";
+    
     @Nested
     @DisplayName("registerUser method")
     class RegisterUser {
+
+        private UserRegistrationRequest registerRequest;
+
+        @BeforeEach
+        void setUp() {
+            registerRequest = new UserRegistrationRequest(USERNAME, RAW_PASSWORD, EMAIL);
+        }
 
         @Test
         @DisplayName("should register user successfully when username is unique")
@@ -98,23 +96,23 @@ class AuthenticationServiceTest {
             // Arrange
             Long id = 1L;
             Instant createdAt = Instant.now();
-            String encodedPassword = "encodedPassword";
-            
+            Role userRole = new Role(ROLE_USER);
+
             // Mock
             when(userRepository.findByUsername(registerRequest.username())).thenReturn(Optional.empty());
-            when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(userRole));
+            when(roleRepository.findByName(ROLE_USER)).thenReturn(Optional.of(userRole));
             
-            User user = new User(registerRequest.username(), encodedPassword, registerRequest.email());
+            User user = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.email());
             when(userMapper.toUser(registerRequest)).thenReturn(user);
             
-            User savedUser = new User(registerRequest.username(), "encodedPassword", registerRequest.email());
+            User savedUser = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.email());
             ReflectionTestUtils.setField(savedUser, "id", id);
             ReflectionTestUtils.setField(savedUser, "createdAt", createdAt);
             ReflectionTestUtils.setField(savedUser, "updatedAt", createdAt);
             savedUser.addRole(userRole);
             when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
-            UserResponse response = new UserResponse(savedUser.getId(), registerRequest.username(), registerRequest.email(), createdAt);
+            UserResponse response = new UserResponse(savedUser.getId(), savedUser.getUsername(), savedUser.getEmail(), savedUser.getCreatedAt());
             when(userMapper.toUserResponse(savedUser)).thenReturn(response);
 
             // Act
@@ -134,7 +132,7 @@ class AuthenticationServiceTest {
 
             // Verify interactions
             verify(userRepository).findByUsername(registerRequest.username());
-            verify(roleRepository).findByName("ROLE_USER");
+            verify(roleRepository).findByName(ROLE_USER);
             verify(userMapper).toUser(registerRequest);
             verify(userMapper).toUserResponse(savedUser);
         }
@@ -143,7 +141,7 @@ class AuthenticationServiceTest {
         @DisplayName("should throw UserAlreadyExistsException when username is taken")
         void should_throwException_when_usernameIsTaken() {
             // Arrange
-            User user = new User(registerRequest.username(), "encodedPassword", registerRequest.email());
+            User user = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.email());
             when(userRepository.findByUsername(registerRequest.username())).thenReturn(Optional.of(user));
 
             // Act & Assert
@@ -156,7 +154,7 @@ class AuthenticationServiceTest {
 
             // Verify further interactions never occured
             verify(roleRepository, never()).findByName("ROLE_USER");
-            verify(userMapper, never()).toUser(any(RegisterRequest.class));
+            verify(userMapper, never()).toUser(any(UserRegistrationRequest.class));
             verify(userRepository, never()).save(any(User.class));
             verify(userMapper, never()).toUserResponse(any(User.class));
         }
@@ -166,7 +164,7 @@ class AuthenticationServiceTest {
         void should_throwException_when_defaultRoleIsMissing() {
             // Arrange
             when(userRepository.findByUsername(registerRequest.username())).thenReturn(Optional.empty());
-            when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.empty());
+            when(roleRepository.findByName(ROLE_USER)).thenReturn(Optional.empty());
 
             // Act & Assert
             assertThatThrownBy(() -> authenticationService.registerUser(registerRequest))
@@ -174,7 +172,7 @@ class AuthenticationServiceTest {
                     .hasMessageContaining("Default role ROLE_USER not found.");
 
             // Verify further interactions never occured
-            verify(userMapper, never()).toUser(any(RegisterRequest.class));
+            verify(userMapper, never()).toUser(any(UserRegistrationRequest.class));
             verify(userRepository, never()).save(any(User.class));
             verify(userMapper, never()).toUserResponse(any(User.class));
         }
@@ -184,17 +182,16 @@ class AuthenticationServiceTest {
     @DisplayName("authenticate method")
     class Authenticate {
 
-        private LoginRequest loginRequest;
         private User existingUser;
-        private final String rawPassword = "password123";
-        private final String encodedPassword = "encodedPassword";
-
+        private UserLoginRequest loginRequest;
+        
         @BeforeEach
-        void setUp() {
-            loginRequest = new LoginRequest("testuser", rawPassword);
-            existingUser = new User("testuser", encodedPassword, "test@email.com");
-            ReflectionTestUtils.setField(existingUser, "id", 1L);
-            existingUser.addRole(new Role("ROLE_USER"));
+        void setUp() {            
+            existingUser = new User(USERNAME, ENCODED_PASSWORD, EMAIL);
+            ReflectionTestUtils.setField(existingUser, "id", ID);
+            existingUser.addRole(new Role(ROLE_USER));
+
+            loginRequest = new UserLoginRequest(USERNAME, RAW_PASSWORD);
         }
 
         @Test
@@ -202,13 +199,18 @@ class AuthenticationServiceTest {
         void should_returnLoginResponse_when_authenticationSuccess() {
             // Arrange
             when(userRepository.findByUsername(loginRequest.username())).thenReturn(Optional.of(existingUser));
-            when(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true);
+            when(passwordEncoder.matches(RAW_PASSWORD, ENCODED_PASSWORD)).thenReturn(true);
 
-            LoginResponse expectedResponse = new LoginResponse(existingUser.getUsername(), List.of("ROLE_USER"));
-            when(authMapper.toLoginResponse(existingUser)).thenReturn(expectedResponse);
+            String accessToken = "access.token";
+            String refreshToken = "refresh.token";
+            when(jwtService.generateAccessToken(existingUser.getUsername(), List.of(ROLE_USER))).thenReturn(accessToken);
+            when(refreshTokenService.createToken(existingUser)).thenReturn(refreshToken);
+
+            UserLoginResponse expectedResponse = new UserLoginResponse(existingUser.getId(), existingUser.getUsername(), EMAIL, List.of(ROLE_USER), accessToken, refreshToken);
+            when(userMapper.toLoginResponse(existingUser, accessToken, refreshToken)).thenReturn(expectedResponse);
 
             // Act
-            LoginResponse result = authenticationService.authenticate(loginRequest);
+            UserLoginResponse result = authenticationService.authenticate(loginRequest);
 
             // Assert
             assertThat(result).isNotNull();
@@ -216,8 +218,10 @@ class AuthenticationServiceTest {
 
             // Verify interactions
             verify(userRepository).findByUsername(loginRequest.username());
-            verify(passwordEncoder).matches(rawPassword, encodedPassword);
-            verify(authMapper).toLoginResponse(existingUser);
+            verify(passwordEncoder).matches(RAW_PASSWORD, ENCODED_PASSWORD);
+            verify(jwtService).generateAccessToken(existingUser.getUsername(), List.of(ROLE_USER));
+            verify(refreshTokenService).createToken(existingUser);
+            verify(userMapper).toLoginResponse(existingUser, accessToken, refreshToken);
         }
 
         @Test
@@ -233,7 +237,9 @@ class AuthenticationServiceTest {
 
             // Verify further interactions never occured
             verify(passwordEncoder, never()).matches(anyString(), anyString());
-            verify(authMapper, never()).toLoginResponse(any(User.class));
+            verify(jwtService, never()).generateAccessToken(anyString(), anyList());
+            verify(refreshTokenService, never()).createToken(any(User.class));
+            verify(userMapper, never()).toLoginResponse(any(User.class), anyString(), anyString());
         }
 
         @Test
@@ -241,7 +247,7 @@ class AuthenticationServiceTest {
         void should_throwException_when_passwordIsIncorrect() {
             // Arrange
             when(userRepository.findByUsername(loginRequest.username())).thenReturn(Optional.of(existingUser));
-            when(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(false);
+            when(passwordEncoder.matches(RAW_PASSWORD, ENCODED_PASSWORD)).thenReturn(false);
 
             // Act & Assert
             assertThatThrownBy(() -> authenticationService.authenticate(loginRequest))
@@ -249,7 +255,9 @@ class AuthenticationServiceTest {
                     .hasMessage("Invalid username or password");
 
             // Verify further interactions never occured
-            verify(authMapper, never()).toLoginResponse(any(User.class));
+            verify(jwtService, never()).generateAccessToken(anyString(), anyList());
+            verify(refreshTokenService, never()).createToken(any(User.class));
+            verify(userMapper, never()).toLoginResponse(any(User.class), anyString(), anyString());
         }
     }
 
@@ -257,26 +265,41 @@ class AuthenticationServiceTest {
     @DisplayName("renewAuthToken method")
     class renewAuthToken {
 
+        private User existingUser;
+        private AuthenticationTokenRequest authRequest;
+        private RefreshToken oldRefreshToken;
+        private static final String OLD_REFRESH_TOKEN_VALUE = "old.refresh.token";
+        private static final String ENCODED_OLD_REFRESH_TOKEN_VALUE = "encoded.old.refresh.token";
+        private static final Long ACCESS_TOKEN_EXPIRATION_MS = 900000L;
+
+        @BeforeEach
+        void setup() {
+            existingUser = new User(USERNAME, ENCODED_PASSWORD, EMAIL);
+            ReflectionTestUtils.setField(existingUser, "id", ID);
+            existingUser.addRole(new Role(ROLE_USER));
+
+            authRequest = new AuthenticationTokenRequest(USERNAME, OLD_REFRESH_TOKEN_VALUE);
+            oldRefreshToken = new RefreshToken(existingUser, ENCODED_OLD_REFRESH_TOKEN_VALUE, Instant.now());
+        }
+
         @Test
         @DisplayName("should return new auth token")
         void should_returnNewToken() {
             // Arrange
-            String oldRefreshTokenValue = UUID.randomUUID().toString();
-            AuthTokenRequest request = new AuthTokenRequest(oldRefreshTokenValue);
-            RefreshToken oldRefreshToken = new RefreshToken(user, oldRefreshTokenValue, Instant.now());
-            when(refreshTokenService.findByTokenValue(oldRefreshTokenValue)).thenReturn(Optional.of(oldRefreshToken));
+            when(userRepository.findByUsername(authRequest.username())).thenReturn(Optional.of(existingUser));
+            when(refreshTokenService.findByUser(existingUser)).thenReturn(List.of(oldRefreshToken));
+            when(passwordEncoder.matches(OLD_REFRESH_TOKEN_VALUE, ENCODED_OLD_REFRESH_TOKEN_VALUE)).thenReturn(true);
             when(refreshTokenService.verifyExpiration(oldRefreshToken)).thenReturn(oldRefreshToken);
-
-            String newRefreshTokenValue = UUID.randomUUID().toString();
-            RefreshToken newRefreshToken = new RefreshToken(user, newRefreshTokenValue, Instant.now());
-            when(refreshTokenService.rotateToken(oldRefreshToken)).thenReturn(newRefreshToken);
+            
+            String newRefreshTokenValue = "new.refresh.token";
+            when(refreshTokenService.rotateToken(oldRefreshToken)).thenReturn(newRefreshTokenValue);
 
             String newAccessTokenValue = "new.access.token";
-            when(jwtService.generateAccessToken(eq(user.getUsername()), anyList())).thenReturn(newAccessTokenValue);
+            when(jwtService.generateAccessToken(eq(existingUser.getUsername()), anyList())).thenReturn(newAccessTokenValue);
             when(jwtService.getAccessTokenExpirationMs()).thenReturn(ACCESS_TOKEN_EXPIRATION_MS);
 
             // Act
-            AuthTokenResponse result = authenticationService.renewAuthToken(request);
+            AuthenticationTokenResponse result = authenticationService.renewAuthToken(authRequest);
 
             // Assert
             assertThat(result).isNotNull();
@@ -286,28 +309,76 @@ class AuthenticationServiceTest {
             assertThat(result.expiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRATION_MS);
 
             // Verify interactions
-            verify(refreshTokenService).findByTokenValue(oldRefreshTokenValue);
+            verify(userRepository).findByUsername(existingUser.getUsername());
+            verify(refreshTokenService).findByUser(existingUser);
+            verify(passwordEncoder).matches(OLD_REFRESH_TOKEN_VALUE, ENCODED_OLD_REFRESH_TOKEN_VALUE);
             verify(refreshTokenService).verifyExpiration(oldRefreshToken);
             verify(refreshTokenService).rotateToken(oldRefreshToken);
-            verify(jwtService).generateAccessToken(eq(user.getUsername()), anyList());
+            verify(jwtService).generateAccessToken(eq(existingUser.getUsername()), anyList());
             verify(jwtService).getAccessTokenExpirationMs();
 
+        }
+
+        @Test
+        @DisplayName("should throw RefreshTokenNotFoundException when user is not found")
+        void should_throwException_when_userIsNotFound() {
+            // Arrange
+            when(userRepository.findByUsername(authRequest.username())).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThatThrownBy(() -> authenticationService.renewAuthToken(authRequest))
+                    .isInstanceOf(RefreshTokenNotFoundException.class)
+                    .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenNotFoundException.class))
+                    .satisfies(ex -> {
+                        assertThat(ex.getTokenValue()).isEqualTo(authRequest.refreshToken());
+                    });
+
+            // Verify no further interactions occured
+            verify(refreshTokenService, never()).findByUser(any(User.class));
+            verify(passwordEncoder, never()).matches(anyString(), anyString());
+            verify(refreshTokenService, never()).verifyExpiration(any(RefreshToken.class));
+            verify(refreshTokenService, never()).rotateToken(any(RefreshToken.class));
+            verify(jwtService, never()).generateAccessToken(anyString(), anyList());
+            verify(jwtService, never()).getAccessTokenExpirationMs();
         }
 
         @Test
         @DisplayName("should throw RefreshTokenNotFoundException when refresh token is not found")
         void should_throwException_when_refreshTokenNotFound() {
             // Arrange
-            String oldRefreshTokenValue = UUID.randomUUID().toString();
-            AuthTokenRequest request = new AuthTokenRequest(oldRefreshTokenValue);
-            when(refreshTokenService.findByTokenValue(oldRefreshTokenValue)).thenReturn(Optional.empty());
+            when(userRepository.findByUsername(authRequest.username())).thenReturn(Optional.of(existingUser));
+            when(refreshTokenService.findByUser(existingUser)).thenReturn(List.of());
 
             // Act & Assert
-            assertThatThrownBy(() -> authenticationService.renewAuthToken(request))
+            assertThatThrownBy(() -> authenticationService.renewAuthToken(authRequest))
                     .isInstanceOf(RefreshTokenNotFoundException.class)
                     .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenNotFoundException.class))
                     .satisfies(ex -> {
-                        assertThat(ex.getTokenValue()).isEqualTo(oldRefreshTokenValue);
+                        assertThat(ex.getTokenValue()).isEqualTo(authRequest.refreshToken());
+                    });
+
+            // Verify no further interactions occured
+            verify(passwordEncoder, never()).matches(anyString(), anyString());
+            verify(refreshTokenService, never()).verifyExpiration(any(RefreshToken.class));
+            verify(refreshTokenService, never()).rotateToken(any(RefreshToken.class));
+            verify(jwtService, never()).generateAccessToken(anyString(), anyList());
+            verify(jwtService, never()).getAccessTokenExpirationMs();
+        }
+
+        @Test
+        @DisplayName("should throw RefreshTokenNotFoundException when the given refresh token is not matched with the one in DB")
+        void should_throwException_when_refreshTokenIsNotMatched() {
+            // Arrange
+            when(userRepository.findByUsername(authRequest.username())).thenReturn(Optional.of(existingUser));
+            when(refreshTokenService.findByUser(existingUser)).thenReturn(List.of(oldRefreshToken));
+            when(passwordEncoder.matches(OLD_REFRESH_TOKEN_VALUE, ENCODED_OLD_REFRESH_TOKEN_VALUE)).thenReturn(false);
+
+            // Act & Assert
+            assertThatThrownBy(() -> authenticationService.renewAuthToken(authRequest))
+                    .isInstanceOf(RefreshTokenNotFoundException.class)
+                    .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenNotFoundException.class))
+                    .satisfies(ex -> {
+                        assertThat(ex.getTokenValue()).isEqualTo(authRequest.refreshToken());
                     });
 
             // Verify no further interactions occured
@@ -321,18 +392,17 @@ class AuthenticationServiceTest {
         @DisplayName("should throw RefreshTokenExpiredException when refresh token is expired")
         void should_throwException_when_refreshTokenIsExpired() {
             // Arrange
-            String oldRefreshTokenValue = UUID.randomUUID().toString();
-            AuthTokenRequest request = new AuthTokenRequest(oldRefreshTokenValue);          
-            RefreshToken oldRefreshToken = new RefreshToken(user, oldRefreshTokenValue, Instant.now());
-            when(refreshTokenService.findByTokenValue(oldRefreshTokenValue)).thenReturn(Optional.of(oldRefreshToken));
-            when(refreshTokenService.verifyExpiration(oldRefreshToken)).thenThrow(new RefreshTokenExpiredException(oldRefreshTokenValue));
+            when(userRepository.findByUsername(authRequest.username())).thenReturn(Optional.of(existingUser));
+            when(refreshTokenService.findByUser(existingUser)).thenReturn(List.of(oldRefreshToken));
+            when(passwordEncoder.matches(OLD_REFRESH_TOKEN_VALUE, ENCODED_OLD_REFRESH_TOKEN_VALUE)).thenReturn(true);
+            when(refreshTokenService.verifyExpiration(oldRefreshToken)).thenThrow(new RefreshTokenExpiredException(oldRefreshToken.getValue()));
 
             // Act & Assert
-            assertThatThrownBy(() -> authenticationService.renewAuthToken(request))
+            assertThatThrownBy(() -> authenticationService.renewAuthToken(authRequest))
                     .isInstanceOf(RefreshTokenExpiredException.class)
                     .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenExpiredException.class))
                     .satisfies(ex -> {
-                        assertThat(ex.getTokenValue()).isEqualTo(oldRefreshTokenValue);
+                        assertThat(ex.getTokenValue()).isEqualTo(ENCODED_OLD_REFRESH_TOKEN_VALUE);
                     });
 
             // Verify no further interactions occured

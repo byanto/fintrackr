@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.userservice.service;
+package com.budiyanto.fintrackr.userservice.service.impl;
 
 import java.util.Collection;
 import java.util.List;
@@ -8,7 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.budiyanto.fintrackr.userservice.domain.User;
+import com.budiyanto.fintrackr.userservice.entity.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Getter;

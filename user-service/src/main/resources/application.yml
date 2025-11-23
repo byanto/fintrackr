@@ -5,9 +5,9 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:fintrackr_user_db}
+    username: ${DB_USER:fintrackr_userdb_user}
+    password: ${DB_PASSWORD:fintrackr_userdb_password}
   jpa:
     hibernate:
       ddl-auto: validate # Flyway handles schema creation, so Hibernate should only validate it

@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.userservice.service;
+package com.budiyanto.fintrackr.userservice.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -18,8 +18,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import com.budiyanto.fintrackr.userservice.domain.Role;
-import com.budiyanto.fintrackr.userservice.domain.User;
+import com.budiyanto.fintrackr.userservice.entity.Role;
+import com.budiyanto.fintrackr.userservice.entity.User;
 import com.budiyanto.fintrackr.userservice.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)

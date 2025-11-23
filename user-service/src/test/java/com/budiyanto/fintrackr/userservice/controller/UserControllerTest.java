@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.userservice.web;
+package com.budiyanto.fintrackr.userservice.controller;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

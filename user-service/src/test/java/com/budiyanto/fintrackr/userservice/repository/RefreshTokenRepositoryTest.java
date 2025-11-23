@@ -5,8 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,10 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.budiyanto.fintrackr.userservice.TestcontainersConfiguration;
-import com.budiyanto.fintrackr.userservice.domain.RefreshToken;
-import com.budiyanto.fintrackr.userservice.domain.User;
+import com.budiyanto.fintrackr.userservice.entity.RefreshToken;
+import com.budiyanto.fintrackr.userservice.entity.User;
 
 @DataJpaTest
 @Import(TestcontainersConfiguration.class)
@@ -28,8 +27,11 @@ class RefreshTokenRepositoryTest {
     private RefreshTokenRepository refreshTokenRepository;
     private UserRepository userRepository;
 
-    private static final String username1 = "user1";
-    private static final String username2 = "user2";
+    private static final String USERNAME = "testuser";
+    private static final String TOKEN_VALUE_1 = "token.value.1";
+    private static final String TOKEN_VALUE_2 = "token.value.2";
+
+    private User savedUser;
 
     @Autowired
     RefreshTokenRepositoryTest(RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
@@ -39,42 +41,46 @@ class RefreshTokenRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        User user1 = new User(username1, "pass1", "user1@mail.com");
-        User user2 = new User(username2, "pass2", "user2@mail.com");
-        userRepository.saveAll(List.of(user1, user2));
+        // Arrange
+        User user = new User(USERNAME, "pass1", "user1@mail.com");
+        savedUser = userRepository.save(user);
+
+        RefreshToken token1 = new RefreshToken(savedUser, TOKEN_VALUE_1, Instant.now().plus(1, ChronoUnit.DAYS));
+        RefreshToken token2 = new RefreshToken(savedUser, TOKEN_VALUE_2, Instant.now().plus(1, ChronoUnit.DAYS));
+        refreshTokenRepository.saveAll(List.of(token1, token2));
     }
 
     @Nested
-    @DisplayName("findByToken method")
-    class FindByToken {
+    @DisplayName("findByUser method")
+    class FindByUser {
         
         @Test
-        @DisplayName("should return token when it exists")
-        void should_returnToken_when_tokenExists() {
-            // Arrange
-            User user = userRepository.findByUsername(username1).orElseThrow();
-
-            String tokenValue = UUID.randomUUID().toString();
-            RefreshToken refreshToken = new RefreshToken(user, tokenValue, Instant.now().plus(1, ChronoUnit.DAYS));
-            refreshTokenRepository.save(refreshToken);
-
+        @DisplayName("should return a list of tokens when user exists")
+        void should_returnTokens_when_userExists() {            
             // Act
-            Optional<RefreshToken> foundToken = refreshTokenRepository.findByToken(tokenValue);
+            List<RefreshToken> foundTokens = refreshTokenRepository.findByUser(savedUser);
 
             // Assert
-            assertThat(foundToken).isPresent();
-            assertThat(foundToken.get().getValue()).isEqualTo(tokenValue);
-            assertThat(foundToken.get().getUser().getUsername()).isEqualTo(username1);
+            assertThat(foundTokens).size().isEqualTo(2);
+            assertThat(foundTokens.get(0).getUser().getUsername()).isEqualTo(USERNAME);
+            assertThat(foundTokens.get(0).getValue()).isEqualTo(TOKEN_VALUE_1);
+            assertThat(foundTokens.get(1).getUser().getUsername()).isEqualTo(USERNAME);
+            assertThat(foundTokens.get(1).getValue()).isEqualTo(TOKEN_VALUE_2);
         }
 
         @Test
-        @DisplayName("should return empty optional when token does not exist")
-        void should_returnEmpty_whenTokenDoesNotExist() {
+        @DisplayName("should return empty list when user does not exist")
+        void should_returnEmptyList_whenUserDoesNotExist() {
+            // Arrange
+            // Create a User object with an ID that we know does not exist in the test DB.
+            User nonExistentUser = new User("nonexistent", "password", "no@email.com");
+            ReflectionTestUtils.setField(nonExistentUser, "id", 999L);
+
             // Act
-            Optional<RefreshToken> foundToken = refreshTokenRepository.findByToken(UUID.randomUUID().toString());
+            List<RefreshToken> foundTokens = refreshTokenRepository.findByUser(nonExistentUser);
 
             // Assert
-            assertThat(foundToken).isNotPresent();
+            assertThat(foundTokens).isEmpty();
         }
     }
 
@@ -84,22 +90,13 @@ class RefreshTokenRepositoryTest {
 
         @Test
         @DisplayName("should delete only the specified user's token")
-        void should_deleteToken_when_userExists() {
-            // Arrange
-            User user1 = userRepository.findByUsername(username1).orElseThrow();
-            User user2 = userRepository.findByUsername(username2).orElseThrow();
-
-            RefreshToken token1 = new RefreshToken(user1, UUID.randomUUID().toString(), Instant.now().plus(1, ChronoUnit.DAYS));
-            RefreshToken token2 = new RefreshToken(user2, UUID.randomUUID().toString(), Instant.now().plus(1, ChronoUnit.DAYS));
-            refreshTokenRepository.saveAll(List.of(token1, token2));
-
+        void should_deleteToken_when_userExists() {            
             // Act
-            int deletedCount = refreshTokenRepository.deleteByUser(user1);
+            int deletedCount = refreshTokenRepository.deleteByUser(savedUser);
 
             // Assert
-            assertThat(deletedCount).isEqualTo(1);
-            assertThat(refreshTokenRepository.findByToken(token1.getValue())).isNotPresent();
-            assertThat(refreshTokenRepository.findByToken(token2.getValue())).isPresent();
+            assertThat(deletedCount).isEqualTo(2);
+            assertThat(refreshTokenRepository.findByUser(savedUser)).isEmpty();            
         }
 
     }

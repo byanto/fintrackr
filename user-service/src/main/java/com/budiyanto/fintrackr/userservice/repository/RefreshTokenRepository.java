@@ -1,12 +1,16 @@
 package com.budiyanto.fintrackr.userservice.repository;
 
-import com.budiyanto.fintrackr.userservice.domain.RefreshToken;
-import com.budiyanto.fintrackr.userservice.domain.User;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.budiyanto.fintrackr.userservice.entity.RefreshToken;
+import com.budiyanto.fintrackr.userservice.entity.User;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
-    Optional<RefreshToken> findByToken(String token);
+
+    List<RefreshToken> findByUser(User user);
+
     int deleteByUser(User user);
+
 }

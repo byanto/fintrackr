@@ -1,0 +1,16 @@
+services:
+  #User Service Database
+  user-db:
+    image: postgres:17-alpine
+    container_name: fintrackr-user-db
+    ports:
+      - "5433:5432" # Expose on a different host port to avoid conflict
+    environment:
+      - POSTGRES_USER=${USER_DB_USER:-fintrackr_userdb_user}
+      - POSTGRES_PASSWORD=${USER_DB_PASSWORD:-fintrackr_userdb_password}
+      - POSTGRES_DB=${USER_DB_NAME:-fintrackr_user_db}
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+
+volumes:
+  user-db-data: # Define the named volume for DB persistence

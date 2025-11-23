@@ -12,8 +12,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 import com.budiyanto.fintrackr.userservice.TestcontainersConfiguration;
-import com.budiyanto.fintrackr.userservice.domain.Role;
-import com.budiyanto.fintrackr.userservice.domain.User;
+import com.budiyanto.fintrackr.userservice.entity.Role;
+import com.budiyanto.fintrackr.userservice.entity.User;
 
 @DataJpaTest
 @Import(TestcontainersConfiguration.class)
@@ -27,6 +27,8 @@ class UserRepositoryTest {
     private static final String PASSWORD = "testpassword";
     private static final String EMAIL = "test@email.com";
 
+    private User user;
+
     @Autowired
     UserRepositoryTest(UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
@@ -36,13 +38,12 @@ class UserRepositoryTest {
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
+        user = new User(USERNAME, PASSWORD, EMAIL);
     }
 
     @Test
     @DisplayName("should save and retrieve user")
-    void should_saveAndRetrieveUser() {
-        // Arrange: Create a new User object
-        User user = new User(USERNAME, PASSWORD, EMAIL);
+    void should_saveAndRetrieveUser() {        
 
         // Act: Save the user using the repository
         User savedUser = userRepository.save(user);
@@ -74,15 +75,19 @@ class UserRepositoryTest {
     @DisplayName("should retrieve user when username exists")
     void should_retrieveUser_when_usernameExists() {
         // Arrange
-        User user = new User(USERNAME, PASSWORD, EMAIL);
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
         // Act
-        Optional<User> foundUser = userRepository.findByUsername(USERNAME);
+        User foundUser = userRepository.findByUsername(USERNAME).orElse(null);
 
         // Assert
-        assertThat(foundUser).isPresent();
-        assertThat(foundUser.get().getUsername()).isEqualTo(USERNAME);
+        assertThat(foundUser).isNotNull();
+        assertThat(foundUser.getId()).isEqualTo(savedUser.getId());
+        assertThat(foundUser.getUsername()).isEqualTo(USERNAME);
+        assertThat(foundUser.getPassword()).isEqualTo(PASSWORD);
+        assertThat(foundUser.getEmail()).isEqualTo(EMAIL);
+        assertThat(foundUser.getCreatedAt()).isNotNull();
+        assertThat(foundUser.getUpdatedAt()).isNotNull();
     }
 
     @Test

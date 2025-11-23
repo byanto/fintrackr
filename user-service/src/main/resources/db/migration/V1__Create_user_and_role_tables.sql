@@ -7,7 +7,7 @@ CREATE TABLE roles (
 -- Create the users table
 CREATE TABLE users (
     id         BIGSERIAL PRIMARY KEY,
-    username   VARCHAR(40) NOT NULL UNIQUE,
+    username   VARCHAR(20) NOT NULL UNIQUE,
     password   VARCHAR(255) NOT NULL,
     email      VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
