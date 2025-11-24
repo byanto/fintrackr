@@ -2,6 +2,8 @@ package com.budiyanto.fintrackr.userservice.controller;
 
 import com.budiyanto.fintrackr.userservice.TestcontainersConfiguration;
 import com.budiyanto.fintrackr.userservice.dto.UserLoginRequest;
+import com.budiyanto.fintrackr.userservice.dto.AuthenticationTokenRequest;
+import com.budiyanto.fintrackr.userservice.dto.AuthenticationTokenResponse;
 import com.budiyanto.fintrackr.userservice.dto.UserLoginResponse;
 import com.budiyanto.fintrackr.userservice.dto.UserRegistrationRequest;
 import com.budiyanto.fintrackr.userservice.dto.UserResponse;
@@ -100,5 +102,51 @@ public class AuthenticationFlowIntegrationTest {
         assertThat(loginResponse.getBody().accessToken()).isNotBlank();
         assertThat(loginResponse.getBody().refreshToken()).isNotBlank();
         assertThat(loginResponse.getBody().roles()).contains(ROLE_USER);
+    }
+
+    @Test
+    @DisplayName("should renew tokens successfully with a valid refresh token")
+    void should_renewTokensSuccessfully() {
+        // === 1. SETUP: Register and Login to get a valid refresh token ===
+        String username = "username";
+        String password = "Password123!";
+        UserRegistrationRequest registrationRequest = new UserRegistrationRequest(username, password, "user@email.com");
+        restTemplate.postForEntity("/api/auth/register", registrationRequest, UserResponse.class);
+
+        UserLoginRequest loginRequest = new UserLoginRequest(username, password);
+        ResponseEntity<UserLoginResponse> loginResponse = restTemplate.postForEntity(
+                "/api/auth/login",
+                loginRequest,
+                UserLoginResponse.class
+        );
+
+        UserLoginResponse loginResponseBody = loginResponse.getBody();
+        assertThat(loginResponseBody).isNotNull();
+        String initialAccessToken = loginResponseBody.accessToken();
+        String initialRefreshToken = loginResponseBody.refreshToken();
+
+        // === 2. RENEW TOKEN PHASE ===
+
+        // Arrange
+        AuthenticationTokenRequest renewRequest = new AuthenticationTokenRequest(username, initialRefreshToken);
+
+        // Act: Call the renew token endpoint
+        ResponseEntity<AuthenticationTokenResponse> renewResponse = restTemplate.postForEntity(
+                "/api/auth/renewtoken",
+                renewRequest,
+                AuthenticationTokenResponse.class
+        );
+
+        // Assert: Token renewal was successful
+        assertThat(renewResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        AuthenticationTokenResponse renewResponseBody = renewResponse.getBody();
+        assertThat(renewResponseBody).isNotNull();
+        assertThat(renewResponseBody.accessToken()).isNotBlank();
+        assertThat(renewResponseBody.refreshToken()).isNotBlank();
+        assertThat(renewResponseBody.tokenType()).isEqualTo("Bearer");
+
+        // Assert: Ensure the new tokens are different from the initial ones
+        assertThat(renewResponseBody.accessToken()).isNotEqualTo(initialAccessToken);
+        assertThat(renewResponseBody.refreshToken()).isNotEqualTo(initialRefreshToken);
     }
 }

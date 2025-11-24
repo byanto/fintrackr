@@ -70,7 +70,7 @@ class RefreshTokenRepositoryTest {
 
         @Test
         @DisplayName("should return empty list when user does not exist")
-        void should_returnEmptyList_whenUserDoesNotExist() {
+        void should_returnEmptyList_when_userDoesNotExist() {
             // Arrange
             // Create a User object with an ID that we know does not exist in the test DB.
             User nonExistentUser = new User("nonexistent", "password", "no@email.com");
