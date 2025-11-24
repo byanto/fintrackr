@@ -1,5 +1,7 @@
 package com.budiyanto.fintrackr.userservice.security;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -16,8 +18,10 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
     @Value("${fintrackr.jwt.secret}")
     private String secret;
@@ -27,6 +31,8 @@ public class JwtService {
     private Long accessTokenExpirationMs;
 
     private SecretKey key;
+
+    private final Clock clock;
 
     @PostConstruct
     public void init() {
@@ -59,15 +65,15 @@ public class JwtService {
         // Add roles to the token
         claims.put("roles", roles);
 
-        long nowMillis = System.currentTimeMillis();
-        Date now = new Date(nowMillis);
-        Date exp = new Date(nowMillis + accessTokenExpirationMs);
+        Instant now = clock.instant();
+        Date currentDate = Date.from(now);
+        Date expDate = Date.from(now.plusMillis(accessTokenExpirationMs));
 
         return Jwts.builder()
                 .claims(claims)
                 .subject(username)
-                .issuedAt(now)
-                .expiration(exp)
+                .issuedAt(currentDate)
+                .expiration(expDate)
                 .signWith(key)
                 .compact();
     }

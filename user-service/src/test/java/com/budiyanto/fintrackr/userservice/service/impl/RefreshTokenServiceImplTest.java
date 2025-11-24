@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -46,6 +48,9 @@ class RefreshTokenServiceImplTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private Clock clock;
     
     @InjectMocks
     private RefreshTokenServiceImpl refreshTokenService;
@@ -56,6 +61,10 @@ class RefreshTokenServiceImplTest {
     void setUp() {
         ReflectionTestUtils.setField(refreshTokenService, "refreshTokenDurationMs", 604800000L);
         user = new User("testuser", "password", "test@email.com");
+
+        // Set a default behavior for the mocked clock to avoid NullPointerExceptions.
+        // Tests that need specific times can override this with their own `when()` calls.
+        Mockito.lenient().when(clock.instant()).thenReturn(Instant.now());
     }
 
     @Nested
@@ -67,8 +76,8 @@ class RefreshTokenServiceImplTest {
         void should_createAndSaveToken_when_userExists() {
             // Arrange
             when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
-            when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
-            
+            when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));            
+
             String encodedTokenValue = "encodedTokenValue";
             when(passwordEncoder.encode(anyString())).thenReturn(encodedTokenValue);
 

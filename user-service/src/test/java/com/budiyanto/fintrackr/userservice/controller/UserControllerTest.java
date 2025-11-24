@@ -13,16 +13,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.budiyanto.fintrackr.userservice.dto.UserResponse;
+import com.budiyanto.fintrackr.userservice.security.JwtAuthenticationFilter;
+import com.budiyanto.fintrackr.userservice.security.JwtService;
+import com.budiyanto.fintrackr.userservice.security.SecurityBeansConfig;
 import com.budiyanto.fintrackr.userservice.security.SecurityConfig;
 import com.budiyanto.fintrackr.userservice.service.UserService;
 
 @WebMvcTest(UserController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, SecurityBeansConfig.class, JwtAuthenticationFilter.class})
 @DisplayName("UserController Tests")
 class UserControllerTest {
 
@@ -31,6 +35,12 @@ class UserControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     @Nested
     @DisplayName("GET /api/users/me")

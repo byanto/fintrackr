@@ -1,6 +1,7 @@
 package com.budiyanto.fintrackr.userservice.service.impl;
 
 import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,6 +30,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Clock clock;
     
     @Override
     @Transactional
@@ -43,7 +45,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         RefreshToken refreshToken = new RefreshToken(
             user,
             encodedToken, // Only save hashed token into the database
-            Instant.now().plusMillis(refreshTokenDurationMs)
+            Instant.now(clock).plusMillis(refreshTokenDurationMs)
         );
 
         refreshTokenRepository.save(refreshToken);
@@ -60,7 +62,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     @Transactional
     public RefreshToken verifyExpiration(RefreshToken token) {
-        if (token.getExpiryDate().isBefore(Instant.now())) {
+        if (token.getExpiryDate().isBefore(Instant.now(clock))) {
             refreshTokenRepository.delete(token);
             throw new RefreshTokenExpiredException(token.getValue());
         }
