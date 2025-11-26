@@ -30,6 +30,45 @@ graph TD
     end
 ```
 
+```mermaid
+graph TD
+    subgraph "Client"
+        A[Browser/Mobile App]
+    end
+
+    subgraph "User Service"
+        B(Spring DispatcherServlet)
+        C(Security Filter Chain)
+        D[JwtAuthenticationFilter]
+        E[UserController]
+        F[UserService]
+        G[UserRepository]
+        H[(PostgreSQL/Database)]
+        I[JwtService]
+        J[Clock]
+
+        A -- HTTP GET /api/users/me (with JWT) --> B
+        B -- Forwards Request --> C
+        C -- Intercepts --> D
+        D -- Uses --> I
+        I -- Validates Token --> D
+        I -- Depends on --> J
+        D -- Sets Security Context --> C
+        C -- Routes to --> E
+        E -- Calls --> F
+        F -- Calls --> G
+        G -- Queries --> H
+        H -- Returns User Data --> G
+        G -- Returns User Entity --> F
+        F -- Maps to DTO --> E
+        E -- Returns UserResponse DTO --> A
+    end
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style H fill:#c9e4ff,stroke:#333,stroke-width:2px
+
+```
+
 ## Data Flow (Authentication)
 1. **Client** sends `POST /auth/login` with credentials.
 2. **AuthController** validates input.
