@@ -23,14 +23,16 @@ eureka:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}} # Create unique IDs if multiple instances run
 
-
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
 
 fintrackr:
   jwt:
     secret: V2VsbCBIZWxsbyBUaGVyZSEgVGhpcyBpcyBhIFRlc3RpbmcgU2VjcmV0IEtleSBGb3IgSldUIFNpZ25pbmc=
     accesstoken:
-      expiration:
-        ms: 3600000 # 1 hour
+      expiration: 1h # 1 hour
     refreshtoken:
-      expiration:
-        ms: 604800000 # 7 days
+      expiration: 7d # 7 days

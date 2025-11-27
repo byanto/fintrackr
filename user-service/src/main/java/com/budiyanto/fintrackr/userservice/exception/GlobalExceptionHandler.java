@@ -57,20 +57,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problemDetail;
     }
 
-    @ExceptionHandler(RefreshTokenExpiredException.class)
-    public ProblemDetail handleRefreshTokenExpiredception(RefreshTokenExpiredException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
-        problemDetail.setTitle("Refresh Token Expired");
-        problemDetail.setType(URI.create("/errors/refresh-token-expired"));
-        problemDetail.setProperty("timestamp", Instant.now());
-        return problemDetail;
-    }
-
-    @ExceptionHandler(RefreshTokenNotFoundException.class)
-    public ProblemDetail handleRefreshTokenNotFoundException(RefreshTokenNotFoundException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
-        problemDetail.setTitle("Refresh Token Not Found");
-        problemDetail.setType(URI.create("/errors/refresh-token-not-found"));
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ProblemDetail handleInvalidRefreshTokenException(InvalidRefreshTokenException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "The provided refresh token is invalid, not found, or expired.");
+        problemDetail.setTitle("Invalid Refresh Token");
+        problemDetail.setType(URI.create("/errors/invalid-refresh-token"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }

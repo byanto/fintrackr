@@ -33,8 +33,7 @@ import com.budiyanto.fintrackr.userservice.dto.UserLoginRequest;
 import com.budiyanto.fintrackr.userservice.dto.UserLoginResponse;
 import com.budiyanto.fintrackr.userservice.dto.UserRegistrationRequest;
 import com.budiyanto.fintrackr.userservice.dto.UserResponse;
-import com.budiyanto.fintrackr.userservice.exception.RefreshTokenExpiredException;
-import com.budiyanto.fintrackr.userservice.exception.RefreshTokenNotFoundException;
+import com.budiyanto.fintrackr.userservice.exception.InvalidRefreshTokenException;
 import com.budiyanto.fintrackr.userservice.exception.UserAlreadyExistsException;
 import com.budiyanto.fintrackr.userservice.security.JwtService;
 import com.budiyanto.fintrackr.userservice.security.SecurityConfig;
@@ -242,7 +241,7 @@ class AuthenticationControllerTest {
             // Arrange
             String nonExistentToken = UUID.randomUUID().toString();
             AuthenticationTokenRequest request = new AuthenticationTokenRequest(USERNAME, nonExistentToken);
-            when(authenticationService.renewAuthToken(request)).thenThrow(new RefreshTokenNotFoundException(nonExistentToken));
+            when(authenticationService.renewAuthToken(request)).thenThrow(new InvalidRefreshTokenException("Refresh Token %s not found".formatted(nonExistentToken)));
 
             // Act & Assert
             mockMvc.perform(post("/api/auth/renewtoken")
@@ -257,7 +256,7 @@ class AuthenticationControllerTest {
             // Arrange
             String expiredToken = UUID.randomUUID().toString();
             AuthenticationTokenRequest request = new AuthenticationTokenRequest(USERNAME, expiredToken);
-            when(authenticationService.renewAuthToken(request)).thenThrow(new RefreshTokenExpiredException(expiredToken));
+            when(authenticationService.renewAuthToken(request)).thenThrow(new InvalidRefreshTokenException("Refresh Token %s has expired".formatted(expiredToken)));
 
             // Act & Assert
             mockMvc.perform(post("/api/auth/renewtoken")

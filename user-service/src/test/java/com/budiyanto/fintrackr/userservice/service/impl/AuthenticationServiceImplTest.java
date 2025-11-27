@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -37,8 +38,7 @@ import com.budiyanto.fintrackr.userservice.dto.UserResponse;
 import com.budiyanto.fintrackr.userservice.entity.RefreshToken;
 import com.budiyanto.fintrackr.userservice.entity.Role;
 import com.budiyanto.fintrackr.userservice.entity.User;
-import com.budiyanto.fintrackr.userservice.exception.RefreshTokenExpiredException;
-import com.budiyanto.fintrackr.userservice.exception.RefreshTokenNotFoundException;
+import com.budiyanto.fintrackr.userservice.exception.InvalidRefreshTokenException;
 import com.budiyanto.fintrackr.userservice.exception.RoleNotFoundException;
 import com.budiyanto.fintrackr.userservice.exception.UserAlreadyExistsException;
 import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
@@ -233,7 +233,7 @@ class AuthenticationServiceImplTest {
             // Act & Assert
             assertThatThrownBy(() -> authenticationService.authenticate(loginRequest))
                     .isInstanceOf(BadCredentialsException.class)
-                    .hasMessage("Invalid username or password");
+                    .hasMessageContaining("Invalid username or password");
 
             // Verify further interactions never occured
             verify(passwordEncoder, never()).matches(anyString(), anyString());
@@ -252,7 +252,7 @@ class AuthenticationServiceImplTest {
             // Act & Assert
             assertThatThrownBy(() -> authenticationService.authenticate(loginRequest))
                     .isInstanceOf(BadCredentialsException.class)
-                    .hasMessage("Invalid username or password");
+                    .hasMessageContaining("Invalid username or password");
 
             // Verify further interactions never occured
             verify(jwtService, never()).generateAccessToken(anyString(), anyList());
@@ -270,7 +270,7 @@ class AuthenticationServiceImplTest {
         private RefreshToken oldRefreshToken;
         private static final String OLD_REFRESH_TOKEN_VALUE = "old.refresh.token";
         private static final String ENCODED_OLD_REFRESH_TOKEN_VALUE = "encoded.old.refresh.token";
-        private static final Long ACCESS_TOKEN_EXPIRATION_MS = 900000L;
+        private static final Duration ACCESS_TOKEN_EXPIRATION = Duration.ofHours(1);
 
         @BeforeEach
         void setup() {
@@ -296,7 +296,7 @@ class AuthenticationServiceImplTest {
 
             String newAccessTokenValue = "new.access.token";
             when(jwtService.generateAccessToken(eq(existingUser.getUsername()), anyList())).thenReturn(newAccessTokenValue);
-            when(jwtService.getAccessTokenExpirationMs()).thenReturn(ACCESS_TOKEN_EXPIRATION_MS);
+            when(jwtService.getAccessTokenExpiration()).thenReturn(ACCESS_TOKEN_EXPIRATION);
 
             // Act
             AuthenticationTokenResponse result = authenticationService.renewAuthToken(authRequest);
@@ -306,7 +306,7 @@ class AuthenticationServiceImplTest {
             assertThat(result.accessToken()).isEqualTo(newAccessTokenValue);
             assertThat(result.refreshToken()).isEqualTo(newRefreshTokenValue);
             assertThat(result.tokenType()).isEqualTo("Bearer");
-            assertThat(result.expiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRATION_MS);
+            assertThat(result.expiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRATION.toSeconds());
 
             // Verify interactions
             verify(userRepository).findByUsername(existingUser.getUsername());
@@ -315,7 +315,7 @@ class AuthenticationServiceImplTest {
             verify(refreshTokenService).verifyExpiration(oldRefreshToken);
             verify(refreshTokenService).rotateToken(oldRefreshToken);
             verify(jwtService).generateAccessToken(eq(existingUser.getUsername()), anyList());
-            verify(jwtService).getAccessTokenExpirationMs();
+            verify(jwtService).getAccessTokenExpiration();
 
         }
 
@@ -327,11 +327,8 @@ class AuthenticationServiceImplTest {
 
             // Act & Assert
             assertThatThrownBy(() -> authenticationService.renewAuthToken(authRequest))
-                    .isInstanceOf(RefreshTokenNotFoundException.class)
-                    .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenNotFoundException.class))
-                    .satisfies(ex -> {
-                        assertThat(ex.getTokenValue()).isEqualTo(authRequest.refreshToken());
-                    });
+                    .isInstanceOf(InvalidRefreshTokenException.class)
+                    .hasMessageContaining("Invalid refresh token.");
 
             // Verify no further interactions occured
             verify(refreshTokenService, never()).findByUser(any(User.class));
@@ -339,7 +336,7 @@ class AuthenticationServiceImplTest {
             verify(refreshTokenService, never()).verifyExpiration(any(RefreshToken.class));
             verify(refreshTokenService, never()).rotateToken(any(RefreshToken.class));
             verify(jwtService, never()).generateAccessToken(anyString(), anyList());
-            verify(jwtService, never()).getAccessTokenExpirationMs();
+            verify(jwtService, never()).getAccessTokenExpiration();
         }
 
         @Test
@@ -351,18 +348,15 @@ class AuthenticationServiceImplTest {
 
             // Act & Assert
             assertThatThrownBy(() -> authenticationService.renewAuthToken(authRequest))
-                    .isInstanceOf(RefreshTokenNotFoundException.class)
-                    .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenNotFoundException.class))
-                    .satisfies(ex -> {
-                        assertThat(ex.getTokenValue()).isEqualTo(authRequest.refreshToken());
-                    });
+                    .isInstanceOf(InvalidRefreshTokenException.class)
+                    .hasMessageContaining("Invalid refresh token.");
 
             // Verify no further interactions occured
             verify(passwordEncoder, never()).matches(anyString(), anyString());
             verify(refreshTokenService, never()).verifyExpiration(any(RefreshToken.class));
             verify(refreshTokenService, never()).rotateToken(any(RefreshToken.class));
             verify(jwtService, never()).generateAccessToken(anyString(), anyList());
-            verify(jwtService, never()).getAccessTokenExpirationMs();
+            verify(jwtService, never()).getAccessTokenExpiration();
         }
 
         @Test
@@ -375,17 +369,14 @@ class AuthenticationServiceImplTest {
 
             // Act & Assert
             assertThatThrownBy(() -> authenticationService.renewAuthToken(authRequest))
-                    .isInstanceOf(RefreshTokenNotFoundException.class)
-                    .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenNotFoundException.class))
-                    .satisfies(ex -> {
-                        assertThat(ex.getTokenValue()).isEqualTo(authRequest.refreshToken());
-                    });
+                    .isInstanceOf(InvalidRefreshTokenException.class)
+                    .hasMessageContaining("Invalid refresh token.");
 
             // Verify no further interactions occured
             verify(refreshTokenService, never()).verifyExpiration(any(RefreshToken.class));
             verify(refreshTokenService, never()).rotateToken(any(RefreshToken.class));
             verify(jwtService, never()).generateAccessToken(anyString(), anyList());
-            verify(jwtService, never()).getAccessTokenExpirationMs();
+            verify(jwtService, never()).getAccessTokenExpiration();
         }
 
         @Test
@@ -395,20 +386,17 @@ class AuthenticationServiceImplTest {
             when(userRepository.findByUsername(authRequest.username())).thenReturn(Optional.of(existingUser));
             when(refreshTokenService.findByUser(existingUser)).thenReturn(List.of(oldRefreshToken));
             when(passwordEncoder.matches(OLD_REFRESH_TOKEN_VALUE, ENCODED_OLD_REFRESH_TOKEN_VALUE)).thenReturn(true);
-            when(refreshTokenService.verifyExpiration(oldRefreshToken)).thenThrow(new RefreshTokenExpiredException(oldRefreshToken.getValue()));
+            when(refreshTokenService.verifyExpiration(oldRefreshToken)).thenThrow(new InvalidRefreshTokenException("Invalid refresh token. Refresh token has expired."));
 
             // Act & Assert
             assertThatThrownBy(() -> authenticationService.renewAuthToken(authRequest))
-                    .isInstanceOf(RefreshTokenExpiredException.class)
-                    .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenExpiredException.class))
-                    .satisfies(ex -> {
-                        assertThat(ex.getTokenValue()).isEqualTo(ENCODED_OLD_REFRESH_TOKEN_VALUE);
-                    });
+                    .isInstanceOf(InvalidRefreshTokenException.class)
+                    .hasMessageContaining("Invalid refresh token.");
 
             // Verify no further interactions occured
             verify(refreshTokenService, never()).rotateToken(any(RefreshToken.class));
             verify(jwtService, never()).generateAccessToken(anyString(), anyList());
-            verify(jwtService, never()).getAccessTokenExpirationMs();
+            verify(jwtService, never()).getAccessTokenExpiration();
         }   
     }   
 }

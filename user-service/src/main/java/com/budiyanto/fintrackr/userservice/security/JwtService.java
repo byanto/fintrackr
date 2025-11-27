@@ -1,6 +1,7 @@
 package com.budiyanto.fintrackr.userservice.security;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -26,9 +27,9 @@ public class JwtService {
     @Value("${fintrackr.jwt.secret}")
     private String secret;
 
-    @Value("${fintrackr.jwt.accesstoken.expiration.ms}")
+    @Value("${fintrackr.jwt.accesstoken.expiration}")
     @Getter
-    private Long accessTokenExpirationMs;
+    private Duration accessTokenExpiration;
 
     private SecretKey key;
 
@@ -67,8 +68,8 @@ public class JwtService {
 
         Instant now = clock.instant();
         Date currentDate = Date.from(now);
-        Date expDate = Date.from(now.plusMillis(accessTokenExpirationMs));
-
+        Date expDate = Date.from(now.plus(accessTokenExpiration));
+        
         return Jwts.builder()
                 .claims(claims)
                 .subject(username)

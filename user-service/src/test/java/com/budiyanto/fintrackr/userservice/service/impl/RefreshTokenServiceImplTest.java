@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
@@ -31,7 +32,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.budiyanto.fintrackr.userservice.entity.RefreshToken;
 import com.budiyanto.fintrackr.userservice.entity.User;
-import com.budiyanto.fintrackr.userservice.exception.RefreshTokenExpiredException;
+import com.budiyanto.fintrackr.userservice.exception.InvalidRefreshTokenException;
 import com.budiyanto.fintrackr.userservice.exception.UserNotFoundException;
 import com.budiyanto.fintrackr.userservice.repository.RefreshTokenRepository;
 import com.budiyanto.fintrackr.userservice.repository.UserRepository;
@@ -59,7 +60,7 @@ class RefreshTokenServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(refreshTokenService, "refreshTokenDurationMs", 604800000L);
+        ReflectionTestUtils.setField(refreshTokenService, "refreshTokenDuration", Duration.ofDays(7));
         user = new User("testuser", "password", "test@email.com");
 
         // Set a default behavior for the mocked clock to avoid NullPointerExceptions.
@@ -171,11 +172,8 @@ class RefreshTokenServiceImplTest {
 
             // Act & Assert
             assertThatThrownBy(() -> refreshTokenService.verifyExpiration(token))
-                    .isInstanceOf(RefreshTokenExpiredException.class)
-                    .asInstanceOf(InstanceOfAssertFactories.type(RefreshTokenExpiredException.class))
-                    .satisfies(ex -> {
-                        assertThat(ex.getTokenValue()).isEqualTo(tokenValue);
-                    });
+                    .isInstanceOf(InvalidRefreshTokenException.class)
+                    .hasMessageContaining("Invalid refresh token.");
                     
             // Verify that the expired Token is deleted
             verify(refreshTokenRepository).delete(token);

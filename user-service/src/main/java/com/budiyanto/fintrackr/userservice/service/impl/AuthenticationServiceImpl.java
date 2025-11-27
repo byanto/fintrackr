@@ -1,12 +1,5 @@
 package com.budiyanto.fintrackr.userservice.service.impl;
 
-import java.util.List;
-
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.budiyanto.fintrackr.userservice.dto.AuthenticationTokenRequest;
 import com.budiyanto.fintrackr.userservice.dto.AuthenticationTokenResponse;
 import com.budiyanto.fintrackr.userservice.dto.UserLoginRequest;
@@ -16,7 +9,7 @@ import com.budiyanto.fintrackr.userservice.dto.UserResponse;
 import com.budiyanto.fintrackr.userservice.entity.RefreshToken;
 import com.budiyanto.fintrackr.userservice.entity.Role;
 import com.budiyanto.fintrackr.userservice.entity.User;
-import com.budiyanto.fintrackr.userservice.exception.RefreshTokenNotFoundException;
+import com.budiyanto.fintrackr.userservice.exception.InvalidRefreshTokenException;
 import com.budiyanto.fintrackr.userservice.exception.RoleNotFoundException;
 import com.budiyanto.fintrackr.userservice.exception.UserAlreadyExistsException;
 import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
@@ -25,13 +18,17 @@ import com.budiyanto.fintrackr.userservice.repository.UserRepository;
 import com.budiyanto.fintrackr.userservice.security.JwtService;
 import com.budiyanto.fintrackr.userservice.service.AuthenticationService;
 import com.budiyanto.fintrackr.userservice.service.RefreshTokenService;
-
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticationServiceImpl implements AuthenticationService {
-    
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -46,8 +43,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new UserAlreadyExistsException(request.username());
         }
 
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RoleNotFoundException("Default role ROLE_USER not found."));
+        Role userRole = roleRepository
+            .findByName("ROLE_USER")
+            .orElseThrow(() ->
+                new RoleNotFoundException("Default role ROLE_USER not found.")
+            );
 
         User user = userMapper.toUser(request);
         user.addRole(userRole);
@@ -60,36 +60,67 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     @Transactional
     public UserLoginResponse authenticate(UserLoginRequest request) {
-    
-        User authenticatedUser = userRepository.findByUsername(request.username())
-                .filter(user -> passwordEncoder.matches(request.password(), user.getPassword()))
-                .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
+        User authenticatedUser = userRepository
+            .findByUsername(request.username())
+            .filter(user ->
+                passwordEncoder.matches(request.password(), user.getPassword())
+            )
+            .orElseThrow(() ->
+                new BadCredentialsException("Invalid username or password")
+            );
 
-        List<String> roles = authenticatedUser.getRoles().stream().map(Role::getName).toList();
-        String accessToken = jwtService.generateAccessToken(authenticatedUser.getUsername(), roles);
+        List<String> roles = authenticatedUser
+            .getRoles()
+            .stream()
+            .map(Role::getName)
+            .toList();
+        String accessToken = jwtService.generateAccessToken(
+            authenticatedUser.getUsername(),
+            roles
+        );
 
         // refreshTokenService.invalidateAllTokensForUser(authenticatedUser);
-        String refreshToken = refreshTokenService.createToken(authenticatedUser);
+        String refreshToken = refreshTokenService.createToken(
+            authenticatedUser
+        );
 
-        return userMapper.toLoginResponse(authenticatedUser, accessToken, refreshToken);
+        return userMapper.toLoginResponse(
+            authenticatedUser,
+            accessToken,
+            refreshToken
+        );
     }
 
     @Override
     @Transactional
-    public AuthenticationTokenResponse renewAuthToken(AuthenticationTokenRequest oldTokenRequest) {
+    public AuthenticationTokenResponse renewAuthToken(
+        AuthenticationTokenRequest oldTokenRequest
+    ) {
         String username = oldTokenRequest.username();
         String rawOldToken = oldTokenRequest.refreshToken();
 
-        User user = userRepository.findByUsername(username)
-                        .orElseThrow(() -> new RefreshTokenNotFoundException(rawOldToken));
-        
+        User user = userRepository
+            .findByUsername(username)
+            .orElseThrow(() ->
+                new InvalidRefreshTokenException(
+                    "Invalid refresh token. User not found."
+                )
+            );
+
         // Find the specific token entity that matches the raw token sent by the client
-        RefreshToken oldToken = refreshTokenService.findByUser(user)
-                .stream()
-                .filter(token -> passwordEncoder.matches(rawOldToken, token.getValue()))
-                .findFirst()
-                .orElseThrow(() -> new RefreshTokenNotFoundException(rawOldToken));
-        
+        RefreshToken oldToken = refreshTokenService
+            .findByUser(user)
+            .stream()
+            .filter(token ->
+                passwordEncoder.matches(rawOldToken, token.getValue())
+            )
+            .findFirst()
+            .orElseThrow(() ->
+                new InvalidRefreshTokenException(
+                    "Invalid refresh token. Refresh Token not found."
+                )
+            );
+
         // Validate the token is not expired
         refreshTokenService.verifyExpiration(oldToken);
 
@@ -97,8 +128,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String newRefreshToken = refreshTokenService.rotateToken(oldToken);
 
         var roles = user.getRoles().stream().map(Role::getName).toList();
-        String newAccessToken = jwtService.generateAccessToken(user.getUsername(), roles);
+        String newAccessToken = jwtService.generateAccessToken(
+            user.getUsername(),
+            roles
+        );
 
-        return new AuthenticationTokenResponse(newAccessToken, newRefreshToken, jwtService.getAccessTokenExpirationMs());       
+        return new AuthenticationTokenResponse(
+            newAccessToken,
+            newRefreshToken,
+            jwtService.getAccessTokenExpiration().toSeconds()
+        );
     }
 }
