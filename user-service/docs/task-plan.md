@@ -43,19 +43,19 @@ Story: As a user, I want to use a refresh token to get a new access token withou
 
 ---
 
-## Epic 4: User Profile Management
+## Epic 4: User Profile Management (COMPLETED)
 
-Story: As an authenticated user, I want to retrieve my own profile information. (COMPLETED)
+Story: As an authenticated user, I want to retrieve my own profile information.
 [x] Create `UserController` with a protected `/api/users/me` endpoint.
 [x] Implement `UserService` with a `getUserByUsername` method.
 [x] Create `UserResponse` DTO to avoid exposing the `User` entity directly.
 [x] Write a `@WebMvcTest` for the `UserController`.
 
-Story: As an authenticated user, I want to update my email address. (PENDING)
-[ ] Add a `PUT /api/users/me` endpoint to `UserController`.
-[ ] Create a `UpdateUserRequest` DTO with validation (e.g. `@Email`)
-[ ] Implement the update logic in `UserService`, ensuring a user can only update their own data.
-[ ] Write integration tests for the update flow.
+Story: As an authenticated user, I want to update my email address.
+[x] Add a `PUT /api/users/me` endpoint to `UserController`.
+[x] Create a `UpdateUserRequest` DTO with validation (e.g. `@Email`)
+[x] Implement the update logic in `UserService`, ensuring a user can only update their own data.
+[x] Write integration tests for the update flow.
 
 ---
 
@@ -68,15 +68,16 @@ Story: As a developer, I need to ensure my time-based logic is fully testable an
 [x] (Lesson Learned) Write a full `AuthenticationFlowIntegrationTest` using `@MockitoBean` for the `Clock` to prove the flaky test is fixed and the flow is 100% reliable.
 
 Story: As a developer, I need proper logging and health checks for the service. (PENDING)
-[ ] Add Spring Boot Actuator dependency.
-[ ] Configure Actuator to expose `health` and `info` endpoints.
+[x] Add Spring Boot Actuator dependency.
+[x] Configure Actuator to expose `health` and `info` endpoints.
 [ ] Implement structured logging (e.g., using Logstash/JSON format) to make logs easier to parse.
 [ ] Add correlation IDs to track a single request across the service.
 
 ---
 
-## Epic 6: API Documentation & Developer Experience
-Story: As a developer, I need clear and interactive API documentation to understand how to use the user-service endpoints. (PENDING)
+## Epic 6: API Documentation & Developer Experience (COMPLETED)
+
+Story: As a developer, I need clear and interactive API documentation to understand how to use the user-service endpoints.
 [x] Add the `springdoc-openapi-starter-webmvc-ui` dependency to `pom.xml`.
 [x] Configure Spring Security to permit public access to the Swagger UI and API docs endpoints (`/swagger-ui.html`, `/v3/api-docs/**`).
 [x] Configure global OpenAPI info in `application.yml` (title, description, version).
@@ -85,8 +86,9 @@ Story: As a developer, I need clear and interactive API documentation to underst
 
 ---
 
-### Epic 7: Containerization `(COMPLETED)`
-*   **Story:** As a developer, I need to build and run the service as a container for consistent deployments.
-    *   `[x]` Add `jib-maven-plugin` to the parent POM to build container images without a Dockerfile.
-    *   `[x]` Configure the plugin in the service's `pom.xml` to expose the correct container port.
-    *   `[x]` Add a service entry to `docker-compose.yml` to orchestrate the container during local development.
+### Epic 7: Containerization (COMPLETED)
+
+Story: As a developer, I need to build and run the service as a container for consistent deployments.
+[x] Add `jib-maven-plugin` to the parent POM to build container images without a Dockerfile.
+[x] Configure the plugin in the service's `pom.xml` to expose the correct container port.
+[x] Add a service entry to `docker-compose.yml` to orchestrate the container during local development.

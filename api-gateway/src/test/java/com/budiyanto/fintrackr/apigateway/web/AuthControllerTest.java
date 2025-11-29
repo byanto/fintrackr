@@ -35,8 +35,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 
 import com.budiyanto.fintrackr.apigateway.dto.AuthRequest;
-import com.budiyanto.fintrackr.apigateway.dto.RegisterRequest;
 import com.budiyanto.fintrackr.apigateway.dto.UserLoginResponse;
+import com.budiyanto.fintrackr.apigateway.dto.UserRegistrationRequest;
 import com.budiyanto.fintrackr.apigateway.dto.UserResponse;
 import com.budiyanto.fintrackr.apigateway.security.JwtAuthenticationManager;
 import com.budiyanto.fintrackr.apigateway.security.JwtUtil;
@@ -74,6 +74,8 @@ class AuthControllerTest {
     private static final String USERNAME = "testuser";
     private static final String EMAIL = "test@email.com";
     private static final String PASSWORD = "password123";
+    private static final String FIRST_NAME = "John";
+    private static final String LAST_NAME = "Doe";
     private static final String ROLE_USER = "ROLE_USER";
 
     @BeforeAll
@@ -172,7 +174,7 @@ class AuthControllerTest {
         @DisplayName("should return 201 Created on successful registration")
         void should_return201_when_registrationSuccess() throws JsonProcessingException {
             // Arrange
-            RegisterRequest registerRequest = new RegisterRequest(USERNAME, PASSWORD, EMAIL);
+            UserRegistrationRequest registerRequest = new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
             UserResponse userResponse = new UserResponse(1L, USERNAME, EMAIL, Instant.now());
 
             mockBackEnd.enqueue(new MockResponse()
@@ -191,7 +193,7 @@ class AuthControllerTest {
         @ParameterizedTest
         @MethodSource("provideInvalidRegisterRequests")
         @DisplayName("should return 400 BadRequest when any field is invalid")
-        void should_returnBadRequest_when_requestIsInvalid(RegisterRequest invalidRequest) throws Exception {
+        void should_returnBadRequest_when_requestIsInvalid(UserRegistrationRequest invalidRequest) throws Exception {
             // Act & Assert for invalid requests
             webTestClient.post().uri("/api/auth/register")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -200,15 +202,20 @@ class AuthControllerTest {
                     .expectStatus().isBadRequest();
         }
 
-        private static Stream<RegisterRequest> provideInvalidRegisterRequests() {
+        private static Stream<UserRegistrationRequest> provideInvalidRegisterRequests() {
             return Stream.of(
-                new RegisterRequest("   ", PASSWORD, EMAIL),
-                new RegisterRequest(USERNAME, "   ", EMAIL),
-                new RegisterRequest(USERNAME, PASSWORD, "   "),
-                new RegisterRequest("ab", PASSWORD, EMAIL),
-                new RegisterRequest("a very long username that exceeds the limit", PASSWORD, EMAIL),
-                new RegisterRequest(USERNAME, "abc", EMAIL),
-                new RegisterRequest(USERNAME, "a very long password that exceeds the limit", EMAIL)
+                new UserRegistrationRequest("   ", PASSWORD, FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, "   ", FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, "   "),
+                new UserRegistrationRequest("ab", PASSWORD, FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest("a very very long username that exceeds the limit", PASSWORD, FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, "abc", FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, "a very very long password that exceeds the limit", FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, PASSWORD, "a", LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, PASSWORD, "a very very very long first name that exceeds the limit", LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, "a", EMAIL),
+                new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, "a very very very long last name that exceeds the limit", EMAIL),                
+                new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, "invalidemailformat")
             );
         }
 
@@ -216,7 +223,7 @@ class AuthControllerTest {
         @DisplayName("should return 409 Conflict when username is taken")
         void should_return409_when_usernameIsTaken() throws JsonProcessingException {
             // Arrange
-            RegisterRequest registerRequest = new RegisterRequest("existinguser", PASSWORD, EMAIL);
+            UserRegistrationRequest registerRequest = new UserRegistrationRequest("existinguser", PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
             String errorBody = "{\"error\":\"Username 'existinguser' is already taken.\"}";
 
             mockBackEnd.enqueue(new MockResponse()

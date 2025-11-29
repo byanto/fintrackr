@@ -101,13 +101,13 @@ class AuthenticationServiceImplTest {
             Role userRole = new Role(ROLE_USER);
 
             // Mock
-            when(userRepository.findByUsername(registerRequest.username())).thenReturn(Optional.empty());
+            when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.empty());
             when(roleRepository.findByName(ROLE_USER)).thenReturn(Optional.of(userRole));
             
-            User user = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.firstName(), registerRequest.lastName(), registerRequest.email());
+            User user = new User(USERNAME, ENCODED_PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
             when(userMapper.toUser(registerRequest)).thenReturn(user);
             
-            User savedUser = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.firstName(), registerRequest.lastName(), registerRequest.email());
+            User savedUser = new User(USERNAME, ENCODED_PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
             ReflectionTestUtils.setField(savedUser, "id", id);
             ReflectionTestUtils.setField(savedUser, "createdAt", createdAt);
             ReflectionTestUtils.setField(savedUser, "updatedAt", createdAt);

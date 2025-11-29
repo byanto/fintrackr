@@ -11,27 +11,27 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import com.budiyanto.fintrackr.apigateway.dto.AuthRequest;
 import com.budiyanto.fintrackr.apigateway.dto.AuthResponse;
-import com.budiyanto.fintrackr.apigateway.dto.RegisterRequest;
 import com.budiyanto.fintrackr.apigateway.dto.UserLoginResponse;
+import com.budiyanto.fintrackr.apigateway.dto.UserRegistrationRequest;
 import com.budiyanto.fintrackr.apigateway.security.JwtUtil;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
-@RestController
-@RequestMapping("/api/auth")
+// @RestController
+// @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final WebClient.Builder webClientBuilder;
     private final JwtUtil jwtUtil;
 
-    @PostMapping("/register")
-    public Mono<ResponseEntity<Object>> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    // @PostMapping("/register")
+    public Mono<ResponseEntity<Object>> register(@Valid @RequestBody UserRegistrationRequest request) {
         return webClientBuilder.baseUrl("http://user-service").build()
                 .post()
                 .uri("/api/auth/register")
-                .bodyValue(registerRequest)
+                .bodyValue(request)
                 .retrieve()
                 .toBodilessEntity()
                 .map(response -> ResponseEntity.status(HttpStatus.CREATED).build())
@@ -41,7 +41,7 @@ public class AuthController {
                 });
     }
 
-    @PostMapping("/login")
+    // @PostMapping("/login")
     public Mono<ResponseEntity<AuthResponse>> login(@Valid @RequestBody AuthRequest authRequest) {
         return webClientBuilder.baseUrl("http://user-service").build()
                 .post()

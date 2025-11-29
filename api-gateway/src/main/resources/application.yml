@@ -9,14 +9,17 @@ spring:
       server:
         webflux:
           routes:
-            # Route requests for the investment-service
-            - id: investment-service-route # A unique ID for this route
-              uri: lb://investment-service # "lb" stands for load-balanced. Routes to the service named "investment-service"
+            # Route requests for the user-service
+            - id: user-service-route
+              uri: lb://user-service
               predicates:
-                - Path=/api/** # Match any request starting with /api/ and forward it
-              #filters:
-                 # Remove the first path segment (/api/investments) before forwarding
-                #- StripPrefix=2
+                - Path=/api/auth/**, /api/users/** # Forward requests for auth and user endpoints
+
+            # Route requests for the investment-service
+            - id: investment-service-route
+              uri: lb://investment-service
+              predicates:
+                - Path=/api/investments/** # Forward requests for investment endpoints
 
 eureka:
   client:

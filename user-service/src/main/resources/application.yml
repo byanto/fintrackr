@@ -23,6 +23,18 @@ eureka:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}} # Create unique IDs if multiple instances run
 
+# Expose actuator health and info endpoints over the web
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+        - health
+        - info
+  endpoint:
+    health:
+      show-details: always
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

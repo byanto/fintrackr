@@ -39,11 +39,11 @@ public class User {
     private String password;
 
     @Setter
-    @Column(name = "first_name", length = 50, nullable = false)
+    @Column(name = "first_name", length = 50)
     private String firstName;
 
     @Setter
-    @Column(name = "last_name", length = 50, nullable = false)
+    @Column(name = "last_name", length = 50)
     private String lastName;
 
     @Setter
