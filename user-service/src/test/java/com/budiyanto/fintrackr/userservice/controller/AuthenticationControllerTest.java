@@ -67,6 +67,8 @@ class AuthenticationControllerTest {
     private static final String USERNAME = "testuser";
     private static final String EMAIL = "test@email.com";
     private static final String PASSWORD = "password123";
+    private static final String FIRST_NAME = "John";
+    private static final String LAST_NAME = "Doe";
     private static final String ROLE_USER = "ROLE_USER";
 
     @Nested
@@ -77,8 +79,8 @@ class AuthenticationControllerTest {
         @DisplayName("should return 201 Created on successful registration")
         void should_return201Created_when_registrationSuccess() throws Exception {
             // Arrange
-            UserRegistrationRequest request = new UserRegistrationRequest(USERNAME, PASSWORD, EMAIL);
-            UserResponse response = new UserResponse(USER_ID, USERNAME, EMAIL, Instant.now());
+            UserRegistrationRequest request = new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
+            UserResponse response = new UserResponse(USER_ID, USERNAME, FIRST_NAME, LAST_NAME, EMAIL, Instant.now());
             when(authenticationService.registerUser(request)).thenReturn(response);
 
             // Act & Assert
@@ -108,14 +110,18 @@ class AuthenticationControllerTest {
 
         private static Stream<UserRegistrationRequest> provideInvalidRegisterRequests() {
             return Stream.of(
-                new UserRegistrationRequest("   ", PASSWORD, EMAIL),
-                new UserRegistrationRequest(USERNAME, "   ", EMAIL),
-                new UserRegistrationRequest(USERNAME, PASSWORD, "   "),
-                new UserRegistrationRequest("ab", PASSWORD, EMAIL),
-                new UserRegistrationRequest("a very very long username that exceeds the limit", PASSWORD, EMAIL),
-                new UserRegistrationRequest(USERNAME, "abc", EMAIL),
-                new UserRegistrationRequest(USERNAME, "a very very long password that exceeds the limit", EMAIL),
-                new UserRegistrationRequest(USERNAME, PASSWORD, "invalidemailformat")
+                new UserRegistrationRequest("   ", PASSWORD, FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, "   ", FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, "   "),
+                new UserRegistrationRequest("ab", PASSWORD, FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest("a very very long username that exceeds the limit", PASSWORD, FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, "abc", FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, "a very very long password that exceeds the limit", FIRST_NAME, LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, PASSWORD, "a", LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, PASSWORD, "a very very very long first name that exceeds the limit", LAST_NAME, EMAIL),
+                new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, "a", EMAIL),
+                new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, "a very very very long last name that exceeds the limit", EMAIL),                
+                new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, "invalidemailformat")
             );
         }
 
@@ -123,13 +129,13 @@ class AuthenticationControllerTest {
         @DisplayName("should return 409 Conflict when username is taken")
         void should_return409Conflict_when_usernameIsTaken() throws Exception {
             // Arrange
-            UserRegistrationRequest request = new UserRegistrationRequest(USERNAME, PASSWORD, EMAIL);
+            UserRegistrationRequest request = new UserRegistrationRequest(USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
             when(authenticationService.registerUser(request)).thenThrow(new UserAlreadyExistsException(USERNAME));
 
             // Act & Assert
             mockMvc.perform(post("/api/auth/register")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isConflict());
         }
     }
@@ -145,7 +151,8 @@ class AuthenticationControllerTest {
             UserLoginRequest request = new UserLoginRequest(USERNAME, PASSWORD);
             String accessToken = "access.token";
             String refreshToken = "refresh.token";
-            UserLoginResponse response = new UserLoginResponse(USER_ID, USERNAME, EMAIL, List.of(ROLE_USER), accessToken, refreshToken);
+            UserLoginResponse response = new UserLoginResponse(
+                USER_ID, USERNAME, FIRST_NAME, LAST_NAME, EMAIL, List.of(ROLE_USER), accessToken, refreshToken);
             when(authenticationService.authenticate(request)).thenReturn(response);
 
             // Act & Assert

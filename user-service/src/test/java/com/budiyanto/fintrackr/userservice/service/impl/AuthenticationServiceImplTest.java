@@ -74,6 +74,8 @@ class AuthenticationServiceImplTest {
 
     private static final Long ID = 1L;
     private static final String USERNAME = "testuser";
+    private static final String FIRST_NAME = "John";
+    private static final String LAST_NAME = "Doe";
     private static final String EMAIL = "test@email.com";
     private static final String RAW_PASSWORD = "password123";
     private static final String ENCODED_PASSWORD = "encodedPassword123";
@@ -87,7 +89,7 @@ class AuthenticationServiceImplTest {
 
         @BeforeEach
         void setUp() {
-            registerRequest = new UserRegistrationRequest(USERNAME, RAW_PASSWORD, EMAIL);
+            registerRequest = new UserRegistrationRequest(USERNAME, RAW_PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
         }
 
         @Test
@@ -102,17 +104,18 @@ class AuthenticationServiceImplTest {
             when(userRepository.findByUsername(registerRequest.username())).thenReturn(Optional.empty());
             when(roleRepository.findByName(ROLE_USER)).thenReturn(Optional.of(userRole));
             
-            User user = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.email());
+            User user = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.firstName(), registerRequest.lastName(), registerRequest.email());
             when(userMapper.toUser(registerRequest)).thenReturn(user);
             
-            User savedUser = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.email());
+            User savedUser = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.firstName(), registerRequest.lastName(), registerRequest.email());
             ReflectionTestUtils.setField(savedUser, "id", id);
             ReflectionTestUtils.setField(savedUser, "createdAt", createdAt);
             ReflectionTestUtils.setField(savedUser, "updatedAt", createdAt);
             savedUser.addRole(userRole);
             when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
-            UserResponse response = new UserResponse(savedUser.getId(), savedUser.getUsername(), savedUser.getEmail(), savedUser.getCreatedAt());
+            UserResponse response = new UserResponse(
+                savedUser.getId(), savedUser.getUsername(), savedUser.getFirstName(), savedUser.getLastName(), savedUser.getEmail(), savedUser.getCreatedAt());
             when(userMapper.toUserResponse(savedUser)).thenReturn(response);
 
             // Act
@@ -141,7 +144,7 @@ class AuthenticationServiceImplTest {
         @DisplayName("should throw UserAlreadyExistsException when username is taken")
         void should_throwException_when_usernameIsTaken() {
             // Arrange
-            User user = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.email());
+            User user = new User(registerRequest.username(), ENCODED_PASSWORD, registerRequest.firstName(), registerRequest.lastName(), registerRequest.email());
             when(userRepository.findByUsername(registerRequest.username())).thenReturn(Optional.of(user));
 
             // Act & Assert
@@ -187,7 +190,7 @@ class AuthenticationServiceImplTest {
         
         @BeforeEach
         void setUp() {            
-            existingUser = new User(USERNAME, ENCODED_PASSWORD, EMAIL);
+            existingUser = new User(USERNAME, ENCODED_PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
             ReflectionTestUtils.setField(existingUser, "id", ID);
             existingUser.addRole(new Role(ROLE_USER));
 
@@ -206,7 +209,8 @@ class AuthenticationServiceImplTest {
             when(jwtService.generateAccessToken(existingUser.getUsername(), List.of(ROLE_USER))).thenReturn(accessToken);
             when(refreshTokenService.createToken(existingUser)).thenReturn(refreshToken);
 
-            UserLoginResponse expectedResponse = new UserLoginResponse(existingUser.getId(), existingUser.getUsername(), EMAIL, List.of(ROLE_USER), accessToken, refreshToken);
+            UserLoginResponse expectedResponse = new UserLoginResponse(existingUser.getId(), existingUser.getUsername(), 
+                existingUser.getFirstName(), existingUser.getLastName(), existingUser.getEmail(), List.of(ROLE_USER), accessToken, refreshToken);
             when(userMapper.toLoginResponse(existingUser, accessToken, refreshToken)).thenReturn(expectedResponse);
 
             // Act
@@ -274,7 +278,7 @@ class AuthenticationServiceImplTest {
 
         @BeforeEach
         void setup() {
-            existingUser = new User(USERNAME, ENCODED_PASSWORD, EMAIL);
+            existingUser = new User(USERNAME, ENCODED_PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
             ReflectionTestUtils.setField(existingUser, "id", ID);
             existingUser.addRole(new Role(ROLE_USER));
 

@@ -36,7 +36,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         String username = user.getUsername();
         userRepository
             .findByUsername(username)
-            .orElseThrow(() -> new UserNotFoundException(username));
+            .orElseThrow(() -> new UserNotFoundException("User not found: %s".formatted(username)));
 
         String rawToken = UUID.randomUUID().toString();
         String encodedToken = passwordEncoder.encode(rawToken);

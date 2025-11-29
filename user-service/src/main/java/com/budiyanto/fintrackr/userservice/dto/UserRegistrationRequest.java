@@ -20,13 +20,21 @@ public record UserRegistrationRequest(
         @NotBlank (message = "Password cannot be blank")
         @Size(min = 6, max = 40, message = "Password must be between 6 and 40 characters") 
         String password,
+
+        @Schema(description = "The first name of the user.", example = "John")
+        @Size(min = 2, max = 50, message = "First name must be between 2 and 50 characters")
+        String firstName,
+
+        @Schema(description = "The last name of the user.", example = "Doe")
+        @Size(min = 2, max = 50, message = "Last name must be between 2 and 50 characters")
+        String lastName,
         
         @Schema(description = "The email of the user, must be unique and a valid format.", 
                 example = "john.doe@mail.com",
                 requiredMode =  Schema.RequiredMode.REQUIRED)
         @NotBlank (message = "Email cannot be blank")
-        @Size(max = 255, message = "Email must not exceed 255 characters")
         @Email (message = "Email must be in valid format")
+        @Size(max = 255, message = "Email must not exceed 255 characters")
         String email
 
 ) {}

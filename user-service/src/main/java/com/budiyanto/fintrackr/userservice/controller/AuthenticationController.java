@@ -1,5 +1,7 @@
 package com.budiyanto.fintrackr.userservice.controller;
 
+import java.net.URI;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -54,7 +56,7 @@ public class AuthenticationController {
         UserResponse registeredUser = authenticationService.registerUser(request);
 
         // Create the location URI for the new user resource
-        java.net.URI location = ServletUriComponentsBuilder
+        URI location = ServletUriComponentsBuilder
                 .fromCurrentContextPath().path("/api/users/{username}")
                 .buildAndExpand(registeredUser.username()).toUri();
 

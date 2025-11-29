@@ -12,6 +12,12 @@ public record UserResponse(
     @Schema(description = "The username of the user.", example = "johndoe")
     String username,
 
+    @Schema(description = "The first name of the user.", example = "John")
+    String firstName,
+
+    @Schema(description = "The last name of the user.", example = "Doe")
+    String lastName,
+
     @Schema(description = "The email address of the user.", example = "john.doe@mail.com")
     String email,
 

@@ -16,7 +16,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -61,7 +60,7 @@ class RefreshTokenServiceImplTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(refreshTokenService, "refreshTokenDuration", Duration.ofDays(7));
-        user = new User("testuser", "password", "test@email.com");
+        user = new User("testuser", "password", "John", "Doe", "test@email.com");
 
         // Set a default behavior for the mocked clock to avoid NullPointerExceptions.
         // Tests that need specific times can override this with their own `when()` calls.
@@ -106,16 +105,13 @@ class RefreshTokenServiceImplTest {
         void should_throwException_when_userDoesNotExist() {
             // Arrange
             String nonExistentUsername = "nonexistent";
-            User nonExistentUser = new User(nonExistentUsername, "password", "no@email.com");
+            User nonExistentUser = new User(nonExistentUsername, "password", "John", "Doe", "no@email.com");
             when(userRepository.findByUsername(nonExistentUsername)).thenReturn(Optional.empty());
 
             // Act & Assert
             assertThatThrownBy(() -> refreshTokenService.createToken(nonExistentUser))
                     .isInstanceOf(UserNotFoundException.class)
-                    .asInstanceOf(InstanceOfAssertFactories.type(UserNotFoundException.class))
-                    .satisfies(ex -> {
-                        assertThat(ex.getUsername()).isEqualTo(nonExistentUser.getUsername());
-                    });
+                    .hasMessageContaining("User not found");                    
 
             // Verify no further interactions occured
             verify(passwordEncoder, never()).encode(anyString());

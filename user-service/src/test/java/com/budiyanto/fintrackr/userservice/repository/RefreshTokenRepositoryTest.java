@@ -42,7 +42,7 @@ class RefreshTokenRepositoryTest {
     @BeforeEach
     void setUp() {
         // Arrange
-        User user = new User(USERNAME, "pass1", "user1@mail.com");
+        User user = new User(USERNAME, "pass1", "John", "Doe", "user1@mail.com");
         savedUser = userRepository.save(user);
 
         RefreshToken token1 = new RefreshToken(savedUser, TOKEN_VALUE_1, Instant.now().plus(1, ChronoUnit.DAYS));
@@ -73,7 +73,7 @@ class RefreshTokenRepositoryTest {
         void should_returnEmptyList_when_userDoesNotExist() {
             // Arrange
             // Create a User object with an ID that we know does not exist in the test DB.
-            User nonExistentUser = new User("nonexistent", "password", "no@email.com");
+            User nonExistentUser = new User("nonexistent", "password", "John", "Doe", "no@email.com");
             ReflectionTestUtils.setField(nonExistentUser, "id", 999L);
 
             // Act

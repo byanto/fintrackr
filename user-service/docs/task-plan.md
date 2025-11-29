@@ -77,11 +77,11 @@ Story: As a developer, I need proper logging and health checks for the service. 
 
 ## Epic 6: API Documentation & Developer Experience
 Story: As a developer, I need clear and interactive API documentation to understand how to use the user-service endpoints. (PENDING)
-[ ] (Next Task) Add the `springdoc-openapi-starter-webmvc-ui` dependency to `pom.xml`.
-[ ] (Next Task) Configure Spring Security to permit public access to the Swagger UI and API docs endpoints (`/swagger-ui.html`, `/v3/api-docs/**`).
-[ ] (Next Task) Configure global OpenAPI info in `application.yml` (title, description, version).
-[ ] (Next Task) Annotate all Controller methods and DTOs with `@Operation`, `@ApiResponse`, and `@Schema` to provide clear examples and descriptions.
-[ ] (Next Task) Verify that the generated documentation correctly reflects security requirements (e.g., shows the "lock" icon on protected endpoints).
+[x] Add the `springdoc-openapi-starter-webmvc-ui` dependency to `pom.xml`.
+[x] Configure Spring Security to permit public access to the Swagger UI and API docs endpoints (`/swagger-ui.html`, `/v3/api-docs/**`).
+[x] Configure global OpenAPI info in `application.yml` (title, description, version).
+[x] Annotate all Controller methods and DTOs with `@Operation`, `@ApiResponse`, and `@Schema` to provide clear examples and descriptions.
+[x] Verify that the generated documentation correctly reflects security requirements (e.g., shows the "lock" icon on protected endpoints).
 
 ---
 

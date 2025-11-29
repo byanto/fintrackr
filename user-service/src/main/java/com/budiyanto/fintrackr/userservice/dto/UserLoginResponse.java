@@ -12,6 +12,12 @@ public record UserLoginResponse(
         @Schema(description = "The username of the user.", example = "johndoe")
         String username,
 
+        @Schema(description = "The first name of the user.", example = "John")
+        String firstName,
+
+        @Schema(description = "The last name of the user.", example = "Doe")
+        String lastName,
+
         @Schema(description = "The email address of the user.", example = "john.doe@mail.com")
         String email,
 
@@ -27,7 +33,7 @@ public record UserLoginResponse(
         @Schema(description = "The type of token.", example = "Bearer")
         String tokenType
 ) {
-        public UserLoginResponse(Long id, String username, String email, List<String> roles, String accessToken, String refreshToken) {
-                this(id, username, email, roles, accessToken, refreshToken, "Bearer");
+        public UserLoginResponse(Long id, String username, String firstName, String lastName, String email, List<String> roles, String accessToken, String refreshToken) {
+                this(id, username, firstName, lastName, email, roles, accessToken, refreshToken, "Bearer");
         }
 }

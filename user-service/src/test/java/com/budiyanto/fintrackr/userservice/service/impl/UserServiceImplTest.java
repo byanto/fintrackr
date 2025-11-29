@@ -19,6 +19,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import com.budiyanto.fintrackr.userservice.dto.UserResponse;
 import com.budiyanto.fintrackr.userservice.entity.User;
+import com.budiyanto.fintrackr.userservice.exception.UserNotFoundException;
 import com.budiyanto.fintrackr.userservice.mapper.UserMapper;
 import com.budiyanto.fintrackr.userservice.repository.UserRepository;
 
@@ -45,7 +46,7 @@ class UserServiceImplTest {
             // Arrange
             String username = "testuser";
             User user = new User();
-            UserResponse userResponse = new UserResponse(1L, username, "test@email.com", Instant.now());
+            UserResponse userResponse = new UserResponse(1L, username, "John", "Doe", "test@email.com", Instant.now());
 
             when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
             when(userMapper.toUserResponse(user)).thenReturn(userResponse);
@@ -68,8 +69,8 @@ class UserServiceImplTest {
 
             // Act & Assert
             assertThatThrownBy(() -> userService.getUserByUsername(username))
-                    .isInstanceOf(UsernameNotFoundException.class)
-                    .hasMessage("User not found with username: " + username);
+                    .isInstanceOf(UserNotFoundException.class)
+                    .hasMessageContaining("User not found");
         }
     }
 }

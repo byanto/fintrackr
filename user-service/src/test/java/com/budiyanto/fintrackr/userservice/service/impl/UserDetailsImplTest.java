@@ -20,7 +20,7 @@ class UserDetailsImplTest {
         Role userRole = new Role("ROLE_USER");
         Role adminRole = new Role("ROLE_ADMIN");
 
-        User user = new User("testuser", "password123", "test@example.com");
+        User user = new User("testuser", "password123", "John", "Doe", "test@example.com");
         user.addRole(userRole);
         user.addRole(adminRole);
 

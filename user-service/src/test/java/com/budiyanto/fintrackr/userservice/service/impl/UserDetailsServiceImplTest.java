@@ -45,8 +45,10 @@ class UserDetailsServiceImplTest {
 
             String username = "testuser";
             String password = "password";
+            String firstName = "John";
+            String lastName = "Doe";
             String email = "test@example.com";
-            User user = new User(username, password, email);
+            User user = new User(username, password, firstName, lastName, email);
             user.addRole(role);
 
             when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));

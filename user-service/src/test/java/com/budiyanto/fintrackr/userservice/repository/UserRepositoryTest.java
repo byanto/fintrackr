@@ -25,6 +25,8 @@ class UserRepositoryTest {
 
     private static final String USERNAME = "testuser";
     private static final String PASSWORD = "testpassword";
+    private static final String FIRST_NAME = "John";
+    private static final String LAST_NAME = "Doe";
     private static final String EMAIL = "test@email.com";
 
     private User user;
@@ -38,7 +40,7 @@ class UserRepositoryTest {
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
-        user = new User(USERNAME, PASSWORD, EMAIL);
+        user = new User(USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
     }
 
     @Test
@@ -108,7 +110,7 @@ class UserRepositoryTest {
         Role userRole = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new IllegalStateException("Default role ROLE_USER not found"));
 
-        User user = new User(USERNAME, PASSWORD, EMAIL);
+        User user = new User(USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL);
         user.addRole(userRole);
 
         // Act

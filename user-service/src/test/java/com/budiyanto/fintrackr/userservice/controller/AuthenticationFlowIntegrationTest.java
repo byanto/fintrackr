@@ -84,8 +84,11 @@ public class AuthenticationFlowIntegrationTest {
         // Arrange
         String username = "integration.user";
         String password = "Password123!";
+        String firstName = "John";
+        String lastName = "Doe";
         String email = "integration.user@email.com";
-        UserRegistrationRequest registrationRequest = new UserRegistrationRequest(username, password, email);
+        
+        UserRegistrationRequest registrationRequest = new UserRegistrationRequest(username, password, firstName, lastName, email);
 
         // Act: Call the registration endpoint
         ResponseEntity<UserResponse> registrationResponse = restTemplate.postForEntity(
@@ -133,7 +136,9 @@ public class AuthenticationFlowIntegrationTest {
         // === 1. SETUP: Register and Login to get a valid refresh token ===
         String username = "renew.user";
         String password = "Password123!";
-        UserRegistrationRequest registrationRequest = new UserRegistrationRequest(username, password, "renew.user@email.com");
+        String firstName = "John";
+        String lastName = "Doe";
+        UserRegistrationRequest registrationRequest = new UserRegistrationRequest(username, password, firstName, lastName, "renew.user@email.com");
         restTemplate.postForEntity("/api/auth/register", registrationRequest, UserResponse.class);
 
         // Arrange: Control the clock for the first call
@@ -186,7 +191,9 @@ public class AuthenticationFlowIntegrationTest {
     void should_return403Forbidden_when_refreshTokenNotExistsForTokenRenewal() {
         // Arrange: Register a user so the username is valid, but we won't use their actual token.
         String username = "invalid.token.user";
-        UserRegistrationRequest registrationRequest = new UserRegistrationRequest(username, "Password123!", "invalid.token.user@email.com");
+        String firstName = "John";
+        String lastName = "Doe";
+        UserRegistrationRequest registrationRequest = new UserRegistrationRequest(username, "Password123!", firstName, lastName, "invalid.token.user@email.com");
         restTemplate.postForEntity("/api/auth/register", registrationRequest, UserResponse.class);
 
         // Arrange: Create a request with a completely fake refresh token
@@ -210,7 +217,9 @@ public class AuthenticationFlowIntegrationTest {
         // === 1. SETUP: Register and Login to get a valid refresh token ===       
 
         String username = "expired.token.user";
-        UserRegistrationRequest registrationRequest = new UserRegistrationRequest(username, "Password123!", "expired.token.user@email.com");
+        String firstName = "John";
+        String lastName = "Doe";
+        UserRegistrationRequest registrationRequest = new UserRegistrationRequest(username, "Password123!", firstName, lastName, "expired.token.user@email.com");
         restTemplate.postForEntity("/api/auth/register", registrationRequest, UserResponse.class);
 
         // Arrange: Set the clock for the login call
