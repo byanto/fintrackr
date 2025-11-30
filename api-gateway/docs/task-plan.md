@@ -14,26 +14,25 @@
 
 ### Epic 2: Dynamic Route Configuration `(COMPLETED)`
 *   **Story:** As a developer, I need to configure the gateway to dynamically route requests to downstream services based on their registered names.
-    *   `[x]` Configure routes in `application.yml` for `user-service` and `investment-service`.
+    *   `[x]` Configure routes in `GatewayConfig.java` for `user-service` and `investment-service`.
     *   `[x]` Use the `lb://` (load balancer) protocol to enable service discovery-based routing.
     *   `[x]` Define path predicates for each route (e.g., `/api/auth/**` -> `user-service`, `/api/investments/**` -> `investment-service`).
 
 ---
 
-### Epic 3: Centralized Authentication Filter `(IN PROGRESS)`
-*   **Story:** As a developer, I need to secure service endpoints by validating JWTs at the gateway level.
-    *   `[x]` Create the `AuthenticationConverter.java` class.
-    *   `[ ]` **(Next Task)** Create a `RouterValidator.java` class to define which endpoints are public (e.g., `/auth/login`, `/auth/register`) and which are secured.
-    *   `[ ]` **(Next Task)** Create a `JwtService.java` class to handle JWT parsing and validation logic, using the shared JWT secret.
-    *   `[ ]` **(Next Task)** Inject `RouterValidator` and `JwtUtil` into the `AuthenticationFilter`.
-    *   `[ ]` **(Next Task)** Complete the filter logic to:
-        *   Check if the route is secured.
-        *   Extract the `Authorization` header.
-        *   Validate the JWT using `JwtUtil`.
-        *   Return an `UNAUTHORIZED` status on failure.
-    *   `[ ]` **(Next Task)** Implement the request enrichment logic to add user headers (`X-Authenticated-User-Username`) upon successful validation.
-    *   `[ ]` **(Next Task)** Apply the `AuthenticationFilter` to the appropriate routes in the `application.yml` configuration.
-    *   `[ ]` **(Next Task)** Write integration tests for the gateway to verify:
+### Epic 3: Centralized Reactive Security `(IN PROGRESS)`
+*   **Story:** As a developer, I need to secure service endpoints by integrating with Spring Security to validate JWTs at the gateway level.
+    *   `[x]` Add `spring-boot-starter-security` dependency.
+    *   `[x]` Create a `JwtService.java` class to handle JWT parsing and validation logic.
+    *   `[x]` Create the `AuthenticationConverter.java` class to extract the bearer token from the request header.
+    *   `[x]` Create the `JwtAuthenticationManager.java` to validate the token and populate the `Authentication` object with the user's principal and roles.
+    *   `[x]` Create `SecurityConfig.java` to define the security filter chain.
+        *   `[x]` Disable CSRF, Form Login, and HTTP Basic authentication.
+        *   `[x]` Define public vs. authenticated routes using `authorizeExchange`.
+        *   `[x]` Wire up the `AuthenticationWebFilter` with the custom converter and manager.
+    *   `[x]` Remove the old manual `AuthenticationFilter` and `RouterValidator`.
+    *   `[x]` Update `GatewayConfig.java` to remove the manual filter from the routes.
+    *   `[ ]` **(Next Task)** Write integration tests for the security flow to verify:
         *   Public routes are accessible without a token.
         *   Secured routes are blocked without a token.
         *   Secured routes are blocked with an invalid/expired token.
