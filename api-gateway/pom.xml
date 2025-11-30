@@ -14,6 +14,12 @@
 	<name>api-gateway</name>
 	<description>API Gateway for the Fintrackr application</description>
 	<dependencies>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>

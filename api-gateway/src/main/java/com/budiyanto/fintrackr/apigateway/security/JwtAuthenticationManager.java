@@ -9,33 +9,32 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import com.budiyanto.fintrackr.apigateway.service.JwtService;
+
 import io.jsonwebtoken.Claims;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Component
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
 
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
 
     @Override
     @SuppressWarnings("unchecked")
     public Mono<Authentication> authenticate(Authentication authentication) {
         String authToken = authentication.getCredentials().toString();
-
-        try {
-            // The jjwt library's parse method validates the token's signature and expiration.
-            // If it fails, it throws an exception, and we return an empty Mono.
-            Claims claims = jwtUtil.getAllClaimsFromToken(authToken);
-            String username = claims.getSubject();
-            List<String> roles = claims.get("roles", List.class);
-            List<SimpleGrantedAuthority> authorities = roles.stream()
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
-            return Mono.just(new UsernamePasswordAuthenticationToken(username, null, authorities));
-        } catch (Exception ex) {
-            return Mono.empty(); // Token is invalid, authentication fails.
-        }
+        return Mono.just(jwtService.isValidToken(authToken))
+                .filter(valid -> valid)
+                .map(valid -> {
+                    Claims claims = jwtService.getAllClaimsFromAccessToken(authToken);
+                    String username = claims.getSubject();
+                    List<String> roles = claims.get("roles", List.class);
+                    List<SimpleGrantedAuthority> authorities = roles.stream()
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList());
+                    return new UsernamePasswordAuthenticationToken(username, null, authorities);
+                });
     }
 }

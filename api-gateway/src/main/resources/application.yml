@@ -7,19 +7,7 @@ spring:
   cloud:
     gateway:
       server:
-        webflux:
-          routes:
-            # Route requests for the user-service
-            - id: user-service-route
-              uri: lb://user-service
-              predicates:
-                - Path=/api/auth/**, /api/users/** # Forward requests for auth and user endpoints
-
-            # Route requests for the investment-service
-            - id: investment-service-route
-              uri: lb://investment-service
-              predicates:
-                - Path=/api/investments/** # Forward requests for investment endpoints
+        webflux: {}
 
 eureka:
   client:
@@ -35,7 +23,4 @@ fintrackr:
     # In a production environment, this MUST be overridden with a strong, securely-stored secret,
     # for example, via environment variables or a configuration server.
     # This is a Base64 encoded string for: "Well Hello There! This is a Testing Secret Key For JWT Signing"
-    secret: "V2VsbCBIZWxsbyBUaGVyZSEgVGhpcyBpcyBhIFRlc3RpbmcgU2VjcmV0IEtleSBGb3IgSldUIFNpZ25pbmc="
-    expiration:
-      # Token validity in milliseconds. 3600000ms = 1 hour
-      ms: 3600000
+    secret: V2VsbCBIZWxsbyBUaGVyZSEgVGhpcyBpcyBhIFRlc3RpbmcgU2VjcmV0IEtleSBGb3IgSldUIFNpZ25pbmc=

@@ -16,15 +16,15 @@
 *   **Story:** As a developer, I need to configure the gateway to dynamically route requests to downstream services based on their registered names.
     *   `[x]` Configure routes in `application.yml` for `user-service` and `investment-service`.
     *   `[x]` Use the `lb://` (load balancer) protocol to enable service discovery-based routing.
-    *   `[x]` Define path predicates for each route (e.g., `/auth/**` -> `user-service`, `/api/investments/**` -> `investment-service`).
+    *   `[x]` Define path predicates for each route (e.g., `/api/auth/**` -> `user-service`, `/api/investments/**` -> `investment-service`).
 
 ---
 
 ### Epic 3: Centralized Authentication Filter `(IN PROGRESS)`
 *   **Story:** As a developer, I need to secure service endpoints by validating JWTs at the gateway level.
-    *   `[x]` **(Partially Done)** Create the `AuthenticationFilter.java` class.
+    *   `[x]` Create the `AuthenticationConverter.java` class.
     *   `[ ]` **(Next Task)** Create a `RouterValidator.java` class to define which endpoints are public (e.g., `/auth/login`, `/auth/register`) and which are secured.
-    *   `[ ]` **(Next Task)** Create a `JwtUtil.java` class to handle JWT parsing and validation logic, using the shared JWT secret.
+    *   `[ ]` **(Next Task)** Create a `JwtService.java` class to handle JWT parsing and validation logic, using the shared JWT secret.
     *   `[ ]` **(Next Task)** Inject `RouterValidator` and `JwtUtil` into the `AuthenticationFilter`.
     *   `[ ]` **(Next Task)** Complete the filter logic to:
         *   Check if the route is secured.
