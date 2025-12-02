@@ -24,3 +24,4 @@ fintrackr:
     # for example, via environment variables or a configuration server.
     # This is a Base64 encoded string for: "Well Hello There! This is a Testing Secret Key For JWT Signing"
     secret: V2VsbCBIZWxsbyBUaGVyZSEgVGhpcyBpcyBhIFRlc3RpbmcgU2VjcmV0IEtleSBGb3IgSldUIFNpZ25pbmc=
+    expiration: 1h

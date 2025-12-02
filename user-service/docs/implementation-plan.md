@@ -19,6 +19,8 @@ The work will be broken down into the following high-level epics:
 - **Epic 5: Service Hardening & Observability:** Ensure the service is robust, testable, and production-ready with proper logging, health checks, and configuration.
 - **Epic 6: API Documentation & Developer Experience:** Provide clear, interactive, and auto-generated API documentation for all public-facing endpoints.
 - **Epic 7: Containerization:** Package the application as a container image for consistent deployment.
+- **Epic 8: Centralized Configuration Management:** Move all service configurations to a central, version-controlled server.
+- **Epic 9: Resilient Inter-Service Communication:** Implement fault-tolerant communication between services using modern patterns like circuit breakers.
 
 ---
 
@@ -34,6 +36,8 @@ A standard layered Spring Boot application that is part of a larger microservice
 - **Testability First:** All code must be written with testability in mind (Test-Driven Development). Dependencies on external systems (like the system clock) must be made explicit and injectable.
 - **Time as a Dependency:** All time-sensitive logic (e.g., JWT creation) uses an injected `java.time.Clock` instead of `System.currentTimeMillis()` to ensure deterministic testing.
 - **API Documentation:** All endpoints are documented using OpenAPI 3 (SpringDoc) to ensure a good developer experience for API consumers.
+- **Fault Tolerance:** Services must be designed to handle failures in downstream services gracefully. We will use patterns like Circuit Breakers to prevent cascading failures.
+- **Configuration as Code:** All service configurations will be managed centrally in a Git repository, promoting consistency and auditability.
 
 ---
 
@@ -45,7 +49,7 @@ A standard layered Spring Boot application that is part of a larger microservice
 - **Security:** Spring Security, JSON Web Tokens (JWT)
 - **API Documentation:** OpenAPI 3 (via SpringDoc)
 - **Build Tool:** Maven
-- **Microservice Patterns:** Service Discovery (with Eureka), Centralized Configuration (planned).
+- **Microservice Patterns:** Service Discovery (Eureka), Centralized Configuration (Spring Cloud Config), Resilient Communication (Resilience4j), Declarative REST Clients (OpenFeign).
 - **Testing:** JUnit 5, Mockito, Testcontainers for integration tests.
 
 ---

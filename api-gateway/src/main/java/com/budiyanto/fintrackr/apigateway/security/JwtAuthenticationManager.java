@@ -3,6 +3,7 @@ package com.budiyanto.fintrackr.apigateway.security;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,8 +26,9 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
     @SuppressWarnings("unchecked")
     public Mono<Authentication> authenticate(Authentication authentication) {
         String authToken = authentication.getCredentials().toString();
-        return Mono.just(jwtService.isValidToken(authToken))
+        return Mono.justOrEmpty(jwtService.isValidToken(authToken))
                 .filter(valid -> valid)
+                .switchIfEmpty(Mono.error(new BadCredentialsException("Invalid token")))
                 .map(valid -> {
                     Claims claims = jwtService.getAllClaimsFromAccessToken(authToken);
                     String username = claims.getSubject();

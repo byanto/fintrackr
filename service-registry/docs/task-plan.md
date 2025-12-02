@@ -1,10 +1,11 @@
 # Fintrackr Service Registry: Task Plan (Actionable Breakdown)
 
-*Tasks that are completed are marked as `[x]`.*
+*Here is the breakdown of tasks for each epic. Tasks that are completed or partially completed are marked as `[x]`.*
 
 ---
 
 ### Epic 1: Foundational Server Setup `(COMPLETED)`
+
 *   **Story:** As a developer, I need a running service registry so that other microservices can find each other.
     *   `[x]` Initialize a new Spring Boot project with Maven.
     *   `[x]` Add the `spring-cloud-starter-netflix-eureka-server` dependency.
@@ -17,6 +18,7 @@
 ---
 
 ### Epic 2: Server Hardening & High Availability `(PENDING)`
+
 *   **Story:** As an operator, I need to monitor the health and status of the service registry.
     *   `[ ]` **(Next Task)** Add Spring Boot Actuator dependency.
     *   `[ ]` **(Next Task)** Configure Actuator to expose `health` and `info` endpoints.
@@ -30,7 +32,17 @@
 ---
 
 ### Epic 3: Containerization `(COMPLETED)`
+
 *   **Story:** As a developer, I need to build and run the service as a container for consistent deployments.
     *   `[x]` Add `jib-maven-plugin` to the parent POM to build container images without a Dockerfile.
     *   `[x]` Configure the plugin in the service's `pom.xml` to expose the correct container port.
     *   `[x]` Add a service entry to `docker-compose.yml` to orchestrate the container during local development.
+
+---
+
+### Epic 4: Centralized Configuration `(PENDING)`
+
+*   **Story:** As a developer, I need the service registry to receive its configuration from the central config server for consistency.
+    *   `[ ]` Add the `spring-cloud-starter-config` dependency.
+    *   `[ ]` Create a `bootstrap.yml` file to point the service to the `config-server`.
+    *   `[ ]` Move existing configuration from `application.yml` to a new `service-registry.yml` file in the `config-repo` Git repository.

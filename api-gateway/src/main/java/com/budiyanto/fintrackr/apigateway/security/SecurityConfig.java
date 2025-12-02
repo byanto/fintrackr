@@ -12,7 +12,7 @@ import org.springframework.security.web.server.authentication.AuthenticationWebF
 import lombok.RequiredArgsConstructor;
 
 @Configuration
-@EnableWebFluxSecurity
+// @EnableWebFluxSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 

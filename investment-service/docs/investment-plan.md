@@ -20,6 +20,8 @@ The work will be broken down into the following high-level epics:
 - **Epic 6: API Documentation:** Implement SpringDoc to generate and expose the service's OpenAPI specification.
 - **Epic 7: Service Hardening & Observability:** Ensure the service is robust, testable, and production-ready.
 - **Epic 8: Containerization:** Package the application as a container image for consistent deployment.
+- **Epic 9: Centralized Configuration Management:** Move all service configurations to a central, version-controlled server.
+- **Epic 10: Resilient Inter-Service Communication:** Implement fault-tolerant communication for any future calls to other services.
 
 ---
 
@@ -27,6 +29,10 @@ The work will be broken down into the following high-level epics:
 
 - **Domain-Driven Design (DDD):** The service is structured around the core business domain. The database schema clearly defines aggregates like `Portfolio`, `Instrument`, `BrokerAccount`, `Trade`, and `Holding`.
 - **Event-Sourcing Pattern:** The use of an immutable `Trade` table as an event log, which is then used to calculate the current state in the `Holding` table, is a core design principle. This provides a full audit history.
+-   **Database Schema Management:** The database schema is managed through version-controlled SQL scripts using Flyway, ensuring consistent and repeatable database state across all environments.
 - **Stateless & Secure:** The service is a stateless resource server. It trusts the `api-gateway` for authentication and relies on enriched headers (e.g., `X-Authenticated-User-Id`) for authorization.
 - **Testability First:** All code must be written with testability in mind.
 - **API Documentation:** All endpoints must be documented using OpenAPI 3 (SpringDoc).
+- **Version-Controlled Migrations:** Database schema changes must be managed via Flyway migration scripts. Hibernate's `ddl-auto` will be set to `validate`.
+- **Fault Tolerance:** The service must be designed to handle failures in downstream services gracefully using patterns like Circuit Breakers.
+- **Configuration as Code:** All service configurations will be managed centrally in a Git repository, promoting consistency and auditability.

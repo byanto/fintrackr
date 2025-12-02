@@ -10,7 +10,8 @@
     *   **Standalone Infrastructure:** The registry is a pure server. It does not register with itself or fetch registry information from other sources (unless configured for high availability).
     *   **High Availability (Future Goal):** While currently a single instance, the design should allow for peer-aware replication in a production environment to avoid a single point of failure.
     *   **Convention over Configuration:** The service uses the standard Eureka port (`8761`) and follows default Spring Cloud behaviors where possible.
-*   **Technology Stack:** Java 21, Spring Boot 3, Spring Cloud Netflix Eureka Server.
+    *   **Configuration as Code:** The server's configuration will be managed by a central Config Server for consistency and dynamic updates.
+*   **Technology Stack:** Java 21, Spring Boot 3, Spring Cloud Netflix Eureka Server, Spring Cloud Config Client.
 
 ---
 
@@ -19,3 +20,4 @@
 *   **Epic 1: Foundational Server Setup:** Establish a basic, functional Eureka server that services can register with.
 *   **Epic 2: Server Hardening & High Availability:** Ensure the server is observable and can be configured for a multi-instance, production-grade setup.
 *   **Epic 3: Containerization:** Package the application as a container image for consistent deployment.
+*   **Epic 4: Centralized Configuration:** Connect the server to the central config server to externalize its configuration.

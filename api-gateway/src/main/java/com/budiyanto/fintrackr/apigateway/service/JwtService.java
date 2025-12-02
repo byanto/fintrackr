@@ -1,5 +1,11 @@
 package com.budiyanto.fintrackr.apigateway.service;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
@@ -12,14 +18,21 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
 
     @Value("${fintrackr.jwt.secret}")
     private String secret;
 
+    @Value("${fintrackr.jwt.expiration}")
+    private Duration accessTokenExpiration;
+
     private SecretKey key;
+
+    private final Clock clock;
 
     @PostConstruct
     public void init() {
@@ -47,9 +60,32 @@ public class JwtService {
     }
 
     public boolean isValidToken(String token) {
-        // The parser will throw an exception if the token is invalid (e.g., expired, malformed, wrong signature)
-        getAllClaimsFromAccessToken(token);
-        return true;
+        try {
+            // The parser will throw an exception if the token is invalid (e.g., expired, malformed, wrong signature)
+            getAllClaimsFromAccessToken(token);
+            return true;
+        } catch(Exception ex) {
+            // Any exception (MalformedJwtException, ExpiredJwtException, etc.) means the token is invalid
+            return false;
+        }    
+    }
+
+    public String generateAccessToken(String username, List<String> roles) {
+        var claims = new HashMap<String, Object>();
+        // Add roles to the token
+        claims.put("roles", roles);
+
+        Instant now = clock.instant();
+        Date currentDate = Date.from(now);
+        Date expDate = Date.from(now.plus(accessTokenExpiration));
+        
+        return Jwts.builder()
+                .claims(claims)
+                .subject(username)
+                .issuedAt(currentDate)
+                .expiration(expDate)
+                .signWith(key)
+                .compact();
     }
     
 }

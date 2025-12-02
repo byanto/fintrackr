@@ -11,6 +11,8 @@
     *   **"Spring-Native" Security:** It implements a proper reactive security flow using a custom `ReactiveAuthenticationManager` and `ServerAuthenticationConverter` to validate JWTs and populate the `SecurityContext`.
     *   **Dynamic Routing:** It uses the `service-registry` (Eureka) to dynamically discover and route to service instances via the `lb://` protocol, avoiding hardcoded locations.
     *   **Programmatic Configuration:** Routes are defined in `GatewayConfig.java` and security rules in `SecurityConfig.java`, providing a clear and powerful separation of concerns.
+    *   **Fault Tolerance:** The gateway must protect the system from downstream service failures. It will use patterns like Circuit Breakers (Resilience4j) to fail fast and prevent cascading failures.
+    *   **Configuration as Code:** The gateway's critical configuration (routes, security rules, timeouts) will be managed by a central Config Server to allow for dynamic updates without redeployment.
 *   **Technology Stack:** Java 21, Spring Boot 3, Spring Cloud Gateway, Eureka Client, JJWT, Project Reactor.
 
 ---
@@ -23,3 +25,4 @@
 *   **Epic 4: Gateway Hardening & Observability:** Add logging, health checks, and potentially rate limiting and circuit breaking to make the gateway robust and production-ready.
 *   **Epic 5: Unified API Documentation:** Configure the gateway to aggregate and display OpenAPI (Swagger) documentation from all downstream services.
 *   **Epic 6: Containerization:** Package the application as a container image for consistent deployment.
+*   **Epic 7: Centralized Configuration:** Connect the gateway to the central config server to externalize its configuration.

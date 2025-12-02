@@ -1,0 +1,22 @@
+# This ensures that if the main application.yml has Eureka configured,
+# it won't try to connect during tests.
+# spring:
+#   cloud:
+#     gateway:
+#       server:
+#         webflux:
+#           routes:
+#           - id: user-service-route
+#             uri: lb://user-service # Use LoadBalancer for service discovery
+#             predicates:
+#               - Path=/api/auth/**
+
+
+eureka:
+  client:
+    enabled: false
+
+fintrackr:
+  jwt:
+    secret: YSB2ZXJ5IGxvbmcgdGVzdGluZyBzZWNyZXQgdG9rZW4=
+    expiration: 1h # 1 hour
