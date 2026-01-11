@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class InvestmentTest {
 
     @Test
-    void shouldCreateInvestment() {
+    void givenValidData_whenCreatingInvestment_thenSucceed() {
         // Given
         var id = "123";
         var name = "Tesla Stock";
