@@ -8,6 +8,8 @@
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath> <!-- lookup parent from repository -->
     </parent>
+
+    <groupId>com.budiyanto.fintrackr</groupId>
     <artifactId>investment-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>investment-service</name>
@@ -73,6 +75,16 @@
             <artifactId>mapstruct-processor</artifactId>
             <version>${mapstruct.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.javamoney.moneta</groupId>
+            <artifactId>moneta-core</artifactId>
+            <version>${moneta.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.f4b6a3</groupId>
+            <artifactId>uuid-creator</artifactId>
+            <version>${uuid-creator.version}</version>
         </dependency>
         <!-- Test Dependencies -->
         <dependency>

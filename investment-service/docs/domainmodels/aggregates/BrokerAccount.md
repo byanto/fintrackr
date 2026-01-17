@@ -7,6 +7,12 @@ and a list of portfolios managed within this account.
 
 ```java
 class BrokerAccount {
+    private BrokerAccountId id;
+    private String name; // min length: 3, max length: 255
+    private Broker broker;
+    private Rdn rdn; // balance must be positive
+    private List<PortfolioId> portfolioIds;
+    
     // TODO: Add methods here
 }
 ```
