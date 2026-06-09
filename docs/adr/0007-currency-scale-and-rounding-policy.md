@@ -1,6 +1,6 @@
 # ADR-007: Currency Scale and Rounding Policy for IDR
 
-- **Status:** Accepted
+- **Status:** Accepted (amended 2026-06-08)
 - **Date:** 2026-05-25
 - **Deciders:** Budi Yanto
 
@@ -31,6 +31,16 @@ Money fee = Money.of(rawFee)                              // routes through comp
 // fee.amount() == BigDecimal("1478"), scale 0
 ```
 *Compare: had the price been 9851, rawFee = 1477.65 -> rounds to 1478 (HALF_EVEN, no exact-half case). Had it been an exact-half case like 1478.5, HALF_EVEN picks 1478; HALF_UP would have picked 1479.*
+
+## Amendment — 2026-06-08: JavaMoney/JSR-354 considered and rejected; record confirmed
+
+Implementing `Money` prompted an evaluation of JavaMoney (JSR-354, reference impl Moneta) and Joda-Money as alternatives to the hand-rolled `BigDecimal`-backed value object.
+
+- **JavaMoney / JSR-354 — rejected for v1.** It is a finalised JSR but not part of the JDK (an external dependency). Its strengths — multi-currency, FX, locale formatting, pluggable rounding — are exactly what v1 scopes out. Adopting it now would: import a dependency into the domain layer (against ADR-009's dependency-light domain); complicate persistence (mapping `MonetaryAmount` through JPA/MapStruct versus a single `NUMERIC` column); and weaken the construction-time normalisation guarantee (JavaMoney rounds via an explicit operation, not at construction), forcing a wrapper that re-creates this VO. Crucially, the cheap multi-currency *transition* the library appears to offer is already provided by **encapsulation** — `Money` already carries a `Currency` and is built only via factory/compact constructor, so the implementation is a swappable detail behind that seam. Multi-currency's hard parts (FX policy, the cross-currency cash invariant, consolidation currency) are domain changes the library does not solve.
+- **Joda-Money — also rejected for v1.** Lighter than JavaMoney (money without the FX framework), but still more than a single-currency, scale-0 IDR value object needs.
+- **Decision unchanged:** keep the hand-rolled `record Money`. If multi-currency lands (the deferred v2 item), revisit Joda-Money/JavaMoney *then*, swapping the implementation behind the existing factory seam.
+
+**Record vs class (settled):** keep `Money` a `record`. A public record's canonical constructor cannot be made more restrictive than the record, so it cannot be hidden — but because validation/normalisation lives in the compact constructor, *every* construction path is already safe. Switching to a class with a private constructor plus factory would trade away records' correct `equals`/`hashCode`, immutability, and pattern-matching for no safety gain. Reach for class-plus-private-constructor only when the factory must do more than construct (caching, polymorphic returns) — which `Money` does not.
 
 ## Alternatives Considered
 

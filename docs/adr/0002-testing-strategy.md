@@ -1,6 +1,6 @@
 # ADR-002: Testing Strategy for Fintrackr
 
-- **Status:** Accepted
+- **Status:** Accepted (amended 2026-06-08)
 - **Date:** 2026-05-24
 - **Deciders:** Budi Yanto
 
@@ -31,6 +31,20 @@ Stack:
 - **Mockito** — used sparingly; mock collaborators, not the system under test
 - **Testcontainers** — real PostgreSQL for repository and integration tests
 - **Spring Boot test slices** — for adapter testing without full context
+
+## Amendment — 2026-06-08: Concrete test conventions
+
+ADR-002 set the testing *strategy* (TDD on the domain, test-after on adapters, the pyramid, the stack). Implementing the first domain value object (`Money`) surfaced the need to pin the *conventions* the strategy is written in, so tests are consistent from the start:
+
+- **Domain tests are plain JUnit 5 unit tests — no Spring context.** Value objects and aggregates are pure Java; no `@SpringBootTest` in the domain layer.
+- **Structure:** Arrange–Act–Assert, written as `// given / // when / // then`.
+- **Assertions:** AssertJ `assertThat` imported from `org.assertj.core.api.Assertions` (not `BDDAssertions`). For `BigDecimal`, `isEqualByComparingTo` for numeric equality and `isEqualTo` for value-object equality. Mock interaction (later, in application-service tests) uses BDDMockito `given`/`then` — keeping `then` for mocks and `assertThat` for values avoids the word collision.
+- **Naming:** behaviour-revealing method names (`should_<expected>_when_<condition>`), with `@DisplayName` carrying the full sentence; the method name need not duplicate it.
+- **Parameterized tests** (`@ParameterizedTest` + `@CsvSource`) for tabular cases (e.g. rounding), including the cases that *distinguish* the policy (HALF_EVEN vs HALF_UP).
+- **Tests must be able to fail:** choose inputs that would break if the behaviour were absent (a scale-0 normalisation test needs a non-zero-scale input).
+- **Exceptions:** assert on type (`isInstanceOf`) and at most `hasMessageContaining`; never assert exact message strings.
+
+These are conventions, not strategy changes; ADR-002's decisions stand.
 
 ## Alternatives Considered
 
