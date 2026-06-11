@@ -4,8 +4,6 @@
 - **Date:** 2026-05-31
 - **Deciders:** Budi Yanto
 
-> **Numbering note:** The domain model §11 had pencilled "ADR-008" in for the future *database strategy* decision. Because this Quantity/Percentage decision is the next ADR actually written, it takes number 008 (ADR numbers run in creation order). **Agreed:** the database-strategy ADR will be assigned a new (later) number, and the §11 reference updated accordingly.
-
 ## Context
 
 ADR-007 fixed the scale and rounding policy for **`Money`** (`HALF_EVEN`, scale 0, normalization in the compact constructor, factory methods as the public API) and explicitly scoped itself to currency — deferring `Quantity` and `Percentage`.
@@ -73,7 +71,7 @@ The **fee amount recorded on a transaction is the source of truth** (expected-vs
 - A generous `Percentage` scale removes a fragile precision dependency from fee math.
 
 ### Negative (costs we explicitly accept)
-- With one `Quantity` type, a share quantity and a unit quantity are the *same* Java type; nothing at the type level prevents mixing them in arithmetic. Mitigated because, within a single symbol's holding, all quantities are the same kind, so mixing never arises in correct code. A runtime same-kind guard can be added if a need appears. We accept slightly weaker type-safety in exchange for a simpler shared model.
+- With one `Quantity` type, a share quantity and a unit quantity are the *same* Java type; nothing at the type level prevents mixing them in arithmetic. Mitigated because, within a single asset's holding, all quantities are the same kind, so mixing never arises in correct code. A runtime same-kind guard can be added if a need appears. We accept slightly weaker type-safety in exchange for a simpler shared model.
 - Unit scale is fixed at 4. If a broker ever reports *reksa dana* units at finer than 4 dp, that input is **rejected by design** (not silently rounded) and the policy is revisited — a deliberate trade of flexibility for ledger-to-broker fidelity.
 
 ### Neutral / Open Questions
