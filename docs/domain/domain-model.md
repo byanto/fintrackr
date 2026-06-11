@@ -20,25 +20,26 @@ Fintrackr consolidates investment portfolios held across multiple Indonesian bro
 
 Terms in this section have *precise* meanings in code and conversation. Use them consistently.
 
-| Term | Definition |
-|---|---|
-| **Broker Account** | A regulated account with an Indonesian brokerage (e.g., Stockbit, Mandiri Sekuritas). Holds exactly one RDN. |
-| **RDN** | *Rekening Dana Nasabah* — the regulated cash balance at a broker, held in a partner bank under OJK rules. One per Broker Account. |
-| **Portfolio** | A logical grouping of investments inside a Broker Account (e.g., "Long-Term," "Trading"). Has its own *trading balance* — an allocated slice of the broker's RDN. |
-| **Trading Balance** | Cash available within a Portfolio for new investments. Sum of all Portfolio trading balances under a Broker Account equals the Broker Account's RDN. |
-| **Asset** | A tradable instrument: Stock, Mutual Fund, Bond, or Savings. Lives in the Asset Catalog context. Identified by Symbol. |
-| **Symbol** | A typed identifier for an Asset (e.g., `Symbol("BBCA")`). Format-validated; existence-validated only at system boundary. |
-| **Acquisition** | One immutable record of a single Buy decision: open date, open price, open fee, initial quantity. The unit of cost-basis tracking under Specific Identification. |
-| **Holding** | Derived/cached view of all open Acquisitions for a single Symbol within one Portfolio. Displays aggregate quantity, weighted average cost (for display only), invested value, market value, total dividends received. |
-| **Transaction** | An event that changes Portfolio state: Buy, Sell, Dividend, Deposit, or Withdrawal. Immutable once recorded; corrections happen by reversing transactions. |
-| **Sell Allocation** | Value object inside a Sell that specifies which Acquisition is being consumed and how many shares from it. A Sell has one or more. |
-| **Dividend Allocation** | Value object attached to a Acquisition recording the dividend received for that Acquisition at a given cum-date. |
-| **Cum-date** | Cumulative date — the last date an investor must hold the stock to be eligible for a declared dividend. |
-| **Acquisition Selection Strategy** | The rule that decides which Acquisition(s) a Sell consumes: FIFO, LIFO, Highest Cost, Lowest Cost, or Manual (user-specified). |
-| **Fee Structure** | The buy and sell fee rates configured at the Broker Account level. Used to compute expected fees, which the user can override. |
-| **Cost Basis** | The per-lot purchase price including fees, used to compute realized P&L on sells. |
-| **Realized P&L** | Profit or loss locked in by a Sell, computed per consumed Acquisition: `(sellPrice − acquisitionOpenPrice) × shares − allocatedFee`. |
-| **Per-Acquisition Total Return** | Capital gain plus dividends received during the acquisition's holding period — the user's preferred performance metric. |
+| Term                               | Definition                                                                                                                                                                                                            |
+|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Broker Account**                 | A regulated account with an Indonesian brokerage (e.g., Stockbit, Mandiri Sekuritas). Holds exactly one RDN.                                                                                                          |
+| **RDN**                            | *Rekening Dana Nasabah* — the regulated cash balance at a broker, held in a partner bank under OJK rules. One per Broker Account.                                                                                     |
+| **Portfolio**                      | A logical grouping of investments inside a Broker Account (e.g., "Long-Term," "Trading"). Has its own *trading balance* — an allocated slice of the broker's RDN.                                                     |
+| **Trading Balance**                | Cash available within a Portfolio for new investments. Sum of all Portfolio trading balances under a Broker Account equals the Broker Account's RDN.                                                                  |
+| **Asset**                          | A tradable instrument: Stock, Mutual Fund, Bond, or Savings. Lives in the Asset Catalog context. Identified by AssetId (its ISIN).                                                                                    |
+| **Asset Id**                       | The stable identity of an Asset: its ISIN (ISO 6166 — 12 chars, Luhn check digit). Equality is over the ISIN alone. Format-validated in its constructor; existence-validated only at system boundary.                 |
+| **Short Code**                     | An Asset's human handle, a stock's IDX ticker (e.g., AADI) or an assigned fund code. A display/lookup label on the Asset, never the identity; not guaranteed stable across vendors.                                   |
+| **Acquisition**                    | One immutable record of a single Buy decision: open date, open price, open fee, initial quantity. The unit of cost-basis tracking under Specific Identification.                                                      |
+| **Holding**                        | Derived/cached view of all open Acquisitions for a single Symbol within one Portfolio. Displays aggregate quantity, weighted average cost (for display only), invested value, market value, total dividends received. |
+| **Transaction**                    | An event that changes Portfolio state: Buy, Sell, Dividend, Deposit, or Withdrawal. Immutable once recorded; corrections happen by reversing transactions.                                                            |
+| **Sell Allocation**                | Value object inside a Sell that specifies which Acquisition is being consumed and how many shares from it. A Sell has one or more.                                                                                    |
+| **Dividend Allocation**            | Value object attached to a Acquisition recording the dividend received for that Acquisition at a given cum-date.                                                                                                      |
+| **Cum-date**                       | Cumulative date — the last date an investor must hold the stock to be eligible for a declared dividend.                                                                                                               |
+| **Acquisition Selection Strategy** | The rule that decides which Acquisition(s) a Sell consumes: FIFO, LIFO, Highest Cost, Lowest Cost, or Manual (user-specified).                                                                                        |
+| **Fee Structure**                  | The buy and sell fee rates configured at the Broker Account level. Used to compute expected fees, which the user can override.                                                                                        |
+| **Cost Basis**                     | The per-lot purchase price including fees, used to compute realized P&L on sells.                                                                                                                                     |
+| **Realized P&L**                   | Profit or loss locked in by a Sell, computed per consumed Acquisition: `(sellPrice − acquisitionOpenPrice) × shares − allocatedFee`.                                                                                  |
+| **Per-Acquisition Total Return**   | Capital gain plus dividends received during the acquisition's holding period — the user's preferred performance metric.                                                                                               |
 
 ---
 
@@ -49,14 +50,14 @@ Three contexts, each with a clear responsibility.
 ```
                  ┌───────────────────────┐
                  │   Asset Catalog       │   reference data
-                 │   (Symbols, Stocks,   │   lifecycle: external
-                 │    Mutual Funds, etc.)│   referenced by Symbol
+                 │   (Asset Ids, Stocks, │   lifecycle: external
+                 │    Mutual Funds, etc.)│   referenced by AssetId
                  └───────────▲───────────┘
-                             │ Symbol lookup
+                             │ AssetId lookup
                              │ (boundary validation only)
                              │
 ┌────────────────────────┐   │    ┌─────────────────────────────────┐
-│   Brokerage            │◀──┴───│   Portfolio Management          │
+│   Brokerage            │◀──┴─── │   Portfolio Management          │
 │                        │        │                                 │
 │   Broker Account       │        │   Portfolio (aggregate)         │
 │   RDN                  │◀───────│  Acquisitions, Sells, Dividends │
@@ -91,7 +92,7 @@ Portfolio (aggregate root, entity)
 ├─ defaultAcquisitionSelectionStrategy: AcquisitionSelectionStrategy
 ├─ acquisitions: List<Acquisition>           ← immutable on creation
 ├─ transactions: List<Transaction>  ← append-only ledger (Buy, Sell, Dividend, Deposit, Withdrawal)
-└─ holdings: Map<Symbol, Holding>   ← cached, derived from open Acquisitions (per ADR-004)
+└─ holdings: Map<AssetId, Holding>   ← cached, derived from open Acquisitions (per ADR-004)
 ```
 
 ### 4.2 Entities
@@ -102,7 +103,7 @@ Portfolio (aggregate root, entity)
 Acquisition
 ├─ id
 ├─ portfolioId
-├─ symbol: Symbol
+├─ assetId: AssetId
 ├─ openDate
 ├─ openPrice: Money
 ├─ openFee: Money
@@ -121,13 +122,13 @@ sealed interface Transaction
     permits Buy, Sell, Dividend, Deposit, Withdrawal { }
 ```
 
-| Subtype | Attributes |
-|---|---|
-| `Buy` | id, portfolioId, symbol, date, quantity, price, fee, acquisitionId (the Acquisition it opened) |
-| `Sell` | id, portfolioId, symbol, date, pricePerShare, totalFee, allocations: List\<SellAllocation\> |
-| `Dividend` | id, portfolioId, symbol, cumDate, paymentDate, dps (dividend per share), allocations: List\<DividendAllocation\> |
-| `Deposit` | id, portfolioId, amount, date, source (e.g., "RDN") |
-| `Withdrawal` | id, portfolioId, amount, date, destination |
+| Subtype | Attributes                                                                                                        |
+|---|-------------------------------------------------------------------------------------------------------------------|
+| `Buy` | id, portfolioId, assetId, date, quantity, price, fee, acquisitionId (the Acquisition it opened)                   |
+| `Sell` | id, portfolioId, assetId, date, pricePerShare, totalFee, allocations: List\<SellAllocation\>                      |
+| `Dividend` | id, portfolioId, assetId, cumDate, paymentDate, dps (dividend per share), allocations: List\<DividendAllocation\> |
+| `Deposit` | id, portfolioId, amount, date, source (e.g., "RDN")                                                               |
+| `Withdrawal` | id, portfolioId, amount, date, destination                                                                        |
 
 All Transactions are immutable once recorded. Corrections are made by recording a reversing transaction, never by editing.
 
@@ -136,7 +137,7 @@ All Transactions are immutable once recorded. Corrections are made by recording 
 ```
 Holding (derived)
 ├─ portfolioId
-├─ symbol
+├─ assetId
 ├─ totalQuantity         = Σ openAcquisitions.remainingQuantity
 ├─ averageCost (display) = weighted average of open acquisitions' openPrice (for display only — not the basis of accounting)
 ├─ totalInvested         = Σ openAcquisitions.remainingQuantity × openAcquisitions.openPrice + openFee proportion
@@ -148,15 +149,15 @@ Holding (derived)
 
 ### 4.3 Value Objects
 
-| Value Object | Shape | Validation |
-|---|---|---|
-| `Symbol(String value)` | Typed wrapper around ticker | Non-blank; uppercase; matches `[A-Z]{4}` for IDX (refine for mutual funds, bonds later) |
-| `Money(BigDecimal amount, Currency currency)` | All monetary values | amount ≥ 0 for balances; signed for deltas; rounding mode TBD (see ADR-007) |
-| `Quantity(BigDecimal value)` | Shares / units | value > 0 for transactions; ≥ 0 for derived state |
-| `Percentage(BigDecimal rate)` | Used for fee rates | 0 ≤ rate ≤ 1 |
-| `SellAllocation(acquisitionId, sharesSoldFromAcquisition, feeAllocated)` | Inside `Sell` | sharesSoldFromAcquisition > 0; sharesSoldFromAcquisition ≤ acquisition.remainingQuantity at sell time; feeAllocated proportional |
-| `DividendAllocation(cumDate, paymentDate, dps, sharesEligibleAtCumDate, amount)` | Attached to `Acquisition` | sharesEligibleAtCumDate > 0; amount = sharesEligibleAtCumDate × dps |
-| `AcquisitionSelectionStrategy` | Sealed interface | See below |
+| Value Object                                                                     | Shape                                 | Validation |
+|----------------------------------------------------------------------------------|---------------------------------------|---|
+| `AssetId(String value)`                                                          | Typed asset identity wrapping an ISIN | 12 chars; uppercase alphanumeric; ISO-6166 Luhn check digit; malformed → `llegalArgumentException` (ADR-011); equality over the ISIN |
+| `Money(BigDecimal amount, Currency currency)`                                    | All monetary values                   | amount ≥ 0 for balances; signed for deltas; rounding mode TBD (see ADR-007) |
+| `Quantity(BigDecimal value)`                                                     | Shares / units                        | value > 0 for transactions; ≥ 0 for derived state |
+| `Percentage(BigDecimal rate)`                                                    | Used for fee rates                    | 0 ≤ rate ≤ 1 |
+| `SellAllocation(acquisitionId, sharesSoldFromAcquisition, feeAllocated)`         | Inside `Sell`                         | sharesSoldFromAcquisition > 0; sharesSoldFromAcquisition ≤ acquisition.remainingQuantity at sell time; feeAllocated proportional |
+| `DividendAllocation(cumDate, paymentDate, dps, sharesEligibleAtCumDate, amount)` | Attached to `Acquisition`             | sharesEligibleAtCumDate > 0; amount = sharesEligibleAtCumDate × dps |
+| `AcquisitionSelectionStrategy`                                                   | Sealed interface                      | See below |
 
 #### `AcquisitionSelectionStrategy` (sealed)
 
@@ -177,22 +178,22 @@ Each Portfolio has a `defaultAcquisitionSelectionStrategy`. Every `recordSell` c
 
 All in business language. Each enforces its invariants internally before changing state.
 
-| Method | Purpose |
-|---|---|
-| `recordBuy(symbol, quantity, price, fee, date)` | Opens a new Acquisition; updates Holding cache; decrements tradingBalance; **returns the cash delta moved (`quantity × price + fee` as `Money`)** so the orchestrating app service applies that exact value to RDN (single source of truth — no recomputation, no drift); emits `BuyRecorded` event |
-| `recordSell(symbol, quantity, pricePerShare, fee, date, strategy)` | Resolves allocations via strategy; validates against open Acquisitions; updates referenced Acquisitions (derived state changes); updates Holding cache; increments tradingBalance; emits `SellRecorded` event |
-| `recordDividend(symbol, dps, cumDate, paymentDate)` | For every eligible Acquisition of `symbol`, appends a DividendAllocation; increments tradingBalance; emits `DividendReceived` event |
-| `recordDeposit(amount, date, source)` | Increments tradingBalance from external cash inflow; emits `DepositRecorded` |
-| `recordWithdrawal(amount, date, destination)` | Decrements tradingBalance; emits `WithdrawalRecorded` |
-| `transferTo(targetPortfolioId, amount, date)` | Moves cash between portfolios under the same broker (preserves RDN total) |
+| Method                                                             | Purpose |
+|--------------------------------------------------------------------|---|
+| `recordBuy(assetId, quantity, price, fee, date)`                   | Opens a new Acquisition; updates Holding cache; decrements tradingBalance; **returns the cash delta moved (`quantity × price + fee` as `Money`)** so the orchestrating app service applies that exact value to RDN (single source of truth — no recomputation, no drift); emits `BuyRecorded` event |
+| `recordSell(assetId, quantity, pricePerShare, fee, date, strategy)` | Resolves allocations via strategy; validates against open Acquisitions; updates referenced Acquisitions (derived state changes); updates Holding cache; increments tradingBalance; emits `SellRecorded` event |
+| `recordDividend(assetId, dps, cumDate, paymentDate)`                | For every eligible Acquisition of `symbol`, appends a DividendAllocation; increments tradingBalance; emits `DividendReceived` event |
+| `recordDeposit(amount, date, source)`                              | Increments tradingBalance from external cash inflow; emits `DepositRecorded` |
+| `recordWithdrawal(amount, date, destination)`                      | Decrements tradingBalance; emits `WithdrawalRecorded` |
+| `transferTo(targetPortfolioId, amount, date)`                      | Moves cash between portfolios under the same broker (preserves RDN total) |
 
 ### 4.5 Domain events emitted
 
 Typed events (Spring Modulith `@ApplicationModuleListener` consumers):
 
-- `BuyRecorded(portfolioId, acquisitionId, symbol, quantity, price, fee, date)`
-- `SellRecorded(portfolioId, sellId, symbol, allocations, pricePerShare, fee, date)`
-- `DividendReceived(portfolioId, symbol, allocations, paymentDate)`
+- `BuyRecorded(portfolioId, acquisitionId, assetId, quantity, price, fee, date)`
+- `SellRecorded(portfolioId, sellId, assetId, allocations, pricePerShare, fee, date)`
+- `DividendReceived(portfolioId, assetId, allocations, paymentDate)`
 - `DepositRecorded(portfolioId, amount, date, source)`
 - `WithdrawalRecorded(portfolioId, amount, date, destination)`
 - `TradingBalanceChanged(portfolioId, delta, newBalance)` ← consumed by Brokerage to sync RDN. The cash sync to BrokerAccount RDN is performed by application-service orchestration in one transaction per ADR-003, not by a domain event in v1. A `TradingBalanceChanged` integration event is deferred until a read-model consumer needs it or the modules are split into services.
@@ -244,19 +245,20 @@ Reference data. Lightweight in v1.
 
 ```java
 sealed interface Asset permits Stock, MutualFund {
-    Symbol symbol();
+    AssetId id();
     String name();
+    String shortCode();
 }
 ```
 
-- **Stock** — symbol, name, sector, currentPrice (eventually fed by external market data)
-- **MutualFund** — code, name, currentNAV
+- **Stock** — id, name, shortCode (IDX ticker), sector, currentPrice (eventually fed by external market data), priceAsOf
+- **MutualFund** — id, name, shortCode (assigned fund code), currentNAV, navAsOf
 
 V1 implementation: small in-memory list seeded manually (Stockbit's most common Indonesian tickers). Future: external feed integration.
 
 ### 6.2 Boundary validation
 
-When Portfolio Management receives a Symbol from the outside (UI, API, importer), it queries Asset Catalog: *"is this Symbol known?"* If not, the operation is rejected at the boundary. Inside the Portfolio aggregate, Symbol existence is trusted.
+Portfolio Management receives an asset reference from outside (UI, API, importer), typically a `shortCode` the user typed, or an `AssetId`; it queries Asset Catalog: *"is this Symbol known?"* If not, the operation is rejected at the boundary; Inside the Portfolio aggregate, `AssetId` existence is trusted.
 
 ---
 
@@ -273,7 +275,7 @@ Migration to event-driven eventual consistency (transactional outbox + listener)
 
 ### 7.2 Asset existence validation
 
-Boundary check only: Portfolio Management consults Asset Catalog when accepting a new Symbol from outside. Internal references trust the data.
+Boundary check only: Portfolio Management consults Asset Catalog when accepting a new asset reference (`shortCode`/`AssetId`) from outside. Internal references trust the data.
 
 ---
 
@@ -290,7 +292,7 @@ Boundary check only: Portfolio Management consults Asset Catalog when accepting 
 - All quantities `> 0`, prices `> 0`, fees `≥ 0`
 - Dividend allocations only on Acquisitions where `openDate ≤ cumDate AND sharesEligibleAtCumDate > 0`
 - Acquisitions are immutable after creation (only derived `remainingQuantity` and `status` change)
-- At most one active Holding per Symbol per Portfolio
+- At most one active Holding per AssetId per Portfolio
 
 ### `BrokerAccount`
 - `rdn ≥ 0`
@@ -298,14 +300,15 @@ Boundary check only: Portfolio Management consults Asset Catalog when accepting 
 - Cross-aggregate (see §7.1): `sum(portfolios.tradingBalance) == rdn`
 
 ### `Asset` (catalog)
-- `Symbol` is unique within the catalog
+- `AssetId` is unique within the catalog
+- `shortCode` is unique within the catalog so user input resolves unambiguously
 
 ---
 
 ## 9. Tactical guidance — patterns to follow
 
 - **Tell, Don't Ask.** Methods on aggregates use business language (`recordBuy`, not `setHoldings`). No public setters on internal entities. Callers express intent; aggregates enforce rules.
-- **Primitive obsession is forbidden.** No raw `String` symbols, no raw `BigDecimal` money, no raw `int` quantities. Every primitive concept gets a typed value object with validation in its constructor.
+- **Primitive obsession is forbidden.** No raw `String` identifiers, no raw `BigDecimal` money, no raw `int` quantities. Every primitive concept gets a typed value object with validation in its constructor.
 - **Immutability bias.** Acquisitions, transactions, value objects are immutable once created. Mutations happen by appending new events (Sells, DividendAllocations) that reference the original.
 - **Boundary validation.** Validate at the edges. Trust data inside the domain.
 - **Domain events are typed and module-internal** (Spring Modulith `@ApplicationModuleListener`). No string-named topics in v1.
@@ -345,6 +348,8 @@ These are deliberate parking lots. Track in `backlog.md`; revisit when implement
 - ADR-003 — Cross-aggregate cash invariant
 - ADR-004 — Transaction ledger as source of truth; Holding cached
 - ADR-005 — Specific Identification cost basis with per-lot dividend attribution
+- ADR-006 — Asset model and family split
+- ADR-012 — Asset identity via ISIN
 - Fintrackr Vision (`01-fintrackr-vision.md`)
 - Eric Evans, *Domain-Driven Design*
 - Vaughn Vernon, *Implementing Domain-Driven Design* — aggregate design chapters

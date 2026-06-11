@@ -1,6 +1,6 @@
 # ADR-006: Asset Model — Position vs Cash Families; `Asset` Hierarchy Scoped to Stock and Mutual Fund for v1
 
-- **Status:** Accepted
+- **Status:** Accepted (amended 2026-06-11)
 - **Date:** 2026-05-31
 - **Deciders:** Budi Yanto
 
@@ -44,6 +44,14 @@ Concrete decisions:
 - **The cash family gets no shared (sealed) supertype in v1.** RDN, Trading Balance, and `SavingsAccount` share only *"they hold a `Money` balance"* — which is **composition**, not a behavioural hierarchy. There is no consumer in v1 that receives "a cash account" and dispatches polymorphically over which kind it is. A thin shared interface is introduced *only later, if a concrete need appears* (e.g., a net-worth read-model that must enumerate and total all cash sources).
 
 - **RDN remains a `Money` field on `BrokerAccount`** — it is **not** promoted to a separate entity, despite having real-world bank/account-number attributes. The decision is made on **identity and lifecycle**, not attribute count: RDN is strictly one-to-one and lifecycle-bound to its `BrokerAccount` and is never referenced independently, so its identity *is* the `BrokerAccount`'s. RDN metadata (bank name, account number) is deferred until broker-statement reconciliation is built — which is already out of v1 scope per ADR-003.
+
+## Amendment — 2026-06-11: MF-identifier-as-ticker premise retracted (see ADR-012)
+
+The clause "MutualFund's identifier is modelled as a `Symbol` so the `Asset` contract holds uniformly" rested on an unverified premise: that mutual funds have a ticker-like symbol. Domain investigation showed they do not (funds are identified by name + investment manager; no uniform short code), while both stocks and funds carry an ISIN.
+
+The uniform `Asset` contract is **retained**, but on a corrected basis: every asset's identity is its **ISIN**, not a ticker. The full decision — `Symbol` → `AssetId` (ISIN-validated), the ticker/code demoted to a `shortCode` attribute on `Asset`, and the resulting `Asset` contract — is recorded in **ADR-012 (Asset Identity via ISIN)**, which supersedes this clause.
+
+This amendment changes only the *identifier* premise. ADR-006's substantive decisions — the position/cash family split, the `Asset` hierarchy scoped to Stock and MutualFund for v1, RDN-as-`Money`-field, Savings deferred — are unaffected.
 
 ## Alternatives Considered
 
