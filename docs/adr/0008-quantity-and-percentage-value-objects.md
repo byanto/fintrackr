@@ -24,7 +24,7 @@ Two facts from ADR-006 constrain the choice:
   - `Quantity.ofUnits(BigDecimal)` — fractional; **canonical scale 4** (matches Indonesian *reksa dana* unit reporting); **rejects** input finer than scale 4 rather than rounding it.
 - **`Quantity` never rounds.** It stores the value faithfully and rejects malformed input. Rationale: a quantity — especially an MF unit count — is a *recorded fact* from the broker (ADR-004); silently rounding it would desync our ledger from the broker. This is the deliberate **opposite** of `Money`, which *rounds* because IDR has no functional subunit. (Two value objects, two rounding stances, each justified by domain meaning.)
 - **Scale is canonicalized at construction** (pad to the canonical scale; reject if finer). Because every share quantity is then scale 0 and every unit quantity is the same fixed scale, two numerically-equal quantities always carry the same scale — which makes the record's generated `equals`/`hashCode` correct *despite* `BigDecimal.equals` considering scale (`5.0` ≠ `5.00`). No custom `equals` needed.
-- **Intrinsic guards** (`value > 0` for transaction quantities; `≥ 0` for derived state) live in the value object, per the Session-2 guard-placement decision.
+- **Intrinsic guards**: `≥ 0` for derived state enforced in the VO (structural guard), `value > 0` for transaction quantities enforced in the aggregate when recording a transaction (business rule).
 
 ### `Percentage`
 
