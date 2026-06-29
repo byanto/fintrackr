@@ -31,7 +31,7 @@ Two facts from ADR-006 constrain the choice:
 - **`Percentage(BigDecimal rate)` storing the decimal rate** (e.g., `0.0015` for 0.15%), not a percent figure (`0.15`).
 - **Validation:** `0 ≤ rate ≤ 1`. Absurd-but-valid values (e.g., `1.0` = 100%) are caught by domain *reasonableness* checks at the aggregate, not by the value object — consistent with ADR-007's separation of VO-level validation from aggregate-level reasonableness.
 - **Scale: 6.** Real IDX brokerage rates require it — e.g., `0.1403%` = `0.001403`, which is exactly scale 6.
-- **No rounding mode.** `Percentage` is *configuration / input* that feeds `quantity × price × rate`; the **result** is normalized to `Money` (scale 0) at the `Money` boundary per ADR-007. The rate is never itself persisted as authoritative money, so its precision is low-stakes: being generous (scale 6) costs nothing, whereas too *few* decimals would truncate a real rate. **The danger to guard against is too few decimals, not too many.**
+- **Round using HALF_EVEN.** `Percentage` is *configuration / input* that feeds `quantity × price × rate`; the **result** is normalized to `Money` (scale 0) at the `Money` boundary per ADR-007. The rate is never itself persisted as authoritative money, so its precision is low-stakes: being generous (scale 6) costs nothing, whereas too *few* decimals would truncate a real rate. **The danger to guard against is too few decimals, not too many.**
 
 ### Supporting policy (reaffirmed, not new)
 
@@ -57,9 +57,6 @@ The **fee amount recorded on a transaction is the source of truth** (expected-vs
   - **Rejected** — the rate form is the calculation-ready standard.
 - **Scale 2 or 4.**
   - Cons: truncates legitimate rates (`0.1403%` needs scale 6).
-  - **Rejected.**
-- **Apply a rounding mode to `Percentage`.**
-  - Cons: it's a non-authoritative input; the only rounding that matters happens at the `Money` boundary. Rounding the rate would *lose* configured precision for no benefit.
   - **Rejected.**
 
 ## Consequences
