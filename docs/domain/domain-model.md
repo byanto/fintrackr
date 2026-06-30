@@ -125,7 +125,7 @@ sealed interface Transaction
 | Subtype | Attributes                                                                                                        |
 |---|-------------------------------------------------------------------------------------------------------------------|
 | `Buy` | id, portfolioId, assetId, date, quantity, price, fee, acquisitionId (the Acquisition it opened)                   |
-| `Sell` | id, portfolioId, assetId, date, pricePerShare, totalFee, allocations: List\<SellAllocation\>                      |
+| `Sell` | id, portfolioId, assetId, date, price, totalQuantity, totalFee, allocations: List\<SellAllocation\>                      |
 | `Dividend` | id, portfolioId, assetId, cumDate, paymentDate, dps (dividend per share), allocations: List\<DividendAllocation\> |
 | `Deposit` | id, portfolioId, amount, date, source (e.g., "RDN")                                                               |
 | `Withdrawal` | id, portfolioId, amount, date, destination                                                                        |
@@ -178,14 +178,14 @@ Each Portfolio has a `defaultAcquisitionSelectionStrategy`. Every `recordSell` c
 
 All in business language. Each enforces its invariants internally before changing state.
 
-| Method                                                             | Purpose |
-|--------------------------------------------------------------------|---|
+| Method                                                             | Purpose                                                                                                                                                                                                                                                                                             |
+|--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `recordBuy(assetId, quantity, price, fee, date)`                   | Opens a new Acquisition; updates Holding cache; decrements tradingBalance; **returns the cash delta moved (`quantity × price + fee` as `Money`)** so the orchestrating app service applies that exact value to RDN (single source of truth — no recomputation, no drift); emits `BuyRecorded` event |
-| `recordSell(assetId, quantity, pricePerShare, fee, date, strategy)` | Resolves allocations via strategy; validates against open Acquisitions; updates referenced Acquisitions (derived state changes); updates Holding cache; increments tradingBalance; emits `SellRecorded` event |
-| `recordDividend(assetId, dps, cumDate, paymentDate)`                | For every eligible Acquisition of `symbol`, appends a DividendAllocation; increments tradingBalance; emits `DividendReceived` event |
-| `recordDeposit(amount, date, source)`                              | Increments tradingBalance from external cash inflow; emits `DepositRecorded` |
-| `recordWithdrawal(amount, date, destination)`                      | Decrements tradingBalance; emits `WithdrawalRecorded` |
-| `transferTo(targetPortfolioId, amount, date)`                      | Moves cash between portfolios under the same broker (preserves RDN total) |
+| `recordSell(assetId, quantity, pricePerShare, fee, date, strategy)` | Resolves allocations via strategy; validates against open Acquisitions; updates referenced Acquisitions (derived state changes); updates Holding cache; increments tradingBalance; emits `SellRecorded` event                                                                                       |
+| `recordDividend(assetId, dps, cumDate, paymentDate)`                | For every eligible Acquisition of `assetId`, appends a DividendAllocation; increments tradingBalance; emits `DividendReceived` event                                                                                                                                                                |
+| `recordDeposit(amount, date, source)`                              | Increments tradingBalance from external cash inflow; emits `DepositRecorded`                                                                                                                                                                                                                        |
+| `recordWithdrawal(amount, date, destination)`                      | Decrements tradingBalance; emits `WithdrawalRecorded`                                                                                                                                                                                                                                               |
+| `transferTo(targetPortfolioId, amount, date)`                      | Moves cash between portfolios under the same broker (preserves RDN total)                                                                                                                                                                                                                           |
 
 ### 4.5 Domain events emitted
 
@@ -241,7 +241,7 @@ FeeStructure (value object)
 
 Reference data. Lightweight in v1.
 
-### 6.1 Aggregate: `Asset` (sealed hierarchy — see future ADR-006)
+### 6.1 Aggregate: `Asset` (sealed hierarchy — see ADR-006)
 
 ```java
 sealed interface Asset permits Stock, MutualFund {

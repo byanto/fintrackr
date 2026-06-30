@@ -19,7 +19,7 @@ Spring Modulith enforces module boundaries at build time, so this layout is not 
 
 - **Three context modules** as direct sub-packages of the application root: `portfolio`, `brokerage`, `catalog`. `catalog` is the short form of "Asset Catalog" and names the context's role (a reference-data registry), consistent with `portfolio` and `brokerage` naming areas rather than central entities.
 - **Hexagonal layout inside each context module:** `domain/model` (entities, value objects), `domain/...` (services, events as they appear), `application/port`, `infrastructure/adapter/...`.
-- **A fourth module, `shared`, holds the Shared Kernel:** value objects genuinely used by more than one context. v1 membership is **`Money` and `Symbol` only**. `Quantity` lives in `portfolio` (sole user); `Percentage` lives in `brokerage` (fee rates only). The kernel is kept deliberately minimal.
+- **A fourth module, `shared`, holds the Shared Kernel:** value objects genuinely used by more than one context. v1 membership is **`Money` and `AssetId` only**. `Quantity` lives in `portfolio` (sole user); `Percentage` lives in `brokerage` (fee rates only). The kernel is kept deliberately minimal.
 - **`shared` is laid out flat** (value objects directly under it), NOT mirroring `domain/model`. A kernel has a single concern (value types) and no application/infrastructure tiers; the hexagonal nesting would advertise layers that will never exist there.
 - **`shared` is realized as a Spring Modulith open module** (`@ApplicationModule(type = OPEN)`) and/or registered globally (`@Modulithic(sharedModules = "shared")`), so every context may depend on it even once explicit allowed-dependency whitelists are introduced.
 - **Dependency directions** (per ADR-003) are unchanged: Portfolio Management → Brokerage and → Asset Catalog through published APIs; never the reverse. `shared` is depended upon by all and depends on nothing.
@@ -51,11 +51,6 @@ Spring Modulith enforces module boundaries at build time, so this layout is not 
     - Cons: each is used by exactly one context; sharing over-exposes single-context types and invites accidental cross-context use.
     - Why rejected: keep the kernel to what is *actually* shared.
 
-- **Option F — own `Symbol` in `catalog`, expose via a named interface (Published Language) instead of the kernel.**
-    - Pros: catalog is the context that knows which symbols exist; arguably its identity concept.
-    - Cons: `Symbol` is a behaviourless, format-validated identifier used pervasively in Portfolio; depending on the whole Catalog module just for the type is heavier than the kernel.
-    - Why rejected (for now): placed in the kernel; revisit if Catalog grows behaviour around `Symbol`.
-
 ## Consequences
 
 ### Positive
@@ -70,7 +65,6 @@ Spring Modulith enforces module boundaries at build time, so this layout is not 
 
 ### Neutral / Open Questions
 - Whether `shared` uses `type = OPEN`, `@Modulithic(sharedModules)`, or per-module `allowedDependencies` — decided when the `ApplicationModules.verify()` test is added (not mutually exclusive).
-- `Symbol`'s home (kernel vs Catalog published language) — kernel for now.
 - A future net-worth / `CashAccount` abstraction (ADR-006) does NOT belong in `shared` if it lands — it is a read-model concern.
 
 ## References
