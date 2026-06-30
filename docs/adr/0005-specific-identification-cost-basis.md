@@ -31,16 +31,17 @@ Adopt **Specific Identification cost basis with per-acquisition dividend attribu
 Acquisition (entity, immutable on creation)
 ├─ id
 ├─ portfolioId
-├─ symbol
+├─ assetId
 ├─ openDate
 ├─ openPrice
 ├─ openFee
-├─ initialQuantity              ← original, never changes
-├─ remainingQuantity (derived)  ← initialQuantity − Σ sell allocations against this acquisition
-└─ status (derived)             ← OPEN | PARTIALLY_CLOSED | CLOSED
+├─ initialQuantity                      ← original, never changes
+├─ remainingQuantity (derived)          ← initialQuantity − Σ sell allocations against this Acquisition
+├─ status (derived)                     ← OPEN | PARTIALLY_CLOSED | CLOSED
+└─ dividendAllocations: List<DividendAllocation>
 ```
 
-Each Buy creates exactly one Acquisition. A Acquisition is never mutated after creation; its lifecycle progresses through Sell allocations that reference it.
+Each Buy creates exactly one Acquisition. An Acquisition is never mutated after creation; its lifecycle progresses through Sell allocations and Dividend allocations that reference it.
 
 ### Sell model
 
@@ -50,9 +51,10 @@ A `Sell` is one transaction at one market price, possibly consuming from multipl
 Sell (entity)
 ├─ id
 ├─ portfolioId
-├─ symbol
+├─ assetId
 ├─ date
-├─ pricePerShare
+├─ price
+├─ totalQuantity
 ├─ totalFee
 └─ allocations: List<SellAllocation>
 
@@ -65,7 +67,7 @@ SellAllocation (value object)
 Invariants:
 - The sum of `sharesSoldFromAcquisition` across allocations equals the Sell's total quantity.
 - Each `SellAllocation.sharesSoldFromAcquisition ≤ targetAcquisition.remainingQuantity` at the time the Sell is recorded.
-- Fee is allocated proportionally to shares. Algebraically: `feeAllocated = totalFee × (sharesSoldFromAcquisition / totalShares)`, which equals `sharesSoldFromAcquisition × pricePerShare × sellRate` — so proportional is mathematically consistent with the underlying broker fee formula.
+- Fee is allocated proportionally to shares. Algebraically: `feeAllocated = totalFee × (sharesSoldFromAcquisition / totalQuantity)`, which equals `sharesSoldFromAcquisition × price × sellRate` — so proportional is mathematically consistent with the underlying broker fee formula.
 
 ### Dividend attribution
 

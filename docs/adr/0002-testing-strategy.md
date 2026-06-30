@@ -23,7 +23,7 @@ Adopt a layered testing strategy:
 - **Adapters (REST, JPA):** test-after using Spring's test slices (`@WebMvcTest`, `@DataJpaTest`) and Testcontainers for real-database integration tests.
 - **End-to-end / black box:** a small number of "happy path" tests through the public API.
 
-Follow the **test pyramid**: many unit tests, fewer integration tests, very few end-to-end. No coverage target — coverage incentivizes meaningless tests. Instead, every public method on a domain aggregate must have tests for at least: happy path, each invariant violated, and any edge case implied by the domain.
+Follow the **test pyramid**: many unit tests, fewer integration tests, very few end-to-end. Every public method on a domain aggregate must have tests for at least: happy path, each invariant violated, and any edge case implied by the domain.
 
 Stack:
 - **JUnit 5 (Jupiter)** — test framework
@@ -38,7 +38,7 @@ ADR-002 set the testing *strategy* (TDD on the domain, test-after on adapters, t
 
 - **Domain tests are plain JUnit 5 unit tests — no Spring context.** Value objects and aggregates are pure Java; no `@SpringBootTest` in the domain layer.
 - **Structure:** Arrange–Act–Assert, written as `// given / // when / // then`.
-- **Assertions:** AssertJ `assertThat` imported from `org.assertj.core.api.Assertions` (not `BDDAssertions`). For `BigDecimal`, `isEqualByComparingTo` for numeric equality and `isEqualTo` for value-object equality. Mock interaction (later, in application-service tests) uses BDDMockito `given`/`then` — keeping `then` for mocks and `assertThat` for values avoids the word collision.
+- **Assertions:** AssertJ `assertThat` imported from `org.assertj.core.api.Assertions` (not `BDDAssertions`). For `BigDecimal`, `isEqualByComparingTo` for numeric equality and `isEqualTo` for value-object equality. Mock interaction (in application-service tests) uses BDDMockito `given`/`then` — keeping `then` for mocks and `assertThat` for values avoids the word collision.
 - **Naming:** behaviour-revealing method names (`should_<expected>_when_<condition>`), with `@DisplayName` carrying the full sentence; the method name need not duplicate it.
 - **Parameterized tests** (`@ParameterizedTest` + `@CsvSource`) for tabular cases (e.g. rounding), including the cases that *distinguish* the policy (HALF_EVEN vs HALF_UP).
 - **Tests must be able to fail:** choose inputs that would break if the behaviour were absent (a scale-0 normalisation test needs a non-zero-scale input).

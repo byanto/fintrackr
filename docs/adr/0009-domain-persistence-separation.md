@@ -34,7 +34,7 @@ Hexagonal structure is unaffected: the repository remains an outbound port; only
 - **(A) Merge — the domain entities *are* the JPA entities.** Mutable `@Entity` classes, mutation funnelled through aggregate methods, no public setters; value objects as `@Embeddable`.
   - Pros: no mapper; far less code; it is the mainstream Hibernate practice; faster to ship.
   - Cons: forces abandoning the sealed-record `Transaction` hierarchy and `Acquisition` immutability — the exact Java 21 design ADR-005/008 adopted as a deliberate correctness and clarity aid. Imports persistence concerns into the domain; "immutable on creation" degrades from a compiler guarantee to a discipline convention (protected setters for Hibernate).
-  - Why rejected (for Fintrackr): the sealed/record design is a deliberate part of the model's correctness and clarity. The cost of separation is bounded here — Fintrackr has essentially one rich aggregate (Portfolio, with its acquisitions, allocations, and ledger); BrokerAccount is small and Asset Catalog is in-memory in v1 — so the mapper is not pervasive ceremony. Merge will instead be tried deliberately on **Petalytics**, to experience the contrast first-hand.
+  - Why rejected (for Fintrackr): the sealed/record design is a deliberate part of the model's correctness and clarity. The cost of separation is bounded here — Fintrackr has essentially one rich aggregate (Portfolio, with its acquisitions, allocations, and ledger); BrokerAccount is small and Asset Catalog is in-memory in v1 — so the mapper is not pervasive ceremony.
 
 - **(B) Drop records; make the domain mutable, JPA-friendly classes.** A variant of merge that targets records specifically.
   - Pros: makes vanilla, spec-compliant JPA straightforward.
