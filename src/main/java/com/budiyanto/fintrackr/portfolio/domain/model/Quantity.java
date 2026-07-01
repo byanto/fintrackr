@@ -9,7 +9,7 @@ public class Quantity {
     private final BigDecimal value;
 
     private Quantity(BigDecimal value) {
-        Objects.requireNonNull(value, "Quantity value must not be null");
+        Objects.requireNonNull(value, "Quantity value cannot be null");
         if (value.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Quantity value cannot be negative");
         }

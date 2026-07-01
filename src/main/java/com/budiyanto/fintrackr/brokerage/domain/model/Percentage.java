@@ -7,7 +7,7 @@ import java.util.Objects;
 public record Percentage(BigDecimal rate) {
 
     public Percentage {
-        Objects.requireNonNull(rate, "Percentage rate must not be null");
+        Objects.requireNonNull(rate, "Percentage rate cannot be null");
         if (rate.compareTo(BigDecimal.ZERO) < 0 || rate.compareTo(BigDecimal.ONE) > 0) {
             throw new IllegalArgumentException("Percentage rate must be between 0 and 1, inclusive");
         }
