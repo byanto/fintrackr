@@ -7,7 +7,8 @@ import java.util.Objects;
 public record AssetId(String value) {
 
     public AssetId {
-        Objects.requireNonNull(value);
+
+        Objects.requireNonNull(value, "Isin value cannot be null");
         if (value.isBlank()) {
             throw new IllegalArgumentException("Isin value cannot be blank");
         }
