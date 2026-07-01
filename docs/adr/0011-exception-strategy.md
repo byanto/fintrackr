@@ -55,7 +55,7 @@ The system produces two very different kinds of failure: low-level **preconditio
 ### Neutral / Open Questions
 - Exact `ProblemDetail` mapping (status codes, error codes, i18n) — when the REST adapter is built.
 - Whether VO format violations join the domain hierarchy — open.
-- Where `DomainException` lives — likely a small cross-cutting home (possibly `shared`, though it is behaviour, not a value object) — decided when introduced.
+- ~~Where `DomainException` lives~~ — RESOLVED (Session 10): the abstract base lives in `shared` (the only module every context may depend on); concrete subtypes live in their owning module (e.g. `portfolio.domain.exception.NonPositiveAmountException`, `FutureDatedTransactionException`). The base is behaviour, not a value object — a deliberate, documented stretch of `shared`'s charter (cross-referenced in ADR-010).
 
 ## References
 - ADR-002 (testing — assert by type)

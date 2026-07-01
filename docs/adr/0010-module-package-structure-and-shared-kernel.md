@@ -19,9 +19,9 @@ Spring Modulith enforces module boundaries at build time, so this layout is not 
 
 - **Three context modules** as direct sub-packages of the application root: `portfolio`, `brokerage`, `catalog`. `catalog` is the short form of "Asset Catalog" and names the context's role (a reference-data registry), consistent with `portfolio` and `brokerage` naming areas rather than central entities.
 - **Hexagonal layout inside each context module:** `domain/model` (entities, value objects), `domain/...` (services, events as they appear), `application/port`, `infrastructure/adapter/...`.
-- **A fourth module, `shared`, holds the Shared Kernel:** value objects genuinely used by more than one context. v1 membership is **`Money` and `AssetId` only**. `Quantity` lives in `portfolio` (sole user); `Percentage` lives in `brokerage` (fee rates only). The kernel is kept deliberately minimal.
+- **A fourth module, `shared`, holds the Shared Kernel:** behaviourless value and identity types genuinely used by more than one context. v1 membership is **`Money`, `AssetId`, and `BrokerAccountId`**. `Quantity` lives in `portfolio` (sole user); `Percentage` lives in `brokerage` (fee rates only); `PortfolioId` lives in `portfolio` (no other context references it yet). The kernel is kept deliberately minimal: **a typed identifier is promoted here only once a second module references it** — `AssetId` (Catalog ↔ Portfolio) and `BrokerAccountId` (Brokerage ↔ Portfolio) qualify; `PortfolioId` does not, yet.
 - **`shared` is laid out flat** (value objects directly under it), NOT mirroring `domain/model`. A kernel has a single concern (value types) and no application/infrastructure tiers; the hexagonal nesting would advertise layers that will never exist there.
-- **`shared` is realized as a Spring Modulith open module** (`@ApplicationModule(type = OPEN)`) and/or registered globally (`@Modulithic(sharedModules = "shared")`), so every context may depend on it even once explicit allowed-dependency whitelists are introduced.
+- **`shared` is registered globally as a shared module** via `@Modulithic(sharedModules = "shared")` on the application class (Session 10), so every context may depend on it even once explicit allowed-dependency whitelists are introduced. `type = OPEN` was considered and rejected: `shared` is laid out flat, so it has no internal sub-packages to expose; and it is `sharedModules` — not `OPEN` — that exempts a kernel from per-module dependency whitelists.
 - **Dependency directions** (per ADR-003) are unchanged: Portfolio Management → Brokerage and → Asset Catalog through published APIs; never the reverse. `shared` is depended upon by all and depends on nothing.
 
 ## Alternatives Considered
@@ -33,7 +33,7 @@ Spring Modulith enforces module boundaries at build time, so this layout is not 
 
 - **Option B — duplicate the VOs per context.**
     - Pros: full module autonomy.
-    - Cons: `Money`/`Symbol` are identical everywhere; duplication yields non-interoperable types (a Brokerage `Money` cannot be compared to a Portfolio `Money`) and drift risk.
+    - Cons: `Money`/`AssetId` are identical everywhere; duplication yields non-interoperable types (a Brokerage `Money` cannot be compared to a Portfolio `Money`) and drift risk.
     - Why rejected: duplication is a service-boundary technique, not for in-process modules sharing an identical concept.
 
 - **Option C — a `common`/`utils` module instead of a curated `shared` kernel.**
@@ -51,7 +51,11 @@ Spring Modulith enforces module boundaries at build time, so this layout is not 
     - Cons: each is used by exactly one context; sharing over-exposes single-context types and invites accidental cross-context use.
     - Why rejected: keep the kernel to what is *actually* shared.
 
-## Consequences
+- **Option F — keep cross-context identifiers in their owning context and expose them via a Spring Modulith named interface (Published Language), instead of the kernel.**
+    - Applies to `AssetId` (owned by `catalog`) and `BrokerAccountId` (owned by `brokerage`), each referenced by Portfolio Management.
+    - Pros: identity stays with the aggregate that owns it; the kernel stays smaller; each module's published surface is explicit.
+    - Cons: these are behaviourless, format/null-validated identifiers referenced across modules; a `@NamedInterface` per identifier is more ceremony, and depending on a whole owning module just to reuse its id type is heavier than depending on a tiny kernel. Every module that later adopts an `allowedDependencies` whitelist would also have to list the owning module solely for the id.
+    - Why rejected: cross-context *identifiers* are exactly what the kernel is for — behaviourless types shared by more than one context. Placed in the kernel. Revisit per identifier if its owning context grows behaviour that the identifier should travel with.
 
 ### Positive
 - Dependency directions stay clean and Spring-Modulith-enforceable; the kernel has zero outbound dependencies.
@@ -60,11 +64,12 @@ Spring Modulith enforces module boundaries at build time, so this layout is not 
 - Extraction-friendly: if a context is later split into a service, the kernel is already isolated (copy it, or publish it as a contract).
 
 ### Negative (costs we explicitly accept)
-- A shared kernel is, by definition, the highest-coupling area: changes to `Money`/`Symbol` ripple to all contexts. Mitigated by keeping it tiny and stable.
+- A shared kernel is, by definition, the highest-coupling area: changes to `Money`/`AssetId` ripple to all contexts. Mitigated by keeping it tiny and stable.
 - `shared` is laid out differently from the context modules — a deliberate, honest inconsistency.
 
 ### Neutral / Open Questions
-- Whether `shared` uses `type = OPEN`, `@Modulithic(sharedModules)`, or per-module `allowedDependencies` — decided when the `ApplicationModules.verify()` test is added (not mutually exclusive).
+- ~~Whether `shared` uses `type = OPEN`, `@Modulithic(sharedModules)`, or per-module `allowedDependencies`~~ — RESOLVED (Session 10): `@Modulithic(sharedModules = "shared")`; no `allowedDependencies` whitelists yet. `shared` also hosts the cross-cutting `DomainException` base (behaviour, not a value type — a deliberate stretch of the kernel charter; see ADR-011).
+- Cross-context identifiers' home (kernel vs owning-context published language) — kernel for now (`AssetId`, `BrokerAccountId`); revisit per identifier if its owning context grows behaviour around it.
 - A future net-worth / `CashAccount` abstraction (ADR-006) does NOT belong in `shared` if it lands — it is a read-model concern.
 
 ## References
