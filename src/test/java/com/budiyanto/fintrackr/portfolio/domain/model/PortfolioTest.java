@@ -6,9 +6,7 @@ import com.budiyanto.fintrackr.shared.BrokerAccountId;
 import com.budiyanto.fintrackr.shared.DomainException;
 import com.budiyanto.fintrackr.shared.Money;
 
-import net.bytebuddy.asm.Advice;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,6 +16,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -86,8 +85,23 @@ class PortfolioTest {
 
         @Test
         @DisplayName("Record a Deposit transaction when a deposit is correctly recorded")
-        @Disabled("not yet implemented")
         void should_recordDepositTransaction_when_recordDeposit() {
+            // Given
+            Money amount = Money.of(new BigDecimal(15000));
+
+            // When
+            portfolio.recordDeposit(amount, date, today);
+
+            // Then
+            List<Transaction> transactions = portfolio.transactions();
+            assertThat(transactions.size()).isEqualTo(1);
+            assertThat(transactions.getFirst())
+                    .isInstanceOfSatisfying(Deposit.class, d -> {
+                        assertThat(d.id()).isNotNull();
+                        assertThat(d.portfolioId()).isEqualTo(portfolio.id());
+                        assertThat(d.date()).isEqualTo(date);
+                        assertThat(d.amount()).isEqualTo(amount);
+                    });
 
         }
 
