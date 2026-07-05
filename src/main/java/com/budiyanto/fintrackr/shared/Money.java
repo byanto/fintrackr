@@ -18,6 +18,10 @@ public record Money(BigDecimal amount, Currency currency) implements Comparable<
         return new Money(amount, Currency.getInstance("IDR"));
     }
 
+    public static Money of(BigDecimal amount, Currency currency) {
+        return new Money(amount, currency);
+    }
+
     public static Money zero() {
         return new Money(BigDecimal.ZERO, Currency.getInstance("IDR"));
     }
@@ -25,6 +29,10 @@ public record Money(BigDecimal amount, Currency currency) implements Comparable<
     public Money add(Money toAdd) {
         checkSameCurrency(toAdd);
         return new Money(amount.add(toAdd.amount), currency);
+    }
+
+    public Money negate() {
+        return new Money(amount.negate(), currency);
     }
 
     @Override

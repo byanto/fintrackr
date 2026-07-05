@@ -32,6 +32,10 @@ public class Quantity {
         return new Quantity(value.setScale(4, RoundingMode.UNNECESSARY));
     }
 
+    public boolean isZero() {
+        return value.compareTo(BigDecimal.ZERO) == 0;
+    }
+
     public BigDecimal value() { return value; }
 
     // Strip tailing zeros to normalize (e.g., 10.00 -> 10)

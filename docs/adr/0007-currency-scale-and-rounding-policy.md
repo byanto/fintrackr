@@ -32,6 +32,22 @@ Money fee = Money.of(rawFee)                              // routes through comp
 ```
 *Compare: had the price been 9851, rawFee = 1477.65 -> rounds to 1478 (HALF_EVEN, no exact-half case). Had it been an exact-half case like 1478.5, HALF_EVEN picks 1478; HALF_UP would have picked 1479.*
 
+Worked Example 2 — compose-then-normalize (round ONCE, at the boundary):
+
+Computing a buy cost for `quantity = 1.5`, `price = 5801`, `fee = 11` (already a scale-0 `Money`):
+
+```java
+// WRONG — each Money-returning op is a rounding checkpoint, so this rounds TWICE:
+quantity.multiply(price)  // 8701.5 -> Money rounds to 8702
+        .add(fee)         // 8702 + 11 = 8713   ← off by one
+
+// RIGHT — one BigDecimal expression, normalized to Money exactly once:
+BigDecimal raw = quantity.value().multiply(price.amount()).add(fee.amount()); // 8712.5
+Money cost = Money.of(raw, price.currency());   // HALF_EVEN -> 8712
+```
+
+The rule: **a monetary intermediate is math, not money.** Because every `Money` construction is a normalization checkpoint (see the Decision above), chaining two `Money`-returning operations to build one settled amount rounds twice and can drift by ±1 IDR. Keep the whole calculation in `BigDecimal` and cross into `Money` only at the boundary where the value becomes committed aggregate state. This is why `recordBuy` computes its cost delta inline in `BigDecimal` rather than via a `Money.multiply` helper (that helper was designed and then dropped in Session 12 for exactly this reason).
+
 ## Amendment — 2026-06-08: JavaMoney/JSR-354 considered and rejected; record confirmed
 
 Implementing `Money` prompted an evaluation of JavaMoney (JSR-354, reference impl Moneta) and Joda-Money as alternatives to the hand-rolled `BigDecimal`-backed value object.
