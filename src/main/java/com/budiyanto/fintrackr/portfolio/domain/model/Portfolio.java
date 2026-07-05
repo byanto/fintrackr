@@ -6,20 +6,24 @@ import com.budiyanto.fintrackr.shared.BrokerAccountId;
 import com.budiyanto.fintrackr.shared.Money;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class Portfolio {
 
-    private final PortfolioId portfolioId;
+    private final PortfolioId id;
     private final BrokerAccountId brokerAccountId;
     private String name;
     private Money tradingBalance;
+    private final List<Transaction> transactions;
 
     private Portfolio (BrokerAccountId brokerAccountId, String name) {
-        this.portfolioId = PortfolioId.generate();
+        this.id = PortfolioId.generate();
         this.brokerAccountId = brokerAccountId;
         this.name = name;
         this.tradingBalance = Money.zero();
+        this.transactions = new ArrayList<>();
     }
 
     public static Portfolio create(BrokerAccountId brokerAccountId, String name) {
@@ -39,9 +43,15 @@ public class Portfolio {
             throw new FutureDatedTransactionException(date, today);
         }
 
+        Transaction deposit = Deposit.create(TransactionId.generate(), id, date, amount);
+        transactions.add(deposit);
+
         tradingBalance = tradingBalance.add(amount);
     }
 
+    public PortfolioId id() { return id; }
+
     public Money tradingBalance() { return tradingBalance; }
 
+    public List<Transaction> transactions() { return List.copyOf(transactions); }
 }
