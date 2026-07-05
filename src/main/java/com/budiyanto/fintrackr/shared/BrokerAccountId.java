@@ -1,7 +1,5 @@
 package com.budiyanto.fintrackr.shared;
 
-import org.springframework.validation.ObjectError;
-
 import java.util.Objects;
 import java.util.UUID;
 

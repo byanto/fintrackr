@@ -124,11 +124,11 @@ sealed interface Transaction
 
 | Subtype | Attributes                                                                                                        |
 |---|-------------------------------------------------------------------------------------------------------------------|
-| `Buy` | id, portfolioId, assetId, date, quantity, price, fee, acquisitionId (the Acquisition it opened)                   |
-| `Sell` | id, portfolioId, assetId, date, price, totalQuantity, totalFee, allocations: List\<SellAllocation\>                      |
-| `Dividend` | id, portfolioId, assetId, cumDate, paymentDate, dps (dividend per share), allocations: List\<DividendAllocation\> |
-| `Deposit` | id, portfolioId, amount, date  (v1: `source` dropped — deposits always originate from RDN, so it carried no information; reintroduce if a non-RDN cash source appears) |
-| `Withdrawal` | id, portfolioId, amount, date, destination                                                                        |
+| `Buy` | id, portfolioId, date, assetId, quantity, price, fee, acquisitionId (the Acquisition it opened)                   |
+| `Sell` | id, portfolioId, date, assetId, price, totalQuantity, totalFee, allocations: List\<SellAllocation\>                      |
+| `Dividend` | id, portfolioId, date, assetId, cumDate, paymentDate, dps (dividend per share), allocations: List\<DividendAllocation\> |
+| `Deposit` | id, portfolioId, date, amount (v1: `source` dropped — deposits always originate from RDN, so it carried no information; reintroduce if a non-RDN cash source appears) |
+| `Withdrawal` | id, portfolioId, date, amount, destination                                                                        |
 
 All Transactions are immutable once recorded. Corrections are made by recording a reversing transaction, never by editing.
 
@@ -180,7 +180,7 @@ All in business language. Each enforces its invariants internally before changin
 
 | Method                                                             | Purpose                                                                                                                                                                                                                                                                                             |
 |--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `recordBuy(assetId, quantity, price, fee, date)`                   | Opens a new Acquisition; updates Holding cache; decrements tradingBalance; **returns the cash delta moved (`quantity × price + fee` as `Money`)** so the orchestrating app service applies that exact value to RDN (single source of truth — no recomputation, no drift); emits `BuyRecorded` event |
+| `recordBuy(assetId, quantity, price, fee, date, today)`                   | Opens a new Acquisition; appends `Buy` to the ledger; decrements tradingBalance; **returns the cash delta moved as a *signed* `Money`, `−(quantity × price + fee)`** so the orchestrating app service applies that exact value to RDN via one `applyCashFlow` (single source of truth — no recomputation, no sign decision, no drift). Cost is computed as a single `BigDecimal` expression normalized to `Money` once (ADR-007 line 21 — no intermediate rounding). `today` is the app-service-resolved clock value (Session 10) used to reject future-dated buys. `BuyRecorded` event + `Holding` cache deferred until `Sell` lands. |
 | `recordSell(assetId, quantity, pricePerShare, fee, date, strategy)` | Resolves allocations via strategy; validates against open Acquisitions; updates referenced Acquisitions (derived state changes); updates Holding cache; increments tradingBalance; emits `SellRecorded` event                                                                                       |
 | `recordDividend(assetId, dps, cumDate, paymentDate)`                | For every eligible Acquisition of `assetId`, appends a DividendAllocation; increments tradingBalance; emits `DividendReceived` event                                                                                                                                                                |
 | `recordDeposit(amount, date, today)`                               | Appends a `Deposit` to the transaction ledger (source of truth), then increments the cached `tradingBalance`. `today` is the app-service-resolved clock value (Session 10) used to reject future-dated transactions; v1 has no `source`. Emits `DepositRecorded` |
