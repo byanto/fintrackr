@@ -65,10 +65,7 @@ Three contexts, each with a clear responsibility.
 │                        │ cash   │   Trading Balance               │
 └────────────────────────┘        └─────────────────────────────────┘
 
-Dependency direction: Portfolio Management → Brokerage, through Brokerage's
-published API. PM's RecordBuyUseCase calls computeBuyFee + applyCashFlow in
-one transaction (ADR-003, amended Session 004). Brokerage does NOT depend on
-Portfolio Management.
+Dependency direction: Portfolio Management → Brokerage, through Brokerage's published API. PM's RecordBuyUseCase calls computeBuyFee + applyCashFlow in one transaction (ADR-003, as amended). Brokerage does NOT depend on Portfolio Management.
 ```
 
 - **Portfolio Management** — the heart of the system. Owns Acquisitions, Sells, Dividends, Holdings, Trading Balance. Where most of the business logic lives.
@@ -180,10 +177,10 @@ All in business language. Each enforces its invariants internally before changin
 
 | Method                                                             | Purpose                                                                                                                                                                                                                                                                                             |
 |--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `recordBuy(assetId, quantity, price, fee, date, today)`                   | Opens a new Acquisition; appends `Buy` to the ledger; decrements tradingBalance; **returns the cash delta moved as a *signed* `Money`, `−(quantity × price + fee)`** so the orchestrating app service applies that exact value to RDN via one `applyCashFlow` (single source of truth — no recomputation, no sign decision, no drift). Cost is computed as a single `BigDecimal` expression normalized to `Money` once (ADR-007 line 21 — no intermediate rounding). `today` is the app-service-resolved clock value (Session 10) used to reject future-dated buys. `BuyRecorded` event + `Holding` cache deferred until `Sell` lands. |
+| `recordBuy(assetId, quantity, price, fee, date, today)`                   | Opens a new Acquisition; appends `Buy` to the ledger; decrements tradingBalance; **returns the cash delta moved as a *signed* `Money`, `−(quantity × price + fee)`** so the orchestrating app service applies that exact value to RDN via one `applyCashFlow` (single source of truth — no recomputation, no sign decision, no drift). Cost is computed as a single `BigDecimal` expression normalized to `Money` once (ADR-007 line 21 — no intermediate rounding). `today` is the app-service-resolved clock value used to reject future-dated buys (the aggregate stays clock-free for deterministic tests). `BuyRecorded` event + `Holding` cache deferred until `Sell` lands. |
 | `recordSell(assetId, quantity, pricePerShare, fee, date, strategy)` | Resolves allocations via strategy; validates against open Acquisitions; updates referenced Acquisitions (derived state changes); updates Holding cache; increments tradingBalance; emits `SellRecorded` event                                                                                       |
 | `recordDividend(assetId, dps, cumDate, paymentDate)`                | For every eligible Acquisition of `assetId`, appends a DividendAllocation; increments tradingBalance; emits `DividendReceived` event                                                                                                                                                                |
-| `recordDeposit(amount, date, today)`                               | Appends a `Deposit` to the transaction ledger (source of truth), then increments the cached `tradingBalance`. `today` is the app-service-resolved clock value (Session 10) used to reject future-dated transactions; v1 has no `source`. Emits `DepositRecorded` |
+| `recordDeposit(amount, date, today)`                               | Appends a `Deposit` to the transaction ledger (source of truth), then increments the cached `tradingBalance`. `today` is the app-service-resolved clock value used to reject future-dated transactions; v1 has no `source`. Emits `DepositRecorded` |
 | `recordWithdrawal(amount, date, destination)`                      | Decrements tradingBalance; emits `WithdrawalRecorded`                                                                                                                                                                                                                                               |
 | `transferTo(targetPortfolioId, amount, date)`                      | Moves cash between portfolios under the same broker (preserves RDN total)                                                                                                                                                                                                                           |
 
@@ -209,9 +206,10 @@ BrokerAccount (aggregate root, entity)
 ├─ id
 ├─ name (e.g., "Stockbit")
 ├─ rdn: Money                ← regulated cash balance
-├─ feeStructure: FeeStructure
-└─ portfolioIds: Set<PortfolioId>
+└─ feeStructure: FeeStructure
 ```
+
+Brokerage holds no portfolio references. The association is unidirectional: each Portfolio holds a `brokerAccountId` (shared kernel). A `Set<PortfolioId>` here would require Brokerage to import from Portfolio Management, inverting the ADR-003 dependency direction (and failing `ApplicationModules.verify()`). Enumerating a broker's portfolios is a query on the PM side (repository lookup by `brokerAccountId`), not aggregate state — `BrokerAccount`'s own invariants (`rdn ≥ 0`, fee rates in `[0,1]`) need no portfolio knowledge.
 
 ### 5.2 Value Objects
 
@@ -225,10 +223,10 @@ FeeStructure (value object)
 
 | Method | Purpose |
 |---|---|
-| `depositToBroker(amount, date)` | External cash inflow → increases RDN. User then allocates to a Portfolio via `Portfolio.recordDeposit`. |
-| `withdrawFromBroker(amount, date)` | External cash outflow → decreases RDN. Originates from a Portfolio's `recordWithdrawal`. |
 | `updateFeeStructure(newStructure)` | Changes fee rates. Affects only future transactions; historical fees are preserved as recorded (no FeeStructureHistory needed). |
-| `applyCashFlow(delta, date)` | Applies a cash delta to RDN. Invoked by Portfolio Management's use-case application service (e.g., `RecordBuyUseCase`) through Brokerage's published API, within the same database transaction (per ADR-003, amended Session 004). Not event-driven in v1. |
+| `applyCashFlow(delta)` | Applies a signed cash delta to RDN; rejects a delta that would drive RDN below zero (result must stay ≥ 0 — reaching exactly zero is legal). Invoked by Portfolio Management's use-case application service (e.g., `RecordBuyUseCase`) through Brokerage's published API, within the same database transaction (per ADR-003, as amended). Not event-driven in v1. No `date` parameter: every v1 cash flow originates from a PM transaction whose date is already validated and recorded in the PM ledger (ADR-004 — single source of truth); `BrokerAccount` keeps no ledger, so a date here would have no consumer. Reintroduce if a cash flow ever originates outside a Portfolio (unallocated broker deposit, account fees, RDN interest). |
+
+V1 has no broker-level cash entry points (no `depositToBroker`/`withdrawFromBroker`). All cash movements enter through `Portfolio` methods (`recordDeposit`, `recordWithdrawal`, `recordBuy`, …) and reach the RDN via `applyCashFlow` inside the orchestrating application service's single transaction (ADR-003) — five transaction types, one cash-sync code path, one invariant check. Broker-level deposit/withdrawal returns if a cash flow ever exists outside a portfolio (post-v1 default-portfolio item in `backlog.md` — the same trigger that would reintroduce `date` on `applyCashFlow`).
 
 ### 5.4 Fee handling policy
 
