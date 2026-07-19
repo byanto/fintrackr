@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.portfolio.domain.model;
+package com.budiyanto.fintrackr.shared;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
