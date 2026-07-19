@@ -1,11 +1,16 @@
 package com.budiyanto.fintrackr.brokerage.domain.model;
 
 import com.budiyanto.fintrackr.brokerage.domain.exception.InsufficientRdnException;
-import com.budiyanto.fintrackr.shared.DomainException;
 import com.budiyanto.fintrackr.shared.Money;
-import org.junit.jupiter.api.*;
+import com.budiyanto.fintrackr.shared.Quantity;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.util.stream.Stream;
@@ -222,5 +227,42 @@ class BrokerAccountTest {
             assertThat(brokerAccount.rdn()).isEqualTo(currentRdn);
         }
     }
+
+    @Nested
+    @DisplayName("BrokerAccount ComputeBuyFee Tests")
+    class ComputeBuyFeeTest {
+        @Test
+        @DisplayName("Compute the correct buy fee for valid inputs")
+        void should_computeCorrectBuyFee_when_inputsAreValid() {
+            // Given
+            Quantity quantity = Quantity.ofUnits(new BigDecimal("1000"));
+            Money price = Money.of(new BigDecimal("1500"));
+
+            // When
+            Money buyFee = brokerAccount.computeBuyFee(quantity, price);
+
+            // Then
+            assertThat(buyFee).isEqualTo(Money.of(new BigDecimal("2250")));
+        }
+    }
+
+    @Nested
+    @DisplayName("BrokerAccount ComputeSellFee Tests")
+    class ComputeSellFeeTest {
+        @Test
+        @DisplayName("Compute the correct sell fee for valid inputs")
+        void should_computeCorrectSellFee_when_inputsAreValid() {
+            // Given
+            Quantity quantity = Quantity.ofUnits(new BigDecimal("1000"));
+            Money price = Money.of(new BigDecimal("1500"));
+
+            // When
+            Money sellFee = brokerAccount.computeSellFee(quantity, price);
+
+            // Then
+            assertThat(sellFee).isEqualTo(Money.of(new BigDecimal("3750")));
+        }
+    }
+
 
 }

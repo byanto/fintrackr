@@ -3,6 +3,7 @@ package com.budiyanto.fintrackr.brokerage.domain.model;
 import com.budiyanto.fintrackr.brokerage.domain.exception.InsufficientRdnException;
 import com.budiyanto.fintrackr.shared.BrokerAccountId;
 import com.budiyanto.fintrackr.shared.Money;
+import com.budiyanto.fintrackr.shared.Quantity;
 
 import java.util.Objects;
 
@@ -39,6 +40,14 @@ public class BrokerAccount {
             throw new InsufficientRdnException(rdn, delta);
         }
         rdn = result;
+    }
+
+    public Money computeBuyFee(Quantity quantity, Money price) {
+        return feeStructure.computeBuyFee(quantity, price);
+    }
+
+    public Money computeSellFee(Quantity quantity, Money price) {
+        return feeStructure.computeSellFee(quantity, price);
     }
 
     private void validateName(String name) {

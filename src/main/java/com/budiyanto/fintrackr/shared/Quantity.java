@@ -1,4 +1,4 @@
-package com.budiyanto.fintrackr.portfolio.domain.model;
+package com.budiyanto.fintrackr.shared;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

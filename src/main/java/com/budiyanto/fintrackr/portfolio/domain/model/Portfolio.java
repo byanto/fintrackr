@@ -4,6 +4,7 @@ import com.budiyanto.fintrackr.portfolio.domain.exception.*;
 import com.budiyanto.fintrackr.shared.AssetId;
 import com.budiyanto.fintrackr.shared.BrokerAccountId;
 import com.budiyanto.fintrackr.shared.Money;
+import com.budiyanto.fintrackr.shared.Quantity;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
