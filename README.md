@@ -88,7 +88,7 @@ Work in progress (v1), built in vertical slices:
 - [x] Domain model and ADRs
 - [x] Core value objects: Money, Quantity, Percentage, AssetId (ISIN)
 - [x] Portfolio aggregate: deposits and buys, test-driven
-- [ ] Brokerage aggregate and fee computation
+- [x] Brokerage aggregate and fee computation
 - [ ] Sells with acquisition-selection strategies (FIFO, LIFO, manual, ...)
 - [ ] Dividends with per-lot attribution
 - [ ] Persistence layer (JPA + Flyway)
