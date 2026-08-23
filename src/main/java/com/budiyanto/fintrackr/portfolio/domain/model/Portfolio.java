@@ -95,6 +95,10 @@ public class Portfolio {
 
     public PortfolioId id() { return id; }
 
+    public String name() { return name; }
+
+    public BrokerAccountId brokerAccountId() { return brokerAccountId; }
+
     public Money tradingBalance() { return tradingBalance; }
 
     public List<Transaction> transactions() { return List.copyOf(transactions); }
