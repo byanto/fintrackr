@@ -89,6 +89,7 @@ Work in progress (v1), built in vertical slices:
 - [x] Core value objects: Money, Quantity, Percentage, AssetId (ISIN)
 - [x] Portfolio aggregate: deposits and buys, test-driven
 - [x] Brokerage aggregate and fee computation
+- [x] Record-buy use case: application-service orchestration across Portfolio and Brokerage
 - [ ] Sells with acquisition-selection strategies (FIFO, LIFO, manual, ...)
 - [ ] Dividends with per-lot attribution
 - [ ] Persistence layer (JPA + Flyway)
