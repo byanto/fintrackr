@@ -1,17 +1,16 @@
 package com.budiyanto.fintrackr.brokerage.domain.model;
 
-import com.budiyanto.fintrackr.shared.Quantity;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.budiyanto.fintrackr.shared.Money;
+import com.budiyanto.fintrackr.shared.Quantity;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import java.math.BigDecimal;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("FeeStructure Tests")
 class FeeStructureTest {

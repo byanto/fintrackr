@@ -81,6 +81,19 @@ dev-time Testcontainers support):
 There is no REST API yet. The web and persistence layers arrive once the
 domain model is complete (see Status below).
 
+### Code style
+
+Formatting is enforced by [Spotless](https://github.com/diffplug/spotless), bound to Maven's
+`validate` phase — a formatting violation fails the build before compilation, locally and in CI.
+
+```bash
+./mvnw spotless:apply    # fix violations
+./mvnw spotless:check    # report them
+```
+
+Rules are deliberately surgical: import order, unused-import removal, trailing whitespace, and
+a final newline. No full formatter is applied, so the history stays readable.
+
 ## Status
 
 Work in progress (v1), built in vertical slices:

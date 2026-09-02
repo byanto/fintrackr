@@ -1,31 +1,87 @@
 package com.budiyanto.fintrackr.portfolio.domain.model;
 
-import com.budiyanto.fintrackr.portfolio.domain.exception.*;
-import com.budiyanto.fintrackr.shared.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
-
+import com.budiyanto.fintrackr.portfolio.domain.exception.FutureDatedTransactionException;
+import com.budiyanto.fintrackr.portfolio.domain.exception.InsufficientBalanceException;
+import com.budiyanto.fintrackr.portfolio.domain.exception.NegativeFeeException;
+import com.budiyanto.fintrackr.portfolio.domain.exception.NonPositiveAmountException;
+import com.budiyanto.fintrackr.portfolio.domain.exception.NonPositivePriceException;
+import com.budiyanto.fintrackr.portfolio.domain.exception.ZeroQuantityException;
+import com.budiyanto.fintrackr.shared.AssetId;
+import com.budiyanto.fintrackr.shared.BrokerAccountId;
+import com.budiyanto.fintrackr.shared.DomainException;
+import com.budiyanto.fintrackr.shared.Money;
+import com.budiyanto.fintrackr.shared.Quantity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.*;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("Portfolio Tests")
 class PortfolioTest {
 
     private Portfolio portfolio;
-    private LocalDate date;
-    private LocalDate today;
+    private final LocalDate date = LocalDate.of(2026, 6, 20);
+    private final LocalDate today = LocalDate.of(2026, 6, 28);
 
     @BeforeEach
     void setup() {
         portfolio = Portfolio.create(BrokerAccountId.generate(), "Long-Term");
-        date = LocalDate.of(2026, 6, 20);
-        today = LocalDate.of(2026, 6, 28);
+    }
+
+    @Nested
+    @DisplayName("Create Portfolio Tests")
+    class CreateTest {
+
+        @Test
+        @DisplayName("Create a Portfolio when inputs are valid")
+        void should_createPortfolio_when_inputsAreValid() {
+            // Then
+            assertThat(portfolio.id()).isNotNull();
+            assertThat(portfolio.brokerAccountId()).isNotNull();
+            assertThat(portfolio.name()).isEqualTo("Long-Term");
+            assertThat(portfolio.tradingBalance()).isEqualTo(Money.zero());
+            assertThat(portfolio.transactions().isEmpty()).isTrue();
+            assertThat(portfolio.acquisitions().isEmpty()).isTrue();
+        }
+
+        @ParameterizedTest(name = "\"{2}\" is rejected")
+        @MethodSource("provideNullArguments")
+        @DisplayName("Reject Portfolio creation when input arguments are null")
+        void should_throwNPE_when_inputsAreNull(BrokerAccountId brokerAccountId, String name, String expectedMessage) {
+            // When & Then
+            assertThatThrownBy(() -> Portfolio.create(brokerAccountId, name))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage(expectedMessage);
+        }
+
+        private static Stream<Arguments> provideNullArguments() {
+            return Stream.of(
+                    Arguments.of(null, "Test Portfolio", "brokerAccountId cannot be null"),
+                    Arguments.of(BrokerAccountId.generate(), null, "name cannot be null"));
+        }
+
+        @ParameterizedTest(name = "\"{0}\" is rejected")
+        @ValueSource(strings = {"", "   ", "\t", "\n"})
+        @DisplayName("Reject Portfolio creation when input name is empty or blank")
+        void should_throwIAE_when_nameIsBlankOrEmpty(String name) {
+            // When & Then
+            assertThatThrownBy(() -> Portfolio.create(BrokerAccountId.generate(), name))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("name cannot be blank");
+        }
     }
 
     @Nested
@@ -377,6 +433,169 @@ class PortfolioTest {
             assertThat(portfolio.tradingBalance()).isEqualTo(balanceBefore);
             assertThat(portfolio.transactions().size()).isEqualTo(1); // Should contain only initial deposit transaction
             assertThat(portfolio.acquisitions().size()).isEqualTo(0); // Should contain no acquisitions
+        }
+
+    }
+
+    @Nested
+    @DisplayName("Reconstitute Tests")
+    class ReconstituteTest {
+
+        private final PortfolioId portfolioId = PortfolioId.generate();
+        private final BrokerAccountId brokerAccountId = BrokerAccountId.generate();
+        private final String portfolioName = "Test Reconstitute Portfolio";
+        private final AssetId assetId = AssetId.of("ID1000109507"); // BBCA
+        private final Quantity quantity = Quantity.ofShares(new BigDecimal("1000"));
+        private final Money price = Money.of(new BigDecimal("5800"));
+        private final Money fee = Money.of(new BigDecimal("2500"));
+
+        private final Money depositBalance = Money.of(new BigDecimal("10000000"));
+        private final Money tradingBalance = Money.of(new BigDecimal("15000000"));
+
+        private final Acquisition acquisition = Acquisition.create(portfolioId, assetId, date, price, fee, quantity);
+        private final Deposit depositTransaction = Deposit.create(TransactionId.generate(), portfolioId, date, depositBalance);
+        private final Buy buyTransaction = Buy.create(TransactionId.generate(), portfolioId, date, assetId, quantity, price, fee, acquisition.id());
+        private List<Transaction> transactions;
+        private List<Acquisition> acquisitions;
+
+        @BeforeEach
+        void setup() {
+            acquisitions = new ArrayList<>();
+            acquisitions.add(acquisition);
+
+            transactions = new ArrayList<>();
+            transactions.add(depositTransaction);
+            transactions.add(buyTransaction);
+        }
+
+        @Test
+        @DisplayName("Reconstitute portfolio when valid inputs are given")
+        void should_reconstitutePortfolio_when_validInputsAreGiven() {
+            // When
+            Portfolio result = Portfolio.reconstitute(portfolioId, brokerAccountId, portfolioName,
+                    tradingBalance, transactions, acquisitions);
+
+            // Then
+            assertThat(result.id()).isEqualTo(portfolioId);
+            assertThat(result.brokerAccountId()).isEqualTo(brokerAccountId);
+            assertThat(result.name()).isEqualTo(portfolioName);
+            assertThat(result.tradingBalance()).isEqualTo(tradingBalance);
+            assertThat(result.transactions()).containsExactlyElementsOf(transactions);
+            assertThat(result.acquisitions()).containsExactlyElementsOf(acquisitions);
+        }
+
+        @Test
+        @DisplayName("Restore stored balance and not recompute from ledger when reconstitute portfolio")
+        void should_restoreStoredBalanceNotRecomputeFromLedger_when_reconstitutePortfolio() {
+            // When
+            Portfolio result = Portfolio.reconstitute(portfolioId, brokerAccountId, portfolioName,
+                    tradingBalance, transactions, acquisitions);
+
+            // Then
+            assertThat(result.tradingBalance()).isEqualTo(tradingBalance); // If recomputes, it will be: 10000000 − (1000 × 5800 + 2500) = 4,197,500
+        }
+
+        @Test
+        @DisplayName("Reconstitute portfolio even when business invariants are violated")
+        void should_reconstitutePortfolio_when_businessInvariantsAreViolated() {
+            // Given
+            Money violatedTradingBalance = Money.of(new BigDecimal("-10000"));
+            Money violatedDepositBalance = Money.of(new BigDecimal("-50000"));
+            LocalDate futureDate = today.plusDays(20);
+
+            List<Acquisition> acquisitions = new ArrayList<>();
+            var acquisition = Acquisition.create(portfolioId, assetId, futureDate, price, fee, quantity);
+            acquisitions.add(acquisition);
+
+            List<Transaction> transactions = new ArrayList<>();
+            transactions.add(Deposit.create(TransactionId.generate(), portfolioId, futureDate, violatedDepositBalance));
+            transactions.add(Buy.create(TransactionId.generate(), portfolioId, futureDate, assetId, quantity, price, fee, acquisition.id()));
+
+            // When
+            Portfolio result = Portfolio.reconstitute(portfolioId, brokerAccountId, portfolioName,
+                    violatedTradingBalance, transactions, acquisitions);
+
+            // Then
+            assertThat(result.tradingBalance()).isEqualTo(violatedTradingBalance);
+            assertThat(result.transactions()).hasSize(2);
+            assertThat(result.transactions().getFirst().date()).isEqualTo(futureDate);
+            assertThat(result.transactions().getLast().date()).isEqualTo(futureDate);
+            assertThat(result.acquisitions()).hasSize(1);
+            assertThat(result.acquisitions().getFirst().openDate()).isEqualTo(futureDate);
+        }
+
+        @ParameterizedTest(name = "\"{6}\" is rejected")
+        @MethodSource("nullArgumentProvider")
+        @DisplayName("Throws NPE when structure of the inputs are invalid")
+        void should_throwNPE_when_structureIsInvalid(
+                PortfolioId id, BrokerAccountId brokerAccountId, String name, Money tradingBalance,
+                List<Transaction> transactions, List<Acquisition> acquisitions, String expectedMessage) {
+
+            // When & Then
+            assertThatThrownBy(() -> Portfolio.reconstitute(id, brokerAccountId, name, tradingBalance, transactions, acquisitions))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage(expectedMessage);
+        }
+
+        static Stream<Arguments> nullArgumentProvider() {
+            PortfolioId id = PortfolioId.generate();
+            BrokerAccountId brokerAccountId = BrokerAccountId.generate();
+            String name = "Test Portfolio";
+            Money tradingBalance = Money.of(new BigDecimal("10000"));
+            List<Transaction> transactions = new ArrayList<>();
+            List<Acquisition> acquisitions = new ArrayList<>();
+
+            return Stream.of(
+                    Arguments.of(null, brokerAccountId, name, tradingBalance, transactions, acquisitions, "id cannot be null"),
+                    Arguments.of(id, null, name, tradingBalance, transactions, acquisitions, "brokerAccountId cannot be null"),
+                    Arguments.of(id, brokerAccountId, null, tradingBalance, transactions, acquisitions, "name cannot be null"),
+                    Arguments.of(id, brokerAccountId, name, null, transactions, acquisitions, "tradingBalance cannot be null"),
+                    Arguments.of(id, brokerAccountId, name, tradingBalance, null, acquisitions, "transactions cannot be null"),
+                    Arguments.of(id, brokerAccountId, name, tradingBalance, transactions, null, "acquisitions cannot be null")
+            );
+        }
+
+        @ParameterizedTest(name = "\"{0}\" is accepted")
+        @ValueSource(strings = {"", "   ", "\t", "\n"})
+        @DisplayName("Reconstitute portfolio even when input name is empty or blank")
+        void should_acceptBlankName_when_reconstitute(String name) {
+            // When
+            Portfolio result = Portfolio.reconstitute(portfolioId, brokerAccountId, name,
+                    tradingBalance, transactions, acquisitions);
+
+            // Then
+            assertThat(result.id()).isEqualTo(portfolioId);
+            assertThat(result.name()).isEqualTo(name);
+        }
+
+        @Test
+        @DisplayName("Have a defensive copy of list when reconstitute portfolio")
+        void should_haveADefensiveCopyOfList_when_reconstitutePortfolio() {
+            // When
+            Portfolio result = Portfolio.reconstitute(portfolioId, brokerAccountId, portfolioName,
+                    tradingBalance, transactions, acquisitions);
+
+            transactions.add(Buy.create(TransactionId.generate(), portfolioId, date, assetId, quantity, price, fee, acquisition.id()));
+            acquisitions.add(Acquisition.create(portfolioId, assetId, date, price, fee, quantity));
+
+            // Then
+            assertThat(result.transactions()).hasSize(2); // The reconstituted list should only have 2 transactions
+            assertThat(result.acquisitions()).hasSize(1); // The reconstituted list should only have 1 acquisition
+            assertThat(transactions).hasSize(3); // The original transaction list should have 3 transactions at this point
+            assertThat(acquisitions).hasSize(2); // The original acquisition list should have 2 acquisitions at this point
+        }
+
+        @Test
+        @DisplayName("Have correct balance if new transaction is applied to the reconstituted portfolio")
+        void should_haveCorrectBalance_when_applyTransactionAtReconstitutedPortfolio() {
+            // When
+            Portfolio result = Portfolio.reconstitute(portfolioId, brokerAccountId, portfolioName,
+                    tradingBalance, transactions, acquisitions);
+            result.recordDeposit(Money.of(new BigDecimal("5000000")), date, today);
+
+            // Then
+            assertThat(result.transactions()).hasSize(3);
+            assertThat(result.tradingBalance()).isEqualTo(Money.of(new BigDecimal("20000000"))); // 15000000 + 5000000 = 20000000
         }
 
     }

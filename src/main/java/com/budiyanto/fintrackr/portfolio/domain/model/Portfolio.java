@@ -1,16 +1,22 @@
 package com.budiyanto.fintrackr.portfolio.domain.model;
 
-import com.budiyanto.fintrackr.portfolio.domain.exception.*;
+import com.budiyanto.fintrackr.portfolio.domain.exception.FutureDatedTransactionException;
+import com.budiyanto.fintrackr.portfolio.domain.exception.InsufficientBalanceException;
+import com.budiyanto.fintrackr.portfolio.domain.exception.NegativeFeeException;
+import com.budiyanto.fintrackr.portfolio.domain.exception.NonPositiveAmountException;
+import com.budiyanto.fintrackr.portfolio.domain.exception.NonPositivePriceException;
+import com.budiyanto.fintrackr.portfolio.domain.exception.ZeroQuantityException;
 import com.budiyanto.fintrackr.shared.AssetId;
 import com.budiyanto.fintrackr.shared.BrokerAccountId;
 import com.budiyanto.fintrackr.shared.Money;
 import com.budiyanto.fintrackr.shared.Quantity;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class Portfolio {
 
     private final PortfolioId id;
@@ -20,17 +26,30 @@ public class Portfolio {
     private final List<Transaction> transactions;
     private final List<Acquisition> acquisitions;
 
-    private Portfolio (BrokerAccountId brokerAccountId, String name) {
-        this.id = PortfolioId.generate();
+    private Portfolio(PortfolioId id, BrokerAccountId brokerAccountId, String name, Money tradingBalance,
+                      List<Transaction> transactions, List<Acquisition> acquisitions) {
+        Objects.requireNonNull(id, "id cannot be null");
+        Objects.requireNonNull(brokerAccountId, "brokerAccountId cannot be null");
+        Objects.requireNonNull(name, "name cannot be null");
+        Objects.requireNonNull(tradingBalance, "tradingBalance cannot be null");
+        Objects.requireNonNull(transactions, "transactions cannot be null");
+        Objects.requireNonNull(acquisitions, "acquisitions cannot be null");
+
+        this.id = id;
         this.brokerAccountId = brokerAccountId;
         this.name = name;
-        this.tradingBalance = Money.zero();
-        this.transactions = new ArrayList<>();
-        this.acquisitions = new ArrayList<>();
+        this.tradingBalance = tradingBalance;
+        this.transactions = new ArrayList<>(transactions);
+        this.acquisitions = new ArrayList<>(acquisitions);
     }
 
     public static Portfolio create(BrokerAccountId brokerAccountId, String name) {
-        return new Portfolio(brokerAccountId, name);
+        validateName(name);
+        return new Portfolio(PortfolioId.generate(), brokerAccountId, name, Money.zero(), new ArrayList<>(), new ArrayList<>());
+    }
+
+    public static Portfolio reconstitute(PortfolioId id, BrokerAccountId brokerAccountId, String name, Money tradingBalance, List<Transaction> transactions, List<Acquisition> acquisitions) {
+        return new Portfolio(id, brokerAccountId, name, tradingBalance, transactions, acquisitions);
     }
 
     public void recordDeposit(Money amount, LocalDate date, LocalDate today) {
@@ -104,6 +123,13 @@ public class Portfolio {
     public List<Transaction> transactions() { return List.copyOf(transactions); }
 
     public List<Acquisition> acquisitions() { return List.copyOf(acquisitions); }
+
+    private static void validateName(String name) {
+        Objects.requireNonNull(name, "name cannot be null");
+        if (name.isBlank()) {
+            throw new IllegalArgumentException("name cannot be blank");
+        }
+    }
 
     @Override
     public boolean equals(Object o) {

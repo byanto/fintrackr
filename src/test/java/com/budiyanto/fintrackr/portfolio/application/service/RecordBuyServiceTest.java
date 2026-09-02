@@ -1,5 +1,8 @@
 package com.budiyanto.fintrackr.portfolio.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.budiyanto.fintrackr.brokerage.domain.model.BrokerAccount;
 import com.budiyanto.fintrackr.brokerage.domain.model.FeeStructure;
 import com.budiyanto.fintrackr.brokerage.domain.model.Percentage;
@@ -11,27 +14,22 @@ import com.budiyanto.fintrackr.portfolio.domain.model.PortfolioId;
 import com.budiyanto.fintrackr.shared.AssetId;
 import com.budiyanto.fintrackr.shared.Money;
 import com.budiyanto.fintrackr.shared.Quantity;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-@DisplayName("RecordBuy Tests")
+@DisplayName("RecordBuyService Tests")
 class RecordBuyServiceTest {
 
     private final InMemoryPortfolioRepository inMemoryPortfolioRepository = new InMemoryPortfolioRepository();
     private final InMemoryBrokerageApi inMemoryBrokerageApi = new InMemoryBrokerageApi();
-    private final Clock clock = Clock.fixed(Instant.parse("2026-08-23T00:00:00Z"), ZoneId.systemDefault());
-    private final RecordBuyService recordBuyService =  new RecordBuyService(inMemoryPortfolioRepository, inMemoryBrokerageApi, clock);
+    private final Clock clock = Clock.fixed(Instant.parse("2026-08-23T00:00:00Z"), ZoneOffset.UTC);
+    private final RecordBuyService recordBuyService = new RecordBuyService(inMemoryPortfolioRepository, inMemoryBrokerageApi, clock);
 
     private Portfolio portfolio;
     private BrokerAccount brokerAccount;
@@ -42,6 +40,10 @@ class RecordBuyServiceTest {
     private final Money fee = Money.of(new BigDecimal("1250"));
     private final Money initialDeposit = Money.of(new BigDecimal("6000000"));
 
+    private final LocalDate today = LocalDate.now(clock);
+    private final LocalDate depositDate = today.minusDays(10);
+    private final LocalDate buyDate = today.minusDays(5);
+
     @BeforeEach
     void setup() {
         brokerAccount = BrokerAccount.create("Test Broker Account", FeeStructure.of(Percentage.of(new BigDecimal("0.0015")), Percentage.of(new BigDecimal("0.0025"))));
@@ -49,7 +51,7 @@ class RecordBuyServiceTest {
         inMemoryBrokerageApi.addBrokerAccount(brokerAccount);
 
         portfolio = Portfolio.create(brokerAccount.id(), "Test Portfolio");
-        portfolio.recordDeposit(initialDeposit, LocalDate.now(), LocalDate.now());
+        portfolio.recordDeposit(initialDeposit, depositDate, today);
         inMemoryPortfolioRepository.save(portfolio);
     }
 
@@ -57,7 +59,7 @@ class RecordBuyServiceTest {
     @DisplayName("Reduce portfolio trading balance and broker account RDN when record buy is recorded")
     void should_reduceTradingBalanceAndRdn_when_recordBuy() {
         // Given
-        var command = new RecordBuyCommand(portfolio.id(), assetId, quantity, price, fee, LocalDate.now());
+        var command = new RecordBuyCommand(portfolio.id(), assetId, quantity, price, fee, buyDate);
 
         // When
         recordBuyService.handle(command);
@@ -75,12 +77,12 @@ class RecordBuyServiceTest {
         Money secondDeposit = Money.of(new BigDecimal("10000000"));
         brokerAccount.applyCashFlow(secondDeposit);
 
-        var command1 = new RecordBuyCommand(portfolio.id(), assetId, quantity, price, fee, LocalDate.now());
+        var command1 = new RecordBuyCommand(portfolio.id(), assetId, quantity, price, fee, buyDate);
 
         Portfolio portfolio2 = Portfolio.create(brokerAccount.id(), "Test Portfolio 2");
-        portfolio2.recordDeposit(secondDeposit, LocalDate.now(), LocalDate.now());
+        portfolio2.recordDeposit(secondDeposit, depositDate, today);
         inMemoryPortfolioRepository.save(portfolio2);
-        var command2 = new RecordBuyCommand(portfolio2.id(), assetId, quantity, price, fee, LocalDate.now());
+        var command2 = new RecordBuyCommand(portfolio2.id(), assetId, quantity, price, fee, buyDate);
 
         // When
         recordBuyService.handle(command1);
@@ -94,7 +96,7 @@ class RecordBuyServiceTest {
     @DisplayName("Use computed fee when no fee is given in command")
     void should_useComputedFee_when_noFeeIsGivenInCommand() {
         // Given
-        var command = new RecordBuyCommand(portfolio.id(), assetId, quantity, price, null, LocalDate.now());
+        var command = new RecordBuyCommand(portfolio.id(), assetId, quantity, price, null, buyDate);
 
         // When
         recordBuyService.handle(command);
@@ -109,7 +111,7 @@ class RecordBuyServiceTest {
     @DisplayName("Reject a record buy when the portfolio is not found")
     void should_throwException_when_portfolioNotFound() {
         // Given
-        var command = new RecordBuyCommand(PortfolioId.generate(), assetId, quantity, price, fee, LocalDate.now());
+        var command = new RecordBuyCommand(PortfolioId.generate(), assetId, quantity, price, fee, buyDate);
 
         // When & Assert
         assertThatThrownBy(() -> recordBuyService.handle(command))
@@ -120,7 +122,7 @@ class RecordBuyServiceTest {
     @DisplayName("Reject a record buy when the balance is insufficient")
     void should_throwException_when_balanceIsInsufficient() {
         // Given
-        var command = new RecordBuyCommand(portfolio.id(), assetId, Quantity.ofShares(new BigDecimal("10000")), price, fee, LocalDate.now());
+        var command = new RecordBuyCommand(portfolio.id(), assetId, Quantity.ofShares(new BigDecimal("10000")), price, fee, buyDate);
 
         // When & Then
         assertThatThrownBy(() -> recordBuyService.handle(command))

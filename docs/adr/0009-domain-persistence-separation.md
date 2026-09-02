@@ -65,6 +65,36 @@ Hexagonal structure is unaffected: the repository remains an outbound port; only
 - **(Resolved)** Mapping is done with **MapStruct**. Open sub-decision: whether the sealed `Transaction` dispatch uses MapStruct's `@SubclassMapping` or a hand-written exhaustive `switch` — decided when the mapper is built.
 - Petalytics will deliberately use the merge approach (A) for comparison; lessons feed back here.
 
+
+### Amendment (2026-09-01) — Reconstitution door, and Lombok scope
+
+**Reconstitution.** The separate-models decision requires the domain aggregate to expose a
+second construction door for the mapper. `Portfolio` therefore has:
+
+- `create(...)` — the write door. Mints identity, starts derived state at zero, enforces
+  business invariants.
+- `reconstitute(...)` — the load door. Receives stored ids, restores derived state verbatim,
+  defensive-copies incoming collections, and validates **only** what is structurally required
+  to build a well-formed object (non-null required fields). Business invariants are
+  deliberately not re-run, so that rows written under earlier versions of the rules remain
+  loadable.
+
+`reconstitute` must be `public`: the persistence adapter lives in a different package and
+Java offers no cross-package friend access. The boundary is therefore guarded by naming
+(the DDD term of art makes misuse conspicuous in review) and by an ArchUnit rule restricting
+callers to the persistence adapter package.
+
+**Lombok.** Lombok is permitted in `application/` and `infrastructure/`, and is **not used in
+`domain/`** — the domain's identity-based `equals`, immutability, and absence of setters are
+load-bearing design, not boilerplate, and `@EqualsAndHashCode` would silently substitute value
+equality on entities. This is the same boundary this ADR already draws for `jakarta.persistence`
+and Spring annotations.
+
+`@Data` is banned everywhere. On JPA persistence entities, use `@Getter`, `@Setter`, and
+`@NoArgsConstructor` only: a generated `hashCode` over a null-before-flush id breaks `HashSet`
+membership across a persist, a generated `toString` triggers lazy loading or
+`LazyInitializationException`, and either across a bidirectional association recurses to
+`StackOverflowError`.
 ## References
 - ADR-001 — Modular monolith
 - ADR-002 — Testing strategy (Testcontainers for persistence integration tests)
