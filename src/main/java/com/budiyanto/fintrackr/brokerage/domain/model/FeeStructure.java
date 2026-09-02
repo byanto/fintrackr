@@ -1,8 +1,7 @@
 package com.budiyanto.fintrackr.brokerage.domain.model;
 
-import com.budiyanto.fintrackr.shared.Quantity;
 import com.budiyanto.fintrackr.shared.Money;
-
+import com.budiyanto.fintrackr.shared.Quantity;
 import java.math.BigDecimal;
 import java.util.Objects;
 

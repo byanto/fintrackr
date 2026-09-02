@@ -1,8 +1,7 @@
 package com.budiyanto.fintrackr.shared;
 
-import org.apache.commons.validator.routines.checkdigit.ISINCheckDigit;
-
 import java.util.Objects;
+import org.apache.commons.validator.routines.checkdigit.ISINCheckDigit;
 
 public record AssetId(String value) {
 

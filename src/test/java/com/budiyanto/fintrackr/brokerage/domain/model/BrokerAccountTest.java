@@ -1,8 +1,13 @@
 package com.budiyanto.fintrackr.brokerage.domain.model;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.budiyanto.fintrackr.brokerage.domain.exception.InsufficientRdnException;
 import com.budiyanto.fintrackr.shared.Money;
 import com.budiyanto.fintrackr.shared.Quantity;
+import java.math.BigDecimal;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,12 +16,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.math.BigDecimal;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("BrokerAccount Tests")
 class BrokerAccountTest {
@@ -50,13 +49,14 @@ class BrokerAccountTest {
             assertThat(result.rdn()).isEqualTo(Money.zero());
         }
 
-        @ParameterizedTest
+        @ParameterizedTest(name = "\"{2}\" is rejected")
         @MethodSource("provideNullArguments")
         @DisplayName("Reject BrokerAccount creation when input arguments are null")
-        void should_throwNPE_when_inputsAreNull(String name, FeeStructure feeStructure) {
+        void should_throwNPE_when_inputsAreNull(String name, FeeStructure feeStructure, String expectedMessage) {
             // When & Then
             assertThatThrownBy(() -> BrokerAccount.create(name, feeStructure))
-                    .isInstanceOf(NullPointerException.class);
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage(expectedMessage);
         }
 
         private static Stream<Arguments> provideNullArguments() {
@@ -65,8 +65,8 @@ class BrokerAccountTest {
                     Percentage.of(new BigDecimal("0.0025")));
 
             return Stream.of(
-                    Arguments.of(null, feeStructure),
-                    Arguments.of("Stockbit", null));
+                    Arguments.of(null, feeStructure, "name cannot be null"),
+                    Arguments.of("Stockbit", null, "feeStructure cannot be null"));
         }
 
         @ParameterizedTest

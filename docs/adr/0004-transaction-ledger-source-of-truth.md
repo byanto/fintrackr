@@ -58,6 +58,31 @@ Concretely:
 - Implementation of the rebuild path: a CLI command? A scheduled health check that diffs cached vs computed state and alerts? Defer to a later ADR.
 - Could we eventually move to full event-sourcing if the audit needs grow? Yes — Option C is a stepping stone toward (A) if ever needed.
 
+
+### Amendment (2026-09-01) — Authority is not the load path
+
+This ADR's "ledger is the source of truth" is a statement about **write authority** and
+**repair**, not about how an aggregate is read from storage.
+
+- Every mutation of derived state happens by appending a Transaction through the aggregate.
+- The ledger is the authority for **detecting and repairing** drift in derived state.
+- It is **not** the read path. Loading an aggregate restores observed state verbatim from
+  storage; it never recomputes it by replaying the ledger.
+
+Concretely, `Portfolio.reconstitute(...)` restores the stored `tradingBalance` column.
+Recompute-on-load was considered and rejected:
+
+- it is replay of the arithmetic — O(transactions) on every read, defeating this ADR's own
+  O(1) read goal;
+- it rebinds historical balances to whatever the current calculation code does, so a later
+  rounding fix would silently change past balances;
+- it becomes impossible once fully closed acquisitions are archived out of the active
+  aggregate footprint (an open question in the domain model);
+- it makes drift **undetectable**, because the stored and computed values are never compared.
+
+The rebuild path already noted above is therefore not only a recovery tool but the *only*
+place cache drift is discovered. It is a separate, explicit reconciliation operation, never
+a silent side effect of a repository read.
 ## References
 - ADR-001 (Modular monolith)
 - *Domain-Driven Design* — Eric Evans (chapter on aggregates and repositories)
