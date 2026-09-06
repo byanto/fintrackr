@@ -86,7 +86,7 @@ For each alternative:
 
 ### Positive
 - Guaranteed Consistency: By enforcing the scale and rounding mode in the `Money` compact constructor, it is impossible for the rest of the application to accidentally persist or calculate with fractional IDR.
-- Single Point of Normalization: every `Money` is guaranteed scale-0 because every construction path runs through one compact constructor. 
+- Single Point of Normalization: every `Money` is guaranteed scale-0 because every construction path runs through one compact constructor.
 - Familiarity: Aligns with standard Java/financial engineering practices, satisfying reviewer and auditor expectations.
 
 ### Negative (costs we explicitly accept)

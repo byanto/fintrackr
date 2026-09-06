@@ -1,2 +1,6 @@
+# Handle text files automatically
+* text=auto eol=lf
+
+# Force specific line endings for code/scripts
 /mvnw text eol=lf
 *.cmd text eol=crlf
