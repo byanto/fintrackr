@@ -14,9 +14,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 public class Portfolio {
 
     private final PortfolioId id;
