@@ -5,6 +5,7 @@ import static com.tngtech.archunit.core.domain.JavaClass.Predicates.type;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.name;
 import static com.tngtech.archunit.core.domain.properties.HasOwner.Predicates.With.owner;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noConstructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -23,7 +24,7 @@ class ApplicationArchitectureTests {
     @ArchTest
     static final ArchRule domainPurityRule =
             noClasses()
-                    .that().resideInAPackage("..domain..")
+                    .that().resideInAnyPackage("..domain..", "..shared..")
                     .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "org.springframework..");
 
     @ArchTest
@@ -40,4 +41,13 @@ class ApplicationArchitectureTests {
             noMethods()
                     .that().areDeclaredInClassesThat().resideInAPackage("..domain..")
                     .should().haveNameMatching("set[A-Z].*");
+
+
+    @ArchTest
+    static final ArchRule noPublicConstructorInDomainRule =
+            noConstructors()
+                    .that().areDeclaredInClassesThat()
+                    .resideInAPackage("..domain.model..")
+                    .and().areDeclaredInClassesThat().areNotRecords() // the compact constructor does the validation, so the door is safe
+                    .should().bePublic();
 }
