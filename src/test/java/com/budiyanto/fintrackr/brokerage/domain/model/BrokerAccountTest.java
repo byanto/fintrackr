@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.budiyanto.fintrackr.brokerage.domain.exception.InsufficientRdnException;
+import com.budiyanto.fintrackr.shared.BrokerAccountId;
 import com.budiyanto.fintrackr.shared.Money;
 import com.budiyanto.fintrackr.shared.Quantity;
 import java.math.BigDecimal;
@@ -264,5 +265,71 @@ class BrokerAccountTest {
         }
     }
 
+    @Nested
+    @DisplayName("Reconstitute Tests")
+    class ReconstituteTest {
+
+        private final BrokerAccountId id = BrokerAccountId.generate();
+        private final Money rdn = Money.of(new BigDecimal("25000"));
+
+        @Test
+        @DisplayName("Reconstitute BrokerAccount when valid inputs are given")
+        void should_reconstituteBrokerAccount_when_validInputsAreGiven() {
+            // When
+            BrokerAccount result = BrokerAccount.reconstitute(id, name, rdn, feeStructure);
+
+            // Then
+            assertThat(result.id()).isEqualTo(id);
+            assertThat(result.name()).isEqualTo(name);
+            assertThat(result.rdn()).isEqualTo(rdn);
+            assertThat(result.feeStructure()).isEqualTo(feeStructure);
+        }
+
+        @ParameterizedTest(name = "\"{0}\" is accepted")
+        @ValueSource(strings = {"0", "-25000"})
+        @DisplayName("Reconstitute BrokerAccount when RDN is zero or negative")
+        void should_reconstituteBrokerAccount_when_rdnValueIsZeroOrNegative(String zeroOrNegativeRdnValue) {
+            // When
+            Money zeroOrNegativeRdn = Money.of(new BigDecimal(zeroOrNegativeRdnValue));
+            BrokerAccount result = BrokerAccount.reconstitute(id, name, zeroOrNegativeRdn, feeStructure);
+
+            // Then
+            assertThat(result.rdn()).isEqualTo(zeroOrNegativeRdn);
+        }
+
+        @ParameterizedTest(name = "\"{0}\" is accepted")
+        @ValueSource(strings = {"", "   ", "\t", "\n"})
+        @DisplayName("Reconstitute BrokerAccount even when input name is empty or blank")
+        void should_reconstituteBrokerAccount_when_nameIsEmptyOrBlank(String emptyOrBlankName) {
+            // When
+            BrokerAccount result = BrokerAccount.reconstitute(id, emptyOrBlankName, rdn, feeStructure);
+
+            // Then
+            assertThat(result.name()).isEqualTo(emptyOrBlankName);
+        }
+
+        @ParameterizedTest(name = "\"{4}\" is rejected")
+        @MethodSource("nullArgumentProvider")
+        @DisplayName("Throws NPE when structure of the inputs are invalid")
+        void should_throwNPE_when_structureIsInvalid(BrokerAccountId id, String name, Money rdn, FeeStructure feeStructure, String expectedMessage) {
+            // When & Then
+            assertThatThrownBy(() -> BrokerAccount.reconstitute(id, name, rdn, feeStructure))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage(expectedMessage);
+        }
+
+        static Stream<Arguments> nullArgumentProvider() {
+            BrokerAccountId  id = BrokerAccountId.generate();
+            String name = "Test Broker Account";
+            Money rdn = Money.of(new BigDecimal("25000"));
+            FeeStructure feeStructure = FeeStructure.of(Percentage.of(new BigDecimal("0.0015")), Percentage.of(new BigDecimal("0.0025")));
+            return Stream.of(
+                    Arguments.of(null, name, rdn, feeStructure, "id cannot be null"),
+                    Arguments.of(id, null, rdn, feeStructure, "name cannot be null"),
+                    Arguments.of(id, name, null, feeStructure, "rdn cannot be null"),
+                    Arguments.of(id, name, rdn, null, "feeStructure cannot be null")
+            );
+        }
+    }
 
 }

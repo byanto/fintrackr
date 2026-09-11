@@ -1,7 +1,7 @@
 package com.budiyanto.fintrackr;
 
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.type;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.name;
 import static com.tngtech.archunit.core.domain.properties.HasOwner.Predicates.With.owner;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -28,12 +28,12 @@ class ApplicationArchitectureTests {
                     .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "org.springframework..");
 
     @ArchTest
-    static final ArchRule portfolioReconstitutionRule =
+    static final ArchRule reconstitutionRule =
             noClasses()
                     .that().resideOutsideOfPackage("..adapter.out.persistence..")
                     .should().callMethodWhere(
                             target(name("reconstitute"))
-                                    .and(target(owner(type(com.budiyanto.fintrackr.portfolio.domain.model.Portfolio.class))))
+                                    .and(target(owner(resideInAPackage("..domain.model.."))))
                     );
 
     @ArchTest
@@ -41,7 +41,6 @@ class ApplicationArchitectureTests {
             noMethods()
                     .that().areDeclaredInClassesThat().resideInAPackage("..domain..")
                     .should().haveNameMatching("set[A-Z].*");
-
 
     @ArchTest
     static final ArchRule noPublicConstructorInDomainRule =
