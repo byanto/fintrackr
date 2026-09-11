@@ -4,7 +4,6 @@ import com.budiyanto.fintrackr.brokerage.domain.exception.InsufficientRdnExcepti
 import com.budiyanto.fintrackr.shared.BrokerAccountId;
 import com.budiyanto.fintrackr.shared.Money;
 import com.budiyanto.fintrackr.shared.Quantity;
-
 import java.util.Objects;
 
 public class BrokerAccount {
@@ -14,18 +13,25 @@ public class BrokerAccount {
     private Money rdn;
     private FeeStructure feeStructure;
 
-    private BrokerAccount(String name, FeeStructure feeStructure) {
-        validateName(name);
+    private BrokerAccount(BrokerAccountId id, String name, Money rdn, FeeStructure feeStructure) {
+        Objects.requireNonNull(id, "id cannot be null");
+        Objects.requireNonNull(name, "name cannot be null");
+        Objects.requireNonNull(rdn, "rdn cannot be null");
         Objects.requireNonNull(feeStructure, "feeStructure cannot be null");
 
-        this.id = BrokerAccountId.generate();
+        this.id = id;
         this.name = name;
-        this.rdn = Money.zero();
+        this.rdn = rdn;
         this.feeStructure = feeStructure;
     }
 
     public static BrokerAccount create(String name, FeeStructure feeStructure) {
-        return new BrokerAccount(name, feeStructure);
+        validateName(name);
+        return new BrokerAccount(BrokerAccountId.generate(), name, Money.zero(), feeStructure);
+    }
+
+    public static BrokerAccount reconstitute(BrokerAccountId id, String name, Money rdn, FeeStructure feeStructure) {
+        return new BrokerAccount(id, name, rdn, feeStructure);
     }
 
     public void rename(String name) {
@@ -50,7 +56,7 @@ public class BrokerAccount {
         return feeStructure.computeSellFee(quantity, price);
     }
 
-    private void validateName(String name) {
+    private static void validateName(String name) {
         Objects.requireNonNull(name, "name cannot be null");
         if (name.isBlank()) {
             throw new IllegalArgumentException("name cannot be blank");
