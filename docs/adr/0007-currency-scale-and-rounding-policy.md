@@ -1,6 +1,6 @@
 # ADR-007: Currency Scale and Rounding Policy for IDR
 
-- **Status:** Accepted (amended 2026-06-08)
+- **Status:** Accepted (amended 2026-06-08, 2026-09-06)
 - **Date:** 2026-05-25
 - **Deciders:** Budi Yanto
 
@@ -58,6 +58,22 @@ Implementing `Money` prompted an evaluation of JavaMoney (JSR-354, reference imp
 
 **Record vs class (settled):** keep `Money` a `record`. A public record's canonical constructor cannot be made more restrictive than the record, so it cannot be hidden — but because validation/normalisation lives in the compact constructor, *every* construction path is already safe. Switching to a class with a private constructor plus factory would trade away records' correct `equals`/`hashCode`, immutability, and pattern-matching for no safety gain. Reach for class-plus-private-constructor only when the factory must do more than construct (caching, polymorphic returns) — which `Money` does not.
 
+## Amendment — 2026-09-06: Persisted column type and currency column
+
+The first Flyway migration forced the column-type question that the open-questions section below had deferred.
+
+**Column type: `NUMERIC(19, 0)`.** `BIGINT` was viable — range is a non-issue for IDR at any plausible portfolio size, so it does not discriminate — but was rejected on three grounds:
+
+1. *Migration safety.* If scale ever changes, `NUMERIC(19,0) → NUMERIC(19,2)` is lossless: existing rows keep their value (`10` becomes `10.00`). `BIGINT` would conventionally hold minor units, so every existing row changes *meaning* (`10` rupiah becomes `10` sen); the migration must rewrite every money column in every table, and nothing in a row records which unit it holds — a restored backup or an exported report from before the migration is silently wrong. That is a silent data migration on money.
+2. *Native mapping.* Hibernate maps `BigDecimal` to `numeric` directly. `BIGINT` needs a converter at a seam that is already hand-written (ADR-009).
+3. *The performance argument does not apply.* `BIGINT` arithmetic is faster in SQL; this system performs no money arithmetic in SQL — every calculation runs in the domain in `BigDecimal` and crosses into storage as a settled value.
+
+**The column does not enforce scale.** PostgreSQL silently rounds a fractional value inserted into either type, using round-half-away-from-zero — not HALF_EVEN. The scale-0 column therefore *documents* intent; it is not a second enforcer. `Money`'s compact constructor is the sole enforcement, and it is sufficient because this application is the only writer and every `Money` is constructed through it. A `CHECK` constraint on scale was considered and rejected as a duplicate of a rule the domain already makes unbypassable. Where the mapper converts toward a narrower type, use the exact variant (`longValueExact()`-style) so a fraction fails loudly at the boundary rather than rounding silently in storage.
+
+**Currency column: `VARCHAR(3) NOT NULL` (ISO 4217) with a named `CHECK (<field>_currency = 'IDR')`.** An amount without its currency is a classic production defect; three bytes remove it. The constraint is named (`ck_<table>_<field>_currency`) so that enabling multi-currency is `DROP CONSTRAINT`, not a schema change per table. Unlike the rejected scale `CHECK`, this one encodes a *scope boundary* that the domain expresses only as a factory default (`Money.of(BigDecimal)` assumes IDR), not an invariant the domain already enforces — a different kind of rule, so a different answer.
+
+**Naming.** Every money-bearing field maps to two columns, `<field>_amount` and `<field>_currency` — the layout an `@Embeddable` would have produced, done by hand because ADR-009 keeps persistence annotations off the shared kernel.
+
 ## Alternatives Considered
 
 For each alternative:
@@ -98,7 +114,7 @@ For each alternative:
 ### Neutral / Open Questions
 - Negative Money: How do we represent negative balances versus negative deltas? This will be addressed by invariants within the `Money` record itself, independent of the rounding policy.
 - Multi-Currency: Out of scope for Fintrackr v1. If USD or EUR support is added later, the strict 0 scale policy will need to be refactored to support variable scales per currency.
-- Database column type for persisted Money values: Likely `NUMERIC(19, 0)` to preserve the `BigDecimal` semantics, but `BIGINT` is also viable given scale-0 storage. Defer to when persistence is implemented.
+- Database column type for persisted Money values: resolved in the 2026-09-06 amendment — `NUMERIC(19, 0)` plus a currency column.
 - Scope: This policy governs `Money` only. `Quantity` (which may be fractional for mutual fund units) and `Percentage` (fee rates, scale ~4) have separate scale policies, deferred to a future ADR or decided when those value objects are implemented.
 
 ## References

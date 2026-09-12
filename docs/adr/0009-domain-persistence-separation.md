@@ -1,6 +1,6 @@
 # ADR-009: Pure Domain Model with a Separate JPA Persistence Model
 
-- **Status:** Accepted
+- **Status:** Accepted (amended 2026-09-01, 2026-09-06)
 - **Date:** 2026-06-01
 - **Deciders:** Budi Yanto
 
@@ -95,6 +95,26 @@ and Spring annotations.
 membership across a persist, a generated `toString` triggers lazy loading or
 `LazyInitializationException`, and either across a bidirectional association recurses to
 `StackOverflowError`.
+
+**Enforcement (added 2026-09-06).** The Lombok ban cannot be enforced by bytecode analysis:
+Lombok annotations have `SOURCE` retention and are discarded by `javac`. What Lombok
+*generates* is ordinary bytecode, so the build enforces the **effect** rather than the tool:
+an ArchUnit rule forbids public constructors in `..domain.model..` (records exempt — a
+record's canonical constructor cannot be less visible than the record itself, and its compact
+constructor carries the validation). This catches Lombok-generated, hand-written and
+IDE-generated violations alike. The rule was introduced after a `@RequiredArgsConstructor`
+was found on `Portfolio`, generating a public constructor that bypassed every null check and
+stored caller-owned lists by reference — through three green build gates. Two further
+mechanisms are available if a faster failure is wanted: a directory-scoped `lombok.config`
+with `flagUsage = ERROR` (compile-time), and `lombok.addLombokGeneratedAnnotation`, which
+stamps generated members with a `CLASS`-retention marker visible to bytecode tools.
+
+The domain-purity rule that keeps `jakarta.persistence` and Spring out of the domain covers
+the shared kernel as well as the module `domain` packages. A consequence worth stating: the
+shared value objects (`Money`, `Quantity`, …) cannot be `@Embeddable`. They are mapped by
+hand in each adapter — which is what this ADR asks for, and which keeps a persistence
+decision from being imposed on every consumer of the kernel.
+
 ## References
 - ADR-001 — Modular monolith
 - ADR-002 — Testing strategy (Testcontainers for persistence integration tests)
