@@ -1,6 +1,6 @@
 # ADR-002: Testing Strategy for Fintrackr
 
-- **Status:** Accepted (amended 2026-06-08)
+- **Status:** Accepted (amended 2026-06-08, 2026-09-17)
 - **Date:** 2026-05-24
 - **Deciders:** Budi Yanto
 
@@ -45,6 +45,36 @@ ADR-002 set the testing *strategy* (TDD on the domain, test-after on adapters, t
 - **Exceptions:** assert on type (`isInstanceOf`) and at most `hasMessageContaining`; never assert exact message strings.
 
 These are conventions, not strategy changes; ADR-002's decisions stand.
+
+## Amendment — 2026-09-17: Persistence adapter tests
+
+The first JPA adapter (`BrokerAccount`) fixed how adapter tests are written; the strategy stands.
+
+- **Two tiers, explicitly.** Use-case tests (`RecordBuyServiceTest`) run on in-memory fakes of the
+  ports: no Spring, no Docker, milliseconds. Adapter tests run on `@DataJpaTest` with a
+  Testcontainers Postgres supplied through `@ServiceConnection`. Fakes live in `src/test` only —
+  production code is `main`, and a fake annotated as a bean in `main` would be a second candidate
+  for the port.
+- **A round trip must be forced to touch the database.** `@DataJpaTest` is transactional with
+  rollback, and Spring Data `save` on an entity with an assigned id merges rather than persists,
+  so a naive save-then-find is answered from Hibernate's persistence context without an INSERT or
+  a SELECT ever reaching the database. Adapter tests `flush()` and `clear()` between write and
+  read, and assert field by field (aggregate `equals` is identity-only and would pass on any object
+  with the same id).
+- **One asymmetric observation.** A round trip cannot detect a symmetric mapping bug (a field
+  swapped in both directions). Each adapter test also reads the row through raw SQL
+  (`JdbcTemplate`) and asserts column values and, for numeric columns, `scale()` explicitly. This
+  is the build's only scale gate: `ddl-auto=validate` compares neither precision nor scale.
+- **Discriminating values.** Every column receives a distinct, non-default value (no zero
+  balances, buy rate ≠ sell rate) so a dropped or swapped mapping cannot produce the expected
+  result by accident.
+- **Sabotage before trust.** A new build gate or migration is broken deliberately once, to confirm
+  the failure is visible and names the cause (Flyway: file and SQL state; ArchUnit: rule and class).
+- **Naming.** Adapter tests are named `*Test` and run under Surefire. `*IT` is reserved for a
+  future Failsafe split; without Failsafe in the build, a class named `*IT` is never executed.
+
+Open: a contract test shared by the in-memory fake and the JPA adapter of each repository port,
+so the fakes cannot drift from the real behaviour.
 
 ## Alternatives Considered
 
