@@ -1,6 +1,6 @@
 # ADR-009: Pure Domain Model with a Separate JPA Persistence Model
 
-- **Status:** Accepted (amended 2026-09-01, 2026-09-06)
+- **Status:** Accepted (amended 2026-09-01, 2026-09-06, 2026-09-17)
 - **Date:** 2026-06-01
 - **Deciders:** Budi Yanto
 
@@ -23,7 +23,7 @@ Concretely:
 
 - **Domain layer** (`domain/`): pure Java. No `jakarta.persistence` and no Spring annotations. Records, sealed types, and immutability are preserved exactly as designed in ADR-004/005/007/008.
 - **Persistence model** (`infrastructure/adapter/out/persistence/`): mutable `@Entity` classes (`PortfolioJpaEntity`, `AcquisitionJpaEntity`, `BrokerAccountJpaEntity`, and an `@Inheritance` hierarchy for the transaction ledger), plus columns or `@Embeddable` types for value objects. These classes exist only to satisfy Hibernate and never leak past the adapter.
-- **Mapper**: **MapStruct** (compile-time, type-safe; the standard tool for bean mapping in this ecosystem) converts domain ↔ persistence inside the adapter. Because value objects construct through factory methods rather than public constructors, the mapper uses small custom mapping methods (e.g. `default Money toMoney(BigDecimal v) { return Money.of(v); }`) — which is also what keeps ADR-007's normalization running on reads. The repository **port** (`application/port/out`) speaks only domain types; the JPA adapter implements it and maps at the boundary. (MapStruct and Lombok are both annotation processors and require `lombok-mapstruct-binding` with correct processor ordering, or MapStruct cannot see Lombok-generated accessors.)
+- **Mapper** *(superseded by the 2026-09-17 amendment: hand-written)*: **MapStruct** (compile-time, type-safe; the standard tool for bean mapping in this ecosystem) converts domain ↔ persistence inside the adapter. Because value objects construct through factory methods rather than public constructors, the mapper uses small custom mapping methods (e.g. `default Money toMoney(BigDecimal v) { return Money.of(v); }`) — which is also what keeps ADR-007's normalization running on reads. The repository **port** (`application/port/out`) speaks only domain types; the JPA adapter implements it and maps at the boundary. (MapStruct and Lombok are both annotation processors and require `lombok-mapstruct-binding` with correct processor ordering, or MapStruct cannot see Lombok-generated accessors.)
 - **Value objects** map field-for-field to columns (or persistence-side embeddables for multi-field VOs). Reconstruction always goes through the domain factory methods (`Money.of(...)`, etc.), so ADR-007's scale/rounding normalization runs again at the read boundary — the checkpoint is preserved on rehydration, not just on first construction.
 - **Sealed `Transaction` mapping**: the domain sealed hierarchy maps to a JPA single-table (or joined) `@Inheritance` hierarchy on the persistence side. MapStruct handles subtype dispatch via `@SubclassMapping`; because that is weaker on exhaustiveness than a `switch` over a sealed type (a forgotten subtype is not reliably a compile-time error), this one hierarchy may instead retain a small hand-written exhaustive `switch` so that adding a new transaction variant fails to compile until it is handled. Decided when the mapper is implemented.
 
@@ -62,7 +62,7 @@ Hexagonal structure is unaffected: the repository remains an outbound port; only
 ### Neutral / Open Questions
 - Persistence-side use of Hibernate's record-`@Embeddable` support (6.2+) for multi-field value objects is available but optional; decide per value object when implementing. The domain records themselves stay annotation-free regardless.
 - Column types for persisted `Money` (`NUMERIC(19, 0)` vs `BIGINT`) remain open per ADR-007; decided when the schema is written.
-- **(Resolved)** Mapping is done with **MapStruct**. Open sub-decision: whether the sealed `Transaction` dispatch uses MapStruct's `@SubclassMapping` or a hand-written exhaustive `switch` — decided when the mapper is built.
+- **(Superseded 2026-09-17)** Mapping was to be done with **MapStruct**; it is hand-written — see the amendment, which also settles the sealed `Transaction` dispatch as a hand-written exhaustive `switch`.
 - Petalytics will deliberately use the merge approach (A) for comparison; lessons feed back here.
 
 
@@ -114,6 +114,43 @@ the shared kernel as well as the module `domain` packages. A consequence worth s
 shared value objects (`Money`, `Quantity`, …) cannot be `@Embeddable`. They are mapped by
 hand in each adapter — which is what this ADR asks for, and which keeps a persistence
 decision from being imposed on every consumer of the kernel.
+
+### Amendment (2026-09-17) — Hand-written mapper; entity and embeddable conventions
+
+**Mapper.** This ADR chose MapStruct. Building the first adapter (`BrokerAccount`) showed it has
+nothing to generate here: the domain deliberately exposes fluent accessors (`name()`, not
+`getName()`), which MapStruct's default accessor strategy does not recognise, and reconstruction
+goes through a static factory (`reconstitute`) it cannot call, so every conversion would be a
+hand-written `default` method with an annotation processor watching. Adapting the domain
+(bean-style getters) to satisfy a mapping tool would let an outbound adapter shape the domain —
+the wrong direction. Mappers are therefore **hand-written**: package-private, one class per
+aggregate (`<Aggregate>PersistenceMapper`), two methods, the inbound one ending in `reconstitute`.
+The MapStruct dependency remains in the pom only on the expectation of DTO↔DTO mapping in the
+REST layer; if the first controller lands without it, it is removed. The open question on sealed
+`Transaction` dispatch is thereby settled: a hand-written exhaustive `switch`.
+
+**Persistence-side value classes.** Shared-kernel value objects cannot be `@Embeddable` (domain
+purity rule). Each adapter defines its own `@Embeddable` classes (`MoneyEmbeddable`,
+`FeeStructureEmbeddable`): `BigDecimal` and `String` only, no logic, no validation. Currency is
+stored as `String`, not `java.util.Currency`, so that Hibernate's hydration can never fail on data;
+a row that cannot be represented as a domain type fails in the mapper, per row, in our code, with
+the row identified. Embeddables are not promoted to `shared` speculatively (ADR-010's promotion
+rule); a second consumer decides between per-module duplication and an infrastructure module.
+
+**Entity shape.** `protected` no-arg constructor for Hibernate, package-private all-args
+constructor for the mapper, `@Getter`, **no setters** (this supersedes the `@Setter` allowance in
+the 2026-09-01 amendment), no `equals`/`hashCode` until something needs them — and then
+`instanceof`, not `getClass()`, because Hibernate proxies are subclasses. Column names are always
+explicit: `@Column(name)` on simple fields and `@AttributeOverride` on embedded ones. Two reasons:
+Spring Boot's JPA-compliant implicit naming names an embedded column by the embeddable's field
+alone (`buy_rate`, not `fee_structure_buy_rate`), so overrides are required for any schema that
+prefixes; and explicit names decouple Java renames from migrations. Precision and scale are
+**not** declared on entities: nothing compares them to the schema (`validate` ignores both), so
+they would be documentation that can silently go stale. The rule: duplicate a fact across Java and
+SQL only where a build gate compares the two.
+
+**Enforcement.** ArchUnit: classes annotated `@Entity` or `@Embeddable` must reside in
+`..adapter.out.persistence..`.
 
 ## References
 - ADR-001 — Modular monolith
