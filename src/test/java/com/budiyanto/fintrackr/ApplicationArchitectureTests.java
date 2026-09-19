@@ -4,6 +4,7 @@ import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.name;
 import static com.tngtech.archunit.core.domain.properties.HasOwner.Predicates.With.owner;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noConstructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
@@ -12,6 +13,8 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Entity;
 
 @AnalyzeClasses(
         packages = "com.budiyanto.fintrackr",
@@ -49,4 +52,11 @@ class ApplicationArchitectureTests {
                     .resideInAPackage("..domain.model..")
                     .and().areDeclaredInClassesThat().areNotRecords() // the compact constructor does the validation, so the door is safe
                     .should().bePublic();
+
+    @ArchTest
+    static final ArchRule entityAndEmbeddableMustResideInPersistenceAdapterRule =
+            classes()
+                    .that().areAnnotatedWith(Entity.class)
+                    .or().areAnnotatedWith(Embeddable.class)
+                    .should().resideInAPackage("..adapter.out.persistence..");
 }
