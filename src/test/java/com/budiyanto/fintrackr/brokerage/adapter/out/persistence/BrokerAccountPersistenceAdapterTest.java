@@ -40,14 +40,16 @@ class BrokerAccountPersistenceAdapterTest {
         BrokerAccount savedAccount = savedAccount();
 
         Map<String, Object> row = jdbcTemplate.queryForMap(
-                "SELECT name, rdn_amount, rdn_currency, fee_structure_buy_rate, fee_structure_sell_rate FROM broker_accounts WHERE id = ?",
+                "SELECT version, name, rdn_amount, rdn_currency, fee_structure_buy_rate, fee_structure_sell_rate FROM broker_accounts WHERE id = ?",
                 savedAccount.id().value()
         );
 
+        Long version = (Long) row.get("version");
         BigDecimal rdnAmount = (BigDecimal) row.get("rdn_amount");
         BigDecimal feeStructureBuyRate = (BigDecimal) row.get("fee_structure_buy_rate");
         BigDecimal feeStructureSellRate = (BigDecimal) row.get("fee_structure_sell_rate");
 
+        assertThat(version).isEqualTo(0L);
         assertThat(row.get("name")).isEqualTo("Test BrokerAccount");
         assertThat(rdnAmount).isEqualByComparingTo(new BigDecimal("50000"));
         assertThat(rdnAmount.scale()).isZero();
@@ -81,6 +83,24 @@ class BrokerAccountPersistenceAdapterTest {
 
         // Then
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Persist the changed RDN when an existing account is saved")
+    void should_persistChangedRdn_when_existingAccountIsSaved() {
+        // Given
+        BrokerAccount savedAccount = savedAccount();
+
+        // When
+        savedAccount.applyCashFlow(Money.of(new BigDecimal("100000")));
+        adapter.save(savedAccount);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        // Then
+        BrokerAccount result = adapter.findById(savedAccount.id()).orElseThrow();
+        assertThat(result.rdn()).isEqualTo(Money.of(new BigDecimal("150000")));
     }
 
     private BrokerAccount savedAccount() {

@@ -21,7 +21,15 @@ class BrokerAccountPersistenceAdapter implements BrokerAccountRepository {
 
     @Override
     public BrokerAccount save(BrokerAccount brokerAccount) {
-        repository.save(mapper.toEntity(brokerAccount));
+        Optional<BrokerAccountJpaEntity> entityOptional = repository.findById(brokerAccount.id().value());
+        BrokerAccountJpaEntity entity;
+        if (entityOptional.isPresent()) {
+            entity = entityOptional.get();
+            mapper.updateEntity(brokerAccount, entity);
+        } else {
+            entity = mapper.toEntity(brokerAccount);
+        }
+        repository.save(entity);
         return brokerAccount;
     }
 }

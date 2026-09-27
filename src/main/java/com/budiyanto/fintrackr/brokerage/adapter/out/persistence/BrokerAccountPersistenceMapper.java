@@ -22,10 +22,19 @@ class BrokerAccountPersistenceMapper {
 
     BrokerAccountJpaEntity toEntity(BrokerAccount domain) {
         UUID id = domain.id().value();
+        BrokerAccountJpaEntity entity = new BrokerAccountJpaEntity(id);
+        updateEntity(domain, entity);
+
+        return entity;
+    }
+
+    void updateEntity(BrokerAccount domain, BrokerAccountJpaEntity target) {
         String name = domain.name();
         MoneyEmbeddable rdn = new MoneyEmbeddable(domain.rdn().amount(), domain.rdn().currency().getCurrencyCode());
         FeeStructureEmbeddable feeStructure = new FeeStructureEmbeddable(domain.feeStructure().buyRate().rate(), domain.feeStructure().sellRate().rate());
-        return new BrokerAccountJpaEntity(id, name, rdn, feeStructure);
+        target.setName(name);
+        target.setRdn(rdn);
+        target.setFeeStructure(feeStructure);
     }
 
 }
