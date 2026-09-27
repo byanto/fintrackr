@@ -105,7 +105,7 @@ Work in progress (v1), built in vertical slices:
 - [x] Record-buy use case: application-service orchestration across Portfolio and Brokerage
 - [ ] Sells with acquisition-selection strategies (FIFO, LIFO, manual, ...)
 - [ ] Dividends with per-lot attribution
-- [x] Persistence: Flyway-owned schema, Hibernate validate-only, JPA adapter for BrokerAccount (Testcontainers round-trip test)
+- [x] Persistence: Flyway-owned schema, Hibernate validate-only, JPA adapter for BrokerAccount with optimistic locking (Testcontainers round-trip and concurrency tests)
 - [ ] Persistence: JPA adapter for Portfolio; transactional use-case wiring
 - [ ] REST API
 - [ ] Minimal web UI

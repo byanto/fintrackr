@@ -1,6 +1,6 @@
 # ADR-009: Pure Domain Model with a Separate JPA Persistence Model
 
-- **Status:** Accepted (amended 2026-09-01, 2026-09-06, 2026-09-17)
+- **Status:** Accepted (amended 2026-09-01, 2026-09-06, 2026-09-17, 2026-09-27)
 - **Date:** 2026-06-01
 - **Deciders:** Budi Yanto
 
@@ -151,6 +151,52 @@ SQL only where a build gate compares the two.
 
 **Enforcement.** ArchUnit: classes annotated `@Entity` or `@Embeddable` must reside in
 `..adapter.out.persistence..`.
+
+### Amendment (2026-09-27) — Optimistic locking; adapters update the managed entity
+
+**Locking.** Every aggregate's JPA entity carries a `@Version Long version` column, added by
+migration as `BIGINT NOT NULL DEFAULT 0`. Without it, two concurrent cash flows on the same
+`BrokerAccount` (for example two buys in different portfolios under one broker) both read the
+same RDN and the later commit silently overwrites the earlier one. The ledgers stay correct, the
+RDN ends too high, and the ADR-003 invariant `sum(tradingBalance) == rdn` breaks in the direction
+no single-request test detects. The same lost update applies to `Portfolio`'s cached
+`tradingBalance`, where it also lets two buys pass the balance check against the same stale value.
+
+`Persistable<ID>` was considered and rejected. With assigned ids, Spring Data's default
+`isNew` check (id is null) always answers "existing", so every save of a new aggregate becomes a
+`merge` with an extra SELECT. `Persistable` removes that SELECT and nothing else. A wrapper-typed
+`@Version` removes it too (null version means new) and adds `WHERE version = ?` to every UPDATE.
+The field must be `Long`, not `long`: a primitive is never null and Spring Data falls back to the
+id check. The column needs `DEFAULT 0` for existing rows, and `NOT NULL` so no row can reach the
+"null version means new" branch.
+
+**Updating in place.** An adapter must not map a fresh entity for an aggregate that already
+exists: the fresh entity has no version, is treated as new, and the INSERT fails on the primary
+key. Carrying the loaded version into the fresh entity and letting `merge` copy it works for a
+flat aggregate but passes the version through application code by hand, and for an aggregate with
+child collections (`Portfolio`'s ledger) it means rebuilding and merging the whole graph to append
+one row. Adapters therefore:
+
+- load the managed entity (`findById`, answered from the persistence context inside the use-case
+  transaction) and copy the aggregate's mutable fields onto it; dirty checking issues the UPDATE
+  with the version that was loaded;
+- create new aggregates through `toEntity`, which builds an entity holding only its id and then
+  calls the same update method, so the list of mutable fields exists once;
+- call `repository.save` in both cases. It is a no-op for a managed entity, but keeps the adapter
+  correct when called without a surrounding transaction, where the loaded entity is detached.
+
+Application code never sets the version. The protection depends on load and save sharing one
+transaction, which ADR-003 already requires of the use case.
+
+**Entity shape (supersedes the 2026-09-17 entity conventions in part).** No all-args constructor:
+a package-private constructor taking only the id, the `protected` no-arg constructor for
+Hibernate, and `@Setter(AccessLevel.PACKAGE)` on the mutable fields only. Identity and version get
+no setter. The domain's no-setter rule is unaffected; it covers `..domain..`, not adapters.
+
+**Contract.** A conflict surfaces from the repository port as Spring's provider-neutral
+`OptimisticLockingFailureException`, which is what callers and tests rely on, not the JPA-specific
+subclass. How the use case reacts (retry or report a conflict) is decided when the REST layer
+exists.
 
 ## References
 - ADR-001 — Modular monolith
