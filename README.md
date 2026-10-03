@@ -106,6 +106,8 @@ Work in progress (v1), built in vertical slices:
 - [ ] Sells with acquisition-selection strategies (FIFO, LIFO, manual, ...)
 - [ ] Dividends with per-lot attribution
 - [x] Persistence: Flyway-owned schema, Hibernate validate-only, JPA adapter for BrokerAccount with optimistic locking (Testcontainers round-trip and concurrency tests)
+- [x] Brokerage published API implemented: fee computation and cash flow run through the JPA adapter in one transaction, with an in-memory port implementation that keeps the use-case tests honest
+- [ ] Brokerage inbound side: create and administer a broker account (use case, REST), update the fee structure
 - [ ] Persistence: JPA adapter for Portfolio; transactional use-case wiring
 - [ ] REST API
 - [ ] Minimal web UI
