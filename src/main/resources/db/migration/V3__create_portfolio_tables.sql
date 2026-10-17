@@ -30,37 +30,31 @@ CREATE TABLE transactions (
     portfolio_id UUID NOT NULL,
     date DATE NOT NULL,
     type VARCHAR(20) NOT NULL,
+    cash_amount NUMERIC(19, 0),
+    cash_currency VARCHAR(3),
+    asset_id TEXT,
+    quantity NUMERIC,
+    price_amount NUMERIC(19, 0),
+    price_currency VARCHAR(3),
+    fee_amount NUMERIC(19, 0),
+    fee_currency VARCHAR(3),
+    acquisition_id UUID UNIQUE,
+    seq BIGINT GENERATED ALWAYS AS IDENTITY,
     CONSTRAINT fk_transactions_portfolio_id FOREIGN KEY (portfolio_id) REFERENCES portfolios(id),
-    CONSTRAINT uq_transactions_id_type UNIQUE (id, type),
-    CONSTRAINT ck_transactions_type CHECK (type in ('DEPOSIT', 'BUY'))
-);
-
-CREATE TABLE buys (
-    id UUID PRIMARY KEY,
-    asset_id TEXT NOT NULL,
-    quantity NUMERIC NOT NULL,
-    price_amount NUMERIC(19, 0) NOT NULL,
-    price_currency VARCHAR(3) NOT NULL,
-    fee_amount NUMERIC(19, 0) NOT NULL,
-    fee_currency VARCHAR(3) NOT NULL,
-    acquisition_id UUID UNIQUE NOT NULL,
-    type VARCHAR(20) NOT NULL DEFAULT 'BUY',
-    CONSTRAINT fk_buys_id_type FOREIGN KEY (id, type) REFERENCES transactions(id, type),
-    CONSTRAINT fk_buys_acquisition_id FOREIGN KEY (acquisition_id) REFERENCES acquisitions(id),
-    CONSTRAINT ck_buys_price_currency CHECK (price_currency = 'IDR'),
-    CONSTRAINT ck_buys_fee_currency CHECK (fee_currency = 'IDR'),
-    CONSTRAINT ck_buys_quantity CHECK (scale(quantity) IN (0, 4)),
-    CONSTRAINT ck_buys_type CHECK (type = 'BUY')
-);
-
-CREATE TABLE deposits (
-    id UUID PRIMARY KEY,
-    amount_amount NUMERIC(19, 0) NOT NULL,
-    amount_currency VARCHAR(3) NOT NULL,
-    type VARCHAR(20) NOT NULL DEFAULT 'DEPOSIT',
-    CONSTRAINT fk_deposits_id_type FOREIGN KEY (id, type) REFERENCES transactions(id, type),
-    CONSTRAINT ck_deposits_amount_currency CHECK (amount_currency = 'IDR'),
-    CONSTRAINT ck_deposits_type CHECK (type = 'DEPOSIT')
+    CONSTRAINT fk_transactions_acquisition_id FOREIGN KEY (acquisition_id) REFERENCES acquisitions(id),
+    CONSTRAINT ck_transactions_cash_currency CHECK (cash_currency = 'IDR'),
+    CONSTRAINT ck_transactions_price_currency CHECK (price_currency = 'IDR'),
+    CONSTRAINT ck_transactions_fee_currency CHECK (fee_currency = 'IDR'),
+    CONSTRAINT ck_transactions_quantity CHECK (scale(quantity) IN (0, 4)),
+    CONSTRAINT ck_transactions_type CHECK (type IN ('DEPOSIT', 'BUY')),
+    CONSTRAINT ck_transactions_columns_match_type
+      CHECK (
+        CASE type
+          WHEN 'DEPOSIT' THEN (cash_amount IS NOT NULL AND cash_currency IS NOT NULL AND asset_id IS NULL AND quantity IS NULL AND price_amount IS NULL AND price_currency IS NULL AND fee_amount IS NULL AND fee_currency IS NULL AND acquisition_id IS NULL)
+          WHEN 'BUY' THEN (cash_amount IS NULL AND cash_currency IS NULL AND asset_id IS NOT NULL AND quantity IS NOT NULL AND price_amount IS NOT NULL AND price_currency IS NOT NULL AND fee_amount IS NOT NULL AND fee_currency IS NOT NULL AND acquisition_id IS NOT NULL)
+          ELSE FALSE
+        END
+      )
 );
 
 CREATE INDEX idx_acquisitions_portfolio_id ON acquisitions(portfolio_id);
