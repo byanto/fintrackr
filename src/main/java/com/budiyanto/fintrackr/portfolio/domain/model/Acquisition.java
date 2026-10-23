@@ -18,6 +18,14 @@ public class Acquisition {
     private final Quantity initialQuantity;
 
     private Acquisition(AcquisitionId id, PortfolioId portfolioId, AssetId assetId, LocalDate openDate, Money openPrice, Money openFee, Quantity initialQuantity) {
+        Objects.requireNonNull(id, "id cannot be null");
+        Objects.requireNonNull(portfolioId, "portfolioId cannot be null");
+        Objects.requireNonNull(assetId, "assetId cannot be null");
+        Objects.requireNonNull(openDate, "openDate cannot be null");
+        Objects.requireNonNull(openPrice, "openPrice cannot be null");
+        Objects.requireNonNull(openFee, "openFee cannot be null");
+        Objects.requireNonNull(initialQuantity, "initialQuantity cannot be null");
+
         this.id = id;
         this.portfolioId = portfolioId;
         this.assetId = assetId;
@@ -29,6 +37,10 @@ public class Acquisition {
 
     public static Acquisition create(PortfolioId portfolioId, AssetId assetId, LocalDate openDate, Money openPrice, Money openFee, Quantity initialQuantity) {
         return new Acquisition(AcquisitionId.generate(), portfolioId, assetId, openDate, openPrice, openFee, initialQuantity);
+    }
+
+    public static Acquisition reconstitute(AcquisitionId id, PortfolioId portfolioId, AssetId assetId, LocalDate openDate, Money openPrice, Money openFee, Quantity initialQuantity) {
+        return new Acquisition(id, portfolioId, assetId, openDate, openPrice, openFee, initialQuantity);
     }
 
     public AcquisitionId id() { return id; }

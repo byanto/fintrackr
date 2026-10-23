@@ -13,4 +13,7 @@ public record PortfolioId(UUID value) {
         return new PortfolioId(UUID.randomUUID());
     }
 
+    public static PortfolioId of(UUID value) {
+        return new PortfolioId(value);
+    }
 }

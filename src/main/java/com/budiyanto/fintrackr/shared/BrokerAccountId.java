@@ -13,4 +13,7 @@ public record BrokerAccountId(UUID value) {
         return new BrokerAccountId(UUID.randomUUID());
     }
 
+    public static BrokerAccountId of(UUID value) {
+        return new BrokerAccountId(value);
+    }
 }

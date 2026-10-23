@@ -51,15 +51,19 @@ class PortfolioJpaEntity {
     })
     private MoneyEmbeddable tradingBalance;
 
+    // Insert order matters: fk_transactions_acquisition_id is checked per statement, so acquisitions
+    // must be inserted before transactions. Hibernate cascades in alphabetical attribute order, which
+    // gives that order today. Renaming either field can flip it.
+    // Guarded by should_writeTransactionRowsTheSchemaExpects_when_save.
     @Getter(AccessLevel.NONE)
     @OneToMany(cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "portfolio_id", nullable = false)
+    @JoinColumn(name = "portfolio_id", nullable = false, updatable = false)
     @OrderBy("date ASC, seq ASC")
     private List<TransactionJpaEntity> transactions;
 
     @Getter(AccessLevel.NONE)
     @OneToMany(cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "portfolio_id", nullable = false)
+    @JoinColumn(name = "portfolio_id", nullable = false, updatable = false)
     @OrderBy("openDate ASC, id ASC")
     private List<AcquisitionJpaEntity> acquisitions;
 

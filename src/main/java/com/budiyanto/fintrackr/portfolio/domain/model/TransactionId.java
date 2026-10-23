@@ -13,4 +13,8 @@ public record TransactionId(UUID value) {
         return new TransactionId(UUID.randomUUID());
     }
 
+    public static TransactionId of(UUID value) {
+        return new TransactionId(value);
+    }
+
 }

@@ -4,10 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -165,4 +170,52 @@ class QuantityTest {
 
     }
 
+    @Nested
+    @DisplayName("reconstitute Tests")
+    class reconstitute {
+
+        @Test
+        @DisplayName("Keep value and scale as given when reconstitute")
+        void should_keepValueAndScaleAsGiven_when_reconstitute() {
+            // Given
+            BigDecimal value = new BigDecimal("10.2680");
+
+            // When
+            Quantity result = Quantity.reconstitute(value);
+
+            // Then
+            assertThat(result.value()).isEqualTo(value);
+        }
+
+        @Test
+        @DisplayName("Throw exception when reconstituted value is null")
+        void should_throwException_when_reconstitutedValueIsNull() {
+            // When & Then
+            assertThatThrownBy(() -> Quantity.reconstitute(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage("Quantity value cannot be null");
+        }
+
+        @ParameterizedTest(name = "\"{0}\"")
+        @MethodSource("violatedInputProviders")
+        @DisplayName("Reconstitute quantity when creation rules are violated")
+        void should_reconstituteQuantity_when_creationRulesAreViolated(String violatedInput) {
+            // Given
+            BigDecimal violatedValue = new BigDecimal(violatedInput);
+
+            // When
+            Quantity result = Quantity.reconstitute(violatedValue);
+
+            // Then
+            assertThat(result.value()).isEqualTo(violatedValue);
+        }
+
+        static Stream<Arguments> violatedInputProviders() {
+            return Stream.of(
+                    Arguments.of(Named.of("negative value", "-10.2312")),
+                    Arguments.of(Named.of("scale greater than 4", "5.12345")),
+                    Arguments.of(Named.of("scale is not 0 or 4", "5.12"))
+            );
+        }
+    }
 }
