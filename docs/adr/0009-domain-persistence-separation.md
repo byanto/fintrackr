@@ -1,6 +1,6 @@
 # ADR-009: Pure Domain Model with a Separate JPA Persistence Model
 
-- **Status:** Accepted (amended 2026-09-01, 2026-09-06, 2026-09-17, 2026-09-27)
+- **Status:** Accepted (amended 2026-09-01, 2026-09-06, 2026-09-17, 2026-09-27, 2026-10-23)
 - **Date:** 2026-06-01
 - **Deciders:** Budi Yanto
 
@@ -184,6 +184,9 @@ one row. Adapters therefore:
   calls the same update method, so the list of mutable fields exists once;
 - call `repository.save` in both cases. It is a no-op for a managed entity, but keeps the adapter
   correct when called without a surrounding transaction, where the loaded entity is detached.
+  This holds for flat aggregates. For an aggregate with child collections, `merge` walks the
+  children and fails on new ones with assigned ids; such an adapter calls `save` only for a new
+  aggregate and must be `@Transactional` (ADR-013).
 
 Application code never sets the version. The protection depends on load and save sharing one
 transaction, which ADR-003 already requires of the use case.
