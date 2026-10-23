@@ -14,7 +14,11 @@ public record Deposit(TransactionId id, PortfolioId portfolioId, LocalDate date,
         Objects.requireNonNull(amount, "amount cannot be null");
     }
 
-    public static Deposit create(TransactionId id, PortfolioId portfolioId, LocalDate date, Money amount) {
+    public static Deposit create(PortfolioId portfolioId, LocalDate date, Money amount) {
+        return new Deposit(TransactionId.generate(), portfolioId, date, amount);
+    }
+
+    public static Deposit reconstitute(TransactionId id, PortfolioId portfolioId, LocalDate date, Money amount) {
         return new Deposit(id, portfolioId, date, amount);
     }
 

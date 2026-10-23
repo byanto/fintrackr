@@ -20,7 +20,11 @@ public record Buy(TransactionId id, PortfolioId portfolioId, LocalDate date, Ass
         Objects.requireNonNull(acquisitionId, "acquisitionId cannot be null");
     }
 
-    public static Buy create(TransactionId id, PortfolioId portfolioId, LocalDate date, AssetId assetId, Quantity quantity, Money price, Money fee, AcquisitionId acquisitionId) {
+    public static Buy create(PortfolioId portfolioId, LocalDate date, AssetId assetId, Quantity quantity, Money price, Money fee, AcquisitionId acquisitionId) {
+        return new Buy(TransactionId.generate(), portfolioId, date, assetId, quantity, price, fee, acquisitionId);
+    }
+
+    public static Buy reconstitute(TransactionId id, PortfolioId portfolioId, LocalDate date, AssetId assetId, Quantity quantity, Money price, Money fee, AcquisitionId acquisitionId) {
         return new Buy(id, portfolioId, date, assetId, quantity, price, fee, acquisitionId);
     }
 

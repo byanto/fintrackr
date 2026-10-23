@@ -13,4 +13,8 @@ public record AcquisitionId(UUID value) {
         return new AcquisitionId(UUID.randomUUID());
     }
 
+    public static AcquisitionId of(UUID value) {
+        return new AcquisitionId(value);
+    }
+
 }

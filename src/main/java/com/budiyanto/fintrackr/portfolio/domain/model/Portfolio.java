@@ -63,7 +63,7 @@ public class Portfolio {
             throw new FutureDatedTransactionException(date, today);
         }
 
-        Transaction deposit = Deposit.create(TransactionId.generate(), id, date, amount);
+        Transaction deposit = Deposit.create(id, date, amount);
         transactions.add(deposit);
 
         tradingBalance = tradingBalance.add(amount);
@@ -103,7 +103,7 @@ public class Portfolio {
         Acquisition acquisition = Acquisition.create(id, assetId, date, price, fee, quantity);
         acquisitions.add(acquisition);
 
-        Transaction buy = Buy.create(TransactionId.generate(), id, date, assetId, quantity, price, fee, acquisition.id());
+        Transaction buy = Buy.create(id, date, assetId, quantity, price, fee, acquisition.id());
         transactions.add(buy);
 
         tradingBalance = endBalance;

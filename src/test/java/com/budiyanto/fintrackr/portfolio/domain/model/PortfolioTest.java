@@ -453,8 +453,8 @@ class PortfolioTest {
         private final Money tradingBalance = Money.of(new BigDecimal("15000000"));
 
         private final Acquisition acquisition = Acquisition.create(portfolioId, assetId, date, price, fee, quantity);
-        private final Deposit depositTransaction = Deposit.create(TransactionId.generate(), portfolioId, date, depositBalance);
-        private final Buy buyTransaction = Buy.create(TransactionId.generate(), portfolioId, date, assetId, quantity, price, fee, acquisition.id());
+        private final Deposit depositTransaction = Deposit.create(portfolioId, date, depositBalance);
+        private final Buy buyTransaction = Buy.create(portfolioId, date, assetId, quantity, price, fee, acquisition.id());
         private List<Transaction> transactions;
         private List<Acquisition> acquisitions;
 
@@ -508,8 +508,8 @@ class PortfolioTest {
             acquisitions.add(acquisition);
 
             List<Transaction> transactions = new ArrayList<>();
-            transactions.add(Deposit.create(TransactionId.generate(), portfolioId, futureDate, violatedDepositBalance));
-            transactions.add(Buy.create(TransactionId.generate(), portfolioId, futureDate, assetId, quantity, price, fee, acquisition.id()));
+            transactions.add(Deposit.create(portfolioId, futureDate, violatedDepositBalance));
+            transactions.add(Buy.create(portfolioId, futureDate, assetId, quantity, price, fee, acquisition.id()));
 
             // When
             Portfolio result = Portfolio.reconstitute(portfolioId, brokerAccountId, portfolioName,
@@ -575,7 +575,7 @@ class PortfolioTest {
             Portfolio result = Portfolio.reconstitute(portfolioId, brokerAccountId, portfolioName,
                     tradingBalance, transactions, acquisitions);
 
-            transactions.add(Buy.create(TransactionId.generate(), portfolioId, date, assetId, quantity, price, fee, acquisition.id()));
+            transactions.add(Buy.create(portfolioId, date, assetId, quantity, price, fee, acquisition.id()));
             acquisitions.add(Acquisition.create(portfolioId, assetId, date, price, fee, quantity));
 
             // Then
