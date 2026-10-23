@@ -50,6 +50,7 @@ Key decisions are recorded as ADRs in [docs/adr](docs/adr):
 - [ADR-010: Module Package Structure and Shared Kernel](docs/adr/0010-module-package-structure-and-shared-kernel.md)
 - [ADR-011: Exception Strategy](docs/adr/0011-exception-strategy.md)
 - [ADR-012: Asset Identity via ISIN](docs/adr/0012-asset-identity-via-isin.md)
+- [ADR-013: Portfolio Ledger Persistence](docs/adr/0013-portfolio-ledger-persistence.md)
 
 ## Tech Stack
 
@@ -108,6 +109,7 @@ Work in progress (v1), built in vertical slices:
 - [x] Persistence: Flyway-owned schema, Hibernate validate-only, JPA adapter for BrokerAccount with optimistic locking (Testcontainers round-trip and concurrency tests)
 - [x] Brokerage published API implemented: fee computation and cash flow run through the JPA adapter in one transaction, with an in-memory port implementation that keeps the use-case tests honest
 - [ ] Brokerage inbound side: create and administer a broker account (use case, REST), update the fee structure
-- [ ] Persistence: JPA adapter for Portfolio; transactional use-case wiring
+- [x] Persistence: JPA adapter for Portfolio with a single-table ledger and schema-level checks per transaction type ([ADR-013](docs/adr/0013-portfolio-ledger-persistence.md); `PortfolioPersistenceAdapterTest`, `PortfolioOptimisticLockingTest`)
+- [ ] Transactional use-case wiring: record-buy as one transaction across Portfolio and Brokerage, with a rollback integration test
 - [ ] REST API
 - [ ] Minimal web UI
