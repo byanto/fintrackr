@@ -110,6 +110,6 @@ Work in progress (v1), built in vertical slices:
 - [x] Brokerage published API implemented: fee computation and cash flow run through the JPA adapter in one transaction, with an in-memory port implementation that keeps the use-case tests honest
 - [ ] Brokerage inbound side: create and administer a broker account (use case, REST), update the fee structure
 - [x] Persistence: JPA adapter for Portfolio with a single-table ledger and schema-level checks per transaction type ([ADR-013](docs/adr/0013-portfolio-ledger-persistence.md); `PortfolioPersistenceAdapterTest`, `PortfolioOptimisticLockingTest`)
-- [ ] Transactional use-case wiring: record-buy as one transaction across Portfolio and Brokerage, with a rollback integration test
+- [x] Transactional use-case wiring: record-buy as one transaction across Portfolio and Brokerage, with a rollback integration test ([ADR-003](docs/adr/0003-cross-aggregate-cash-invariant.md); `RecordBuyServiceTransactionTest`)
 - [ ] REST API
 - [ ] Minimal web UI
