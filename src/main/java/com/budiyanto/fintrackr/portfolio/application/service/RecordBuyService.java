@@ -11,7 +11,10 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@Service
 @RequiredArgsConstructor
 public class RecordBuyService implements RecordBuyUseCase {
 
@@ -20,6 +23,7 @@ public class RecordBuyService implements RecordBuyUseCase {
     private final Clock clock;
 
     @Override
+    @Transactional
     public void handle(RecordBuyCommand command) {
         Optional<Portfolio> portfolioOptional = portfolioRepository.findById(command.portfolioId());
         if  (portfolioOptional.isEmpty()) {
