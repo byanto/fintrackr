@@ -22,4 +22,8 @@ public record Deposit(TransactionId id, PortfolioId portfolioId, LocalDate date,
         return new Deposit(id, portfolioId, date, amount);
     }
 
+    @Override
+    public Money cashFlow() {
+        return amount;
+    }
 }

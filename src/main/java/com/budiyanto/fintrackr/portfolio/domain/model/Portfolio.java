@@ -69,7 +69,7 @@ public class Portfolio {
         tradingBalance = tradingBalance.add(amount);
     }
 
-    public Money recordBuy(AssetId assetId, Quantity quantity, Money price, Money fee, LocalDate date, LocalDate today) {
+    public Buy recordBuy(AssetId assetId, Quantity quantity, Money price, Money fee, LocalDate date, LocalDate today) {
         Objects.requireNonNull(assetId, "assetId cannot be null");
         Objects.requireNonNull(quantity, "quantity cannot be null");
         Objects.requireNonNull(price, "price cannot be null");
@@ -93,21 +93,20 @@ public class Portfolio {
             throw new FutureDatedTransactionException(date, today);
         }
 
-        Money costDelta = Money.of(quantity.value().multiply(price.amount()).add(fee.amount()), price.currency()).negate();
+        Acquisition acquisition = Acquisition.create(id, assetId, date, price, fee, quantity);
+        Buy buy = Buy.create(id, date, assetId, quantity, price, fee, acquisition.id());
 
+        Money costDelta = buy.cashFlow();
         Money endBalance = tradingBalance.add(costDelta);
         if (endBalance.isNegative()) {
             throw new InsufficientBalanceException(tradingBalance, costDelta.negate());
         }
 
-        Acquisition acquisition = Acquisition.create(id, assetId, date, price, fee, quantity);
         acquisitions.add(acquisition);
-
-        Transaction buy = Buy.create(id, date, assetId, quantity, price, fee, acquisition.id());
         transactions.add(buy);
 
         tradingBalance = endBalance;
-        return costDelta;
+        return buy;
     }
 
     public PortfolioId id() { return id; }

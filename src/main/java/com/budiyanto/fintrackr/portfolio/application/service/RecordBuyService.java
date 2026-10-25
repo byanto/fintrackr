@@ -5,7 +5,9 @@ import com.budiyanto.fintrackr.portfolio.application.exception.PortfolioNotFound
 import com.budiyanto.fintrackr.portfolio.application.port.in.RecordBuyCommand;
 import com.budiyanto.fintrackr.portfolio.application.port.in.RecordBuyUseCase;
 import com.budiyanto.fintrackr.portfolio.application.port.out.PortfolioRepository;
+import com.budiyanto.fintrackr.portfolio.domain.model.Buy;
 import com.budiyanto.fintrackr.portfolio.domain.model.Portfolio;
+import com.budiyanto.fintrackr.portfolio.domain.model.TransactionId;
 import com.budiyanto.fintrackr.shared.Money;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -24,7 +26,7 @@ public class RecordBuyService implements RecordBuyUseCase {
 
     @Override
     @Transactional
-    public void handle(RecordBuyCommand command) {
+    public TransactionId handle(RecordBuyCommand command) {
         Optional<Portfolio> portfolioOptional = portfolioRepository.findById(command.portfolioId());
         if  (portfolioOptional.isEmpty()) {
             throw new PortfolioNotFoundException(command.portfolioId());
@@ -36,11 +38,10 @@ public class RecordBuyService implements RecordBuyUseCase {
                 .orElseGet(() -> brokerageApi.computeBuyFee(portfolio.brokerAccountId(), command.quantity(), command.price()));
 
         LocalDate today = LocalDate.now(clock);
-        Money delta = portfolio.recordBuy(command.assetId(), command.quantity(), command.price(), fee, command.date(), today);
+        Buy buy = portfolio.recordBuy(command.assetId(), command.quantity(), command.price(), fee, command.date(), today);
         portfolioRepository.save(portfolio);
 
-        brokerageApi.applyCashFlow(portfolio.brokerAccountId(), delta);
-
+        brokerageApi.applyCashFlow(portfolio.brokerAccountId(), buy.cashFlow());
+        return buy.id();
     }
-
 }

@@ -11,6 +11,7 @@ import com.budiyanto.fintrackr.portfolio.application.port.in.RecordBuyCommand;
 import com.budiyanto.fintrackr.portfolio.domain.exception.InsufficientBalanceException;
 import com.budiyanto.fintrackr.portfolio.domain.model.Portfolio;
 import com.budiyanto.fintrackr.portfolio.domain.model.PortfolioId;
+import com.budiyanto.fintrackr.portfolio.domain.model.TransactionId;
 import com.budiyanto.fintrackr.shared.AssetId;
 import com.budiyanto.fintrackr.shared.Money;
 import com.budiyanto.fintrackr.shared.Quantity;
@@ -53,6 +54,19 @@ class RecordBuyServiceTest {
         portfolio = Portfolio.create(brokerAccount.id(), "Test Portfolio");
         portfolio.recordDeposit(initialDeposit, depositDate, today);
         inMemoryPortfolioRepository.save(portfolio);
+    }
+
+    @Test
+    @DisplayName("Return id of the recorded buy when handle")
+    void should_returnIdOfRecordedBuy_when_handle() {
+        // Given
+        var command = new RecordBuyCommand(portfolio.id(), assetId, quantity, price, fee, buyDate);
+
+        // When
+        TransactionId result = recordBuyService.handle(command);
+
+        // Then
+        assertThat(result).isEqualTo(portfolio.transactions().getLast().id());
     }
 
     @Test
