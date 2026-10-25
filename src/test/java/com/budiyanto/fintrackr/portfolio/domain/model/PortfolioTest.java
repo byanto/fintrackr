@@ -221,36 +221,6 @@ class PortfolioTest {
         }
 
         @Test
-        @DisplayName("Return the total cost as a negative delta when a buy is recorded")
-        void should_returnCostDelta_when_recordBuy() {
-            // When
-            Money costDelta = portfolio.recordBuy(assetId, quantity, price, fee, date, today);
-
-            // Then
-            assertThat(costDelta).isEqualTo(Money.of(new BigDecimal("-5802500"))); // (5800 x 1000) + 2500 = 5802500
-        }
-
-        @ParameterizedTest
-        @CsvSource({
-                "1.5, 5801, 0, -8702",
-                "1.6, 5801, 100, -9382",
-                "1.3, 5801, 100, -7641"
-        })
-        @DisplayName("Return the total cost as a negative delta with correct rounding when a buy is recorded")
-        void should_returnCorrectRounding_when_recordBuy(String inputQuantity, String inputPrice, String inputFee, String inputCostDelta) {
-            // Given
-            Quantity quantity = Quantity.ofUnits(new BigDecimal(inputQuantity));
-            Money price = Money.of(new BigDecimal(inputPrice));
-            Money fee = Money.of(new BigDecimal(inputFee));
-
-            // When
-            Money costDelta = portfolio.recordBuy(assetId, quantity, price, fee, date, today);
-
-            // Then
-            assertThat(costDelta).isEqualTo(Money.of(new BigDecimal(inputCostDelta)));
-        }
-
-        @Test
         @DisplayName("Decrease the trading balance by the total cost when a buy is recorded")
         void should_decreaseBalanceByCost_when_recordBuy() {
             // When
@@ -318,6 +288,28 @@ class PortfolioTest {
                         assertThat(b.fee()).isEqualTo(fee);
                         assertThat(b.acquisitionId()).isEqualTo(acquisition.id());
                     });
+        }
+
+        @Test
+        @DisplayName("Return the buy added to the ledger when record buy")
+        void should_returnTheBuyAddedToTheLedger_when_recordBuy() {
+            // When
+            Buy result = portfolio.recordBuy(assetId, quantity, price, fee, date, today);
+
+            // Then
+            assertThat(result).isSameAs(portfolio.transactions().getLast());
+        }
+
+        @Test
+        @DisplayName("Match trading balance when cash flows of ledger are summed")
+        void should_matchTradingBalance_when_cashFlowsOfLedgerAreSummed() {
+            // When
+            portfolio.recordBuy(assetId, quantity, price, fee, date, today); // - (1000 * 5800 + 2500) = -5802500
+            portfolio.recordBuy(assetId, quantity, price, fee, date, today); // - (1000 * 5800 + 2500) = -5802500
+
+            // Then
+            Money sumOfLedgerCashFlows = portfolio.transactions().stream().map(Transaction::cashFlow).reduce(Money::add).orElseThrow();
+            assertThat(sumOfLedgerCashFlows).isEqualTo(portfolio.tradingBalance()); // 20000000 + (2 * -5802500) = 8395000
         }
 
         // Boundaries (Edge Cases)

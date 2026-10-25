@@ -28,4 +28,8 @@ public record Buy(TransactionId id, PortfolioId portfolioId, LocalDate date, Ass
         return new Buy(id, portfolioId, date, assetId, quantity, price, fee, acquisitionId);
     }
 
+    @Override
+    public Money cashFlow() {
+        return Money.of(quantity.value().multiply(price.amount()).add(fee.amount()), price.currency()).negate();
+    }
 }

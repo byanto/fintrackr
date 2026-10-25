@@ -15,6 +15,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class DepositTest {
 
+    private static final TransactionId TRANSACTION_ID = TransactionId.generate();
+    private static final PortfolioId PORTFOLIO_ID = PortfolioId.generate();
+    private static final LocalDate DEPOSIT_DATE = LocalDate.now();
+    private static final Money AMOUNT = Money.of(new BigDecimal("10000"));
+
     @ParameterizedTest(name = "\"{4}\"")
     @MethodSource("nullArgumentProvider")
     @DisplayName("Throw NPE with the field name when a field is null")
@@ -26,32 +31,34 @@ class DepositTest {
     }
 
     static Stream<Arguments> nullArgumentProvider() {
-        TransactionId id = TransactionId.generate();
-        PortfolioId portfolioId = PortfolioId.generate();
-        LocalDate date = LocalDate.now();
-        Money amount = Money.of(new BigDecimal("10000"));
-
         return Stream.of(
-                Arguments.of(null, portfolioId, date, amount, "id cannot be null"),
-                Arguments.of(id, null, date, amount, "portfolioId cannot be null"),
-                Arguments.of(id, portfolioId, null, amount, "date cannot be null"),
-                Arguments.of(id, portfolioId, date, null, "amount cannot be null")
+                Arguments.of(null, PORTFOLIO_ID, DEPOSIT_DATE, AMOUNT, "id cannot be null"),
+                Arguments.of(TRANSACTION_ID, null, DEPOSIT_DATE, AMOUNT, "portfolioId cannot be null"),
+                Arguments.of(TRANSACTION_ID, PORTFOLIO_ID, null, AMOUNT, "date cannot be null"),
+                Arguments.of(TRANSACTION_ID, PORTFOLIO_ID, DEPOSIT_DATE, null, "amount cannot be null")
         );
     }
 
     @Test
     @DisplayName("Keep the given id when reconstitute")
     void should_keepGivenId_when_reconstitute() {
-        // Given
-        TransactionId id = TransactionId.generate();
-        PortfolioId portfolioId = PortfolioId.generate();
-        LocalDate date = LocalDate.now();
-        Money amount = Money.of(new BigDecimal("10000"));
-
         // When
-        Deposit result = Deposit.reconstitute(id, portfolioId, date, amount);
+        Deposit result = Deposit.reconstitute(TRANSACTION_ID, PORTFOLIO_ID, DEPOSIT_DATE, AMOUNT);
 
         // Then
-        assertThat(result.id()).isEqualTo(id);
+        assertThat(result.id()).isEqualTo(TRANSACTION_ID);
+    }
+
+    @Test
+    @DisplayName("Increase cash by amount when deposit")
+    void should_increaseCashByAmount_when_deposit() {
+        // Given
+        Deposit deposit = Deposit.create(PORTFOLIO_ID, DEPOSIT_DATE, AMOUNT);
+
+        // When
+        Money result = deposit.cashFlow();
+
+        // Then
+        assertThat(result).isEqualTo(AMOUNT);
     }
 }
