@@ -66,7 +66,8 @@ class RecordBuyServiceTest {
         TransactionId result = recordBuyService.handle(command);
 
         // Then
-        assertThat(result).isEqualTo(portfolio.transactions().getLast().id());
+        Portfolio loadedPortfolio = inMemoryPortfolioRepository.findById(portfolio.id()).orElseThrow();
+        assertThat(result).isEqualTo(loadedPortfolio.transactions().getLast().id());
     }
 
     @Test
@@ -79,9 +80,10 @@ class RecordBuyServiceTest {
         recordBuyService.handle(command);
 
         // Then
-        assertThat(portfolio.tradingBalance()).isEqualTo(Money.of(new BigDecimal("998750"))); // 6000000 - (1000 * 5000 + 1250) = 998750
+        Portfolio loadedPortfolio = inMemoryPortfolioRepository.findById(portfolio.id()).orElseThrow();
+        assertThat(loadedPortfolio.tradingBalance()).isEqualTo(Money.of(new BigDecimal("998750"))); // 6000000 - (1000 * 5000 + 1250) = 998750
         assertThat(brokerAccount.rdn()).isEqualTo(Money.of(new BigDecimal("998750"))); // 6000000 - (1000 * 5000 + 1250) = 998.750
-        assertThat(brokerAccount.rdn()).isEqualTo(portfolio.tradingBalance());
+        assertThat(brokerAccount.rdn()).isEqualTo(loadedPortfolio.tradingBalance());
     }
 
     @Test
@@ -103,7 +105,9 @@ class RecordBuyServiceTest {
         recordBuyService.handle(command2);
 
         // Then
-        assertThat(brokerAccount.rdn()).isEqualTo(portfolio.tradingBalance().add(portfolio2.tradingBalance()));
+        Portfolio loadedPortfolio1 = inMemoryPortfolioRepository.findById(portfolio.id()).orElseThrow();
+        Portfolio loadedPortfolio2 = inMemoryPortfolioRepository.findById(portfolio2.id()).orElseThrow();
+        assertThat(brokerAccount.rdn()).isEqualTo(loadedPortfolio1.tradingBalance().add(loadedPortfolio2.tradingBalance()));
     }
 
     @Test
@@ -116,9 +120,10 @@ class RecordBuyServiceTest {
         recordBuyService.handle(command);
 
         // Then
-        assertThat(portfolio.tradingBalance()).isEqualTo(Money.of(new BigDecimal("992500"))); // 6000000 - (1000 * 5000 + 7500) = 992500
+        Portfolio loadedPortfolio = inMemoryPortfolioRepository.findById(portfolio.id()).orElseThrow();
+        assertThat(loadedPortfolio.tradingBalance()).isEqualTo(Money.of(new BigDecimal("992500"))); // 6000000 - (1000 * 5000 + 7500) = 992500
         assertThat(brokerAccount.rdn()).isEqualTo(Money.of(new BigDecimal("992500"))); // 6000000 - (1000 * 5000 + 7500) = 992500
-        assertThat(brokerAccount.rdn()).isEqualTo(portfolio.tradingBalance());
+        assertThat(brokerAccount.rdn()).isEqualTo(loadedPortfolio.tradingBalance());
     }
 
     @Test
@@ -142,7 +147,8 @@ class RecordBuyServiceTest {
         assertThatThrownBy(() -> recordBuyService.handle(command))
                 .isInstanceOf(InsufficientBalanceException.class);
 
-        assertThat(portfolio.tradingBalance()).isEqualTo(initialDeposit);
+        Portfolio loadedPortfolio = inMemoryPortfolioRepository.findById(portfolio.id()).orElseThrow();
+        assertThat(loadedPortfolio.tradingBalance()).isEqualTo(initialDeposit);
         assertThat(brokerAccount.rdn()).isEqualTo(initialDeposit);
     }
 
