@@ -1,6 +1,6 @@
 # ADR-011: Exception Strategy — Technical vs Domain Exceptions
 
-- **Status:** Accepted
+- **Status:** Accepted (amended 2026-10-27)
 - **Date:** 2026-06-08
 - **Deciders:** Budi Yanto
 
@@ -53,9 +53,48 @@ The system produces two very different kinds of failure: low-level **preconditio
 - Unchecked exceptions are invisible in signatures — failure modes rely on docs/tests, not the compiler.
 
 ### Neutral / Open Questions
-- Exact `ProblemDetail` mapping (status codes, error codes, i18n) — when the REST adapter is built.
+- ~~Exact `ProblemDetail` mapping~~: RESOLVED, see the 2026-10-27 amendment. Error codes and i18n remain open.
 - Whether VO format violations join the domain hierarchy — open.
-- ~~Where `DomainException` lives~~ — RESOLVED (Session 10): the abstract base lives in `shared` (the only module every context may depend on); concrete subtypes live in their owning module (e.g. `portfolio.domain.exception.NonPositiveAmountException`, `FutureDatedTransactionException`). The base is behaviour, not a value object — a deliberate, documented stretch of `shared`'s charter (cross-referenced in ADR-010).
+- ~~Where `DomainException` lives~~ — RESOLVED: the abstract base lives in `shared` (the only module every context may depend on); concrete subtypes live in their owning module (e.g. `portfolio.domain.exception.NonPositiveAmountException`, `FutureDatedTransactionException`). The base is behaviour, not a value object — a deliberate, documented stretch of `shared`'s charter (cross-referenced in ADR-010).
+
+## Amendment (2026-10-27): Mapping at the REST boundary
+
+The first controller (`POST /api/portfolios/{id}/buys`) settles the mapping deferred above.
+
+| Failure | Status | Handled in |
+|---|---|---|
+| `DomainException` and subtypes | 422, title "Business Rule Violated", detail = exception message | `GlobalExceptionHandler` |
+| `OptimisticLockingFailureException` | 409, title "Concurrent Update", fixed detail | `GlobalExceptionHandler` |
+| `PortfolioNotFoundException` | 404 | `PortfolioExceptionHandler` |
+| Bad input during request translation | 400, title "Invalid Request" | `PortfolioExceptionHandler` |
+| Malformed JSON, Bean Validation, path type mismatch | 400 | Spring, inherited from `ResponseEntityExceptionHandler` |
+| Anything else | 500 | Spring Boot's default error handling |
+
+**Map by location, not by type.** `IllegalArgumentException` means "the caller has a bug" (see
+Decision). REST adds a caller that may send nonsense: the user. The controller catches it only
+inside its translation step (request DTO to command) and rethrows `InvalidRequestException` with
+the original as cause. Once the command exists, every input has passed its value object, so an
+`IllegalArgumentException` from the use case comes from stored data or our own code. It is not
+caught and becomes a 500. A global `IllegalArgumentException` handler would report such bugs to
+the client as 400, with no 500 and no alert. `RecordBuyControllerTest` pins both directions.
+
+**Two advices, split by ownership.** `GlobalExceptionHandler` in the root package handles the
+cross-cutting cases and is the only advice extending `ResponseEntityExceptionHandler`. It adds the
+field errors to the Bean Validation response as an `errors` property. `PortfolioExceptionHandler`
+in `portfolio.adapter.in.web` handles Portfolio's own exceptions. The advices do not overlap, so
+their order does not matter. A catch-all handler would change that and then needs `@Order`.
+
+`BrokerAccountNotFoundException` gets no handler. The client never names a broker account, so a
+missing one means broken data and stays a 500.
+
+**Known gaps.**
+- A 500 uses Spring Boot's error format, not `ProblemDetail`. A catch-all handler (with logging
+  and `@Order`) was rejected for now: no client reads a 500 body. Revisit when the UI needs
+  uniform errors or a 500 should carry an error id for support.
+- `type` is `about:blank` everywhere. Revisit when a client must tell problem kinds apart by
+  machine instead of by status.
+- Domain exception messages reach the client as `detail`. They contain no secrets, but they are
+  written for developers.
 
 ## References
 - ADR-002 (testing — assert by type)

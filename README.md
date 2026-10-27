@@ -57,7 +57,7 @@ Key decisions are recorded as ADRs in [docs/adr](docs/adr):
 - Language: Java 21
 - Framework: Spring Boot 3, Spring Modulith
 - Persistence: PostgreSQL, Hibernate/Spring Data JPA, Flyway
-- Mapping: MapStruct
+- Mapping: hand-written, no mapping library ([ADR-009](docs/adr/0009-domain-persistence-separation.md))
 - Testing: JUnit 5, AssertJ, Mockito, Testcontainers
 
 ## Getting Started
@@ -79,8 +79,10 @@ dev-time Testcontainers support):
 ./mvnw spring-boot:test-run
 ```
 
-There is no REST API yet. Persistence is arriving aggregate by aggregate; the
-web layer follows once the domain model is complete (see Status below).
+The first REST endpoint records a buy: `POST /api/portfolios/{id}/buys`. There
+is no endpoint yet to create a portfolio or deposit cash, so the running
+application cannot be used end to end over HTTP (see Status and Known
+limitations below).
 
 ### Code style
 
@@ -111,5 +113,13 @@ Work in progress (v1), built in vertical slices:
 - [ ] Brokerage inbound side: create and administer a broker account (use case, REST), update the fee structure
 - [x] Persistence: JPA adapter for Portfolio with a single-table ledger and schema-level checks per transaction type ([ADR-013](docs/adr/0013-portfolio-ledger-persistence.md); `PortfolioPersistenceAdapterTest`, `PortfolioOptimisticLockingTest`)
 - [x] Transactional use-case wiring: record-buy as one transaction across Portfolio and Brokerage, with a rollback integration test ([ADR-003](docs/adr/0003-cross-aggregate-cash-invariant.md); `RecordBuyServiceTransactionTest`)
-- [ ] REST API
+- [x] REST: record a buy, errors as ProblemDetail ([ADR-011](docs/adr/0011-exception-strategy.md); `RecordBuyControllerTest`)
+- [ ] REST: create portfolios, deposits, broker accounts, read side
 - [ ] Minimal web UI
+
+## Known limitations
+
+- `Location` of a recorded buy points at `GET /api/portfolios/{id}/transactions/{tid}`, which does not exist yet (404 until the read side lands).
+- A retried `POST` records the buy twice. Fix when a second client or automatic retries appear: an `Idempotency-Key` header or client-generated ids.
+- `quantityKind` is sent by the client until the Asset Catalog can supply it.
+- Server errors (500) use Spring Boot's default error body, not `ProblemDetail`.

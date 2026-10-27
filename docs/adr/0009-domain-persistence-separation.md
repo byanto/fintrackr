@@ -1,6 +1,6 @@
 # ADR-009: Pure Domain Model with a Separate JPA Persistence Model
 
-- **Status:** Accepted (amended 2026-09-01, 2026-09-06, 2026-09-17, 2026-09-27, 2026-10-23)
+- **Status:** Accepted (amended 2026-09-01, 2026-09-06, 2026-09-17, 2026-09-27, 2026-10-23, 2026-10-27)
 - **Date:** 2026-06-01
 - **Deciders:** Budi Yanto
 
@@ -200,6 +200,21 @@ no setter. The domain's no-setter rule is unaffected; it covers `..domain..`, no
 `OptimisticLockingFailureException`, which is what callers and tests rely on, not the JPA-specific
 subclass. How the use case reacts (retry or report a conflict) is decided when the REST layer
 exists.
+
+### Amendment (2026-10-27): MapStruct removed; conflicts are reported, not retried
+
+**MapStruct.** The 2026-09-17 amendment kept the dependency for DTO mapping in the REST layer.
+The first controller does not need it. Translating the request into a command is a case
+distinction (`quantityKind` picks `Quantity.ofShares` or `ofUnits`), a null with meaning (a
+missing fee is computed later), and a place where bad input is turned into a 400 (ADR-011). Only
+one field is a plain copy. The dependency, its annotation processor and
+`lombok-mapstruct-binding` are removed.
+
+**Reaction to a conflict.** The open point in the 2026-09-27 amendment is decided: the use case
+does not retry. The `OptimisticLockingFailureException` reaches the REST boundary and becomes a
+409 (ADR-011). A conflict means the state the user acted on has changed, for example the trading
+balance after a parallel buy. The user should see the new state before buying again, not have the
+server repeat the buy silently.
 
 ## References
 - ADR-001 — Modular monolith

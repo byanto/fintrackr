@@ -13,7 +13,7 @@ public record AssetId(String value) {
         }
 
         if (!ISINCheckDigit.ISIN_CHECK_DIGIT.isValid(value)) {
-             throw new IllegalArgumentException("Isin value should be Luhn check digit");
+             throw new IllegalArgumentException("ISIN check digit is invalid");
         }
     }
 
