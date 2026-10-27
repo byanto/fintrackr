@@ -9,16 +9,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 class PortfolioExceptionHandler {
 
-    @ExceptionHandler(InvalidRequestException.class)
-    ProblemDetail handleInvalidRequestException(InvalidRequestException ex) {
-        ProblemDetail body = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
-                ex.getMessage()
-        );
-        body.setTitle("Invalid Request");
-        return body;
-    }
-
     @ExceptionHandler(PortfolioNotFoundException.class)
     ProblemDetail handlePortfolioNotFoundException(PortfolioNotFoundException ex) {
         ProblemDetail body = ProblemDetail.forStatusAndDetail(
