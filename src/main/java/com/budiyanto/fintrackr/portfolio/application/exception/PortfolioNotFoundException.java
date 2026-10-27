@@ -4,6 +4,6 @@ import com.budiyanto.fintrackr.portfolio.domain.model.PortfolioId;
 
 public class PortfolioNotFoundException extends  RuntimeException {
     public PortfolioNotFoundException(PortfolioId portfolioId) {
-        super("Portfolio not found. ID: " + portfolioId);
+        super("Portfolio not found. ID: " + portfolioId.value());
     }
 }
