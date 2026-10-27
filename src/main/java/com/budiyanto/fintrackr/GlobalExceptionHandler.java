@@ -33,6 +33,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, body, headers, status, request);
     }
 
+    @ExceptionHandler(InvalidRequestException.class)
+    ProblemDetail handleInvalidRequestException(InvalidRequestException ex) {
+        ProblemDetail body = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+        body.setTitle("Invalid Request");
+        return body;
+    }
+
     @ExceptionHandler(DomainException.class)
     protected ProblemDetail handleDomainException(DomainException ex) {
         ProblemDetail body = ProblemDetail.forStatusAndDetail(
