@@ -36,4 +36,9 @@ class PortfolioPersistenceAdapter implements PortfolioRepository {
 
         return portfolio;
     }
+
+    @Override
+    public boolean existsById(PortfolioId id) {
+        return repository.existsById(id.value());
+    }
 }

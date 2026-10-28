@@ -11,4 +11,5 @@ public interface PortfolioRepository {
 
     Portfolio save(Portfolio portfolio);
 
+    boolean existsById(PortfolioId id);
 }

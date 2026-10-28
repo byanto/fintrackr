@@ -110,16 +110,18 @@ Work in progress (v1), built in vertical slices:
 - [ ] Dividends with per-lot attribution
 - [x] Persistence: Flyway-owned schema, Hibernate validate-only, JPA adapter for BrokerAccount with optimistic locking (Testcontainers round-trip and concurrency tests)
 - [x] Brokerage published API implemented: fee computation and cash flow run through the JPA adapter in one transaction, with an in-memory port implementation that keeps the use-case tests honest
-- [ ] Brokerage inbound side: create and administer a broker account (use case, REST), update the fee structure
+- [x] Brokerage inbound side: create a broker account over REST (`CreateBrokerAccountControllerTest`)
+- [ ] Brokerage inbound side: rename a broker account, update the fee structure
 - [x] Persistence: JPA adapter for Portfolio with a single-table ledger and schema-level checks per transaction type ([ADR-013](docs/adr/0013-portfolio-ledger-persistence.md); `PortfolioPersistenceAdapterTest`, `PortfolioOptimisticLockingTest`)
 - [x] Transactional use-case wiring: record-buy as one transaction across Portfolio and Brokerage, with a rollback integration test ([ADR-003](docs/adr/0003-cross-aggregate-cash-invariant.md); `RecordBuyServiceTransactionTest`)
 - [x] REST: record a buy, errors as ProblemDetail ([ADR-011](docs/adr/0011-exception-strategy.md); `RecordBuyControllerTest`)
-- [ ] REST: create portfolios, deposits, broker accounts, read side
+- [x] REST: create a portfolio, an unknown broker account answered with 422 ([ADR-011](docs/adr/0011-exception-strategy.md); `CreatePortfolioControllerTest`)
+- [ ] REST: deposits, read side
 - [ ] Minimal web UI
 
 ## Known limitations
 
-- `Location` of a recorded buy points at `GET /api/portfolios/{id}/transactions/{tid}`, which does not exist yet (404 until the read side lands).
+- `Location` headers point at `GET` endpoints that do not exist yet (a recorded buy, a created broker account, a created portfolio). They answer 404 until the read side lands.
 - A retried `POST` records the buy twice. Fix when a second client or automatic retries appear: an `Idempotency-Key` header or client-generated ids.
 - `quantityKind` is sent by the client until the Asset Catalog can supply it.
 - Server errors (500) use Spring Boot's default error body, not `ProblemDetail`.

@@ -28,4 +28,9 @@ class InMemoryBrokerAccountRepository implements BrokerAccountRepository {
         return brokerAccount;
     }
 
+    @Override
+    public boolean existsById(BrokerAccountId id) {
+        return brokerAccounts.containsKey(id);
+    }
+
 }

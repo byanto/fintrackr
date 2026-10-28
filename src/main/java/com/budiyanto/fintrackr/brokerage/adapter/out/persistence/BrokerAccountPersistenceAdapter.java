@@ -32,4 +32,9 @@ class BrokerAccountPersistenceAdapter implements BrokerAccountRepository {
         repository.save(entity);
         return brokerAccount;
     }
+
+    @Override
+    public boolean existsById(BrokerAccountId id) {
+        return repository.existsById(id.value());
+    }
 }

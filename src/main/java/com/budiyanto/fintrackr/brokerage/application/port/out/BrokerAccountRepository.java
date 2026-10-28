@@ -9,4 +9,6 @@ public interface BrokerAccountRepository {
     Optional<BrokerAccount> findById(BrokerAccountId id);
 
     BrokerAccount save(BrokerAccount brokerAccount);
+
+    boolean existsById(BrokerAccountId id);
 }

@@ -104,4 +104,29 @@ class BrokerageServiceTest {
             assertThat(updatedBrokerAccount.rdn()).isEqualTo(Money.of(new BigDecimal("100000")));
         }
     }
+
+    @Nested
+    @DisplayName("Exists Tests")
+    class ExistsTest {
+
+        @Test
+        @DisplayName("Return true when broker account exists")
+        void should_returnTrue_when_brokerAccountExists() {
+            // When
+            boolean result = brokerageService.exists(brokerAccount.id());
+
+            // Then
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        @DisplayName("Return false when broker account is unknown")
+        void should_returnFalse_when_brokerAccountIsUnknown() {
+            // When
+            boolean result = brokerageService.exists(BrokerAccountId.generate());
+
+            // Then
+            assertThat(result).isFalse();
+        }
+    }
 }

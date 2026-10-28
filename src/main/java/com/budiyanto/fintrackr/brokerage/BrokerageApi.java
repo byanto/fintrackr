@@ -10,4 +10,6 @@ public interface BrokerageApi {
 
     void applyCashFlow(BrokerAccountId accountId, Money delta);
 
+    boolean exists(BrokerAccountId accountId);
+
 }

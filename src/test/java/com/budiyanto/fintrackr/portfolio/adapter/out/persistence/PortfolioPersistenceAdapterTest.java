@@ -355,6 +355,32 @@ class PortfolioPersistenceAdapterTest {
                 .containsExactly(backdatedDepositId, firstDepositId, buyId, sameDayDepositId);
     }
 
+    @Test
+    @DisplayName("Return true when portfolio is in repository")
+    void should_returnTrue_when_portfolioInRepository() {
+        // Given
+        Portfolio savedPortfolio = savedPortfolio();
+
+        // When
+        Boolean result = adapter.existsById(savedPortfolio.id());
+
+        // Then
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("Return false when portfolio is unknown")
+    void should_returnFalse_when_portfolioIsUnknown() {
+        // Given
+        PortfolioId portfolioId = PortfolioId.generate();
+
+        // When
+        boolean result = adapter.existsById(portfolioId);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
     private Portfolio savedPortfolio(Quantity quantity) {
         Portfolio portfolio = Portfolio.create(BROKER_ACCOUNT_ID, PORTFOLIO_NAME);
         portfolio.recordDeposit(INITIAL_DEPOSIT, DEPOSIT_DATE, TODAY);
