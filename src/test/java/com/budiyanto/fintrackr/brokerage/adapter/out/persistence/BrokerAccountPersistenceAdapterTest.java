@@ -103,6 +103,32 @@ class BrokerAccountPersistenceAdapterTest {
         assertThat(result.rdn()).isEqualTo(Money.of(new BigDecimal("150000")));
     }
 
+    @Test
+    @DisplayName("Return true when broker account is saved")
+    void should_returnTrue_when_brokerAccountIsSaved() {
+        // Given
+        BrokerAccount savedAccount = savedAccount();
+
+        // When
+        boolean result = adapter.existsById(savedAccount.id());
+
+        // Then
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("Return false when broker account is unknown")
+    void should_returnFalse_when_brokerAccountIsUnknown() {
+        // Given
+        BrokerAccountId brokerAccountId = BrokerAccountId.generate();
+
+        // When
+        boolean result = adapter.existsById(brokerAccountId);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
     private BrokerAccount savedAccount() {
         FeeStructure feeStructure = FeeStructure.of(Percentage.of(new BigDecimal("0.0015")), Percentage.of(new BigDecimal("0.0025")));
         BrokerAccount brokerAccount = BrokerAccount.create("Test BrokerAccount", feeStructure);

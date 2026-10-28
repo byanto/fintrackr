@@ -32,6 +32,11 @@ class BrokerageService implements BrokerageApi {
         brokerAccountRepository.save(brokerAccount);
     }
 
+    @Override
+    public boolean exists(BrokerAccountId accountId) {
+        return brokerAccountRepository.existsById(accountId);
+    }
+
     private BrokerAccount loadAccount(BrokerAccountId accountId) {
         return brokerAccountRepository.findById(accountId).orElseThrow(
                 ()  -> new BrokerAccountNotFoundException(accountId)

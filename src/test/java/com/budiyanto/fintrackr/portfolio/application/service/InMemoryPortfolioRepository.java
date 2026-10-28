@@ -23,8 +23,17 @@ public class InMemoryPortfolioRepository implements PortfolioRepository {
         return portfolio;
     }
 
+    @Override
+    public boolean existsById(PortfolioId id) {
+        return portfolios.containsKey(id);
+    }
+
     void clear() {
         portfolios.clear();
+    }
+
+    boolean isEmpty() {
+        return portfolios.isEmpty();
     }
 
 }

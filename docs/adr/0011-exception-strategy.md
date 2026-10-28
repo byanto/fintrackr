@@ -1,6 +1,6 @@
 # ADR-011: Exception Strategy — Technical vs Domain Exceptions
 
-- **Status:** Accepted (amended 2026-10-27)
+- **Status:** Accepted (amended 2026-10-27, 2026-10-28)
 - **Date:** 2026-06-08
 - **Deciders:** Budi Yanto
 
@@ -66,7 +66,8 @@ The first controller (`POST /api/portfolios/{id}/buys`) settles the mapping defe
 | `DomainException` and subtypes | 422, title "Business Rule Violated", detail = exception message | `GlobalExceptionHandler` |
 | `OptimisticLockingFailureException` | 409, title "Concurrent Update", fixed detail | `GlobalExceptionHandler` |
 | `PortfolioNotFoundException` | 404 | `PortfolioExceptionHandler` |
-| Bad input during request translation | 400, title "Invalid Request" | `PortfolioExceptionHandler` |
+| `UnknownBrokerAccountException` | 422, title "Unknown Broker Account", detail = exception message | `PortfolioExceptionHandler` |
+| Bad input during request translation | 400, title "Invalid Request" | `GlobalExceptionHandler` |
 | Malformed JSON, Bean Validation, path type mismatch | 400 | Spring, inherited from `ResponseEntityExceptionHandler` |
 | Anything else | 500 | Spring Boot's default error handling |
 
@@ -84,8 +85,18 @@ field errors to the Bean Validation response as an `errors` property. `Portfolio
 in `portfolio.adapter.in.web` handles Portfolio's own exceptions. The advices do not overlap, so
 their order does not matter. A catch-all handler would change that and then needs `@Order`.
 
-`BrokerAccountNotFoundException` gets no handler. The client never names a broker account, so a
-missing one means broken data and stays a 500.
+`InvalidRequestException` lives in the root package and is handled in `GlobalExceptionHandler`,
+since every module's translation step needs the same 400. It moved there with the first Brokerage
+endpoint (`POST /api/broker-accounts`).
+
+`BrokerAccountNotFoundException` still gets no handler. Whether a missing account is the
+client's fault depends on where the id came from, and only the use case knows that. A handler
+sees the exception type, not the origin. `POST /api/portfolios` takes the id from the request
+body, so `CreatePortfolioService` asks `BrokerageApi.exists` first and throws its own
+`UnknownBrokerAccountException`. That is a 422, not a 404: the URL names a valid collection, and
+the unknown id sits in the body. Record-buy reads the id from the stored portfolio, so a missing
+account there means broken data and stays a 500. The foreign key on
+`portfolios.broker_account_id` stays as the backstop between check and insert (added 2026-10-28).
 
 **Known gaps.**
 - A 500 uses Spring Boot's error format, not `ProblemDetail`. A catch-all handler (with logging

@@ -23,6 +23,11 @@ public class InMemoryBrokerageApi implements BrokerageApi {
         brokerAccounts.get(accountId).applyCashFlow(delta);
     }
 
+    @Override
+    public boolean exists(BrokerAccountId accountId) {
+        return brokerAccounts.containsKey(accountId);
+    }
+
     void addBrokerAccount(BrokerAccount brokerAccount) {
         brokerAccounts.put(brokerAccount.id(), brokerAccount);
     }
