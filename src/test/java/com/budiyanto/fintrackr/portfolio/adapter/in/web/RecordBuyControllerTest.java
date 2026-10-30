@@ -221,6 +221,56 @@ class RecordBuyControllerTest {
 
             verify(recordBuyUseCase, never()).handle(any(RecordBuyCommand.class));
         }
+
+        @Test
+        @DisplayName("Return 400 problem detail with field errors when price has decimal places")
+        void should_return400ProblemDetailWithFieldErrors_when_priceHasDecimalPlaces() throws Exception {
+            // Given
+            PortfolioId portfolioId = PortfolioId.generate();
+            RecordBuyRequest request = new RecordBuyRequest(
+                    "ID1000109507",
+                    new BigDecimal("100"),
+                    "SHARES",
+                    new BigDecimal("2000.58"),
+                    new BigDecimal("1500"),
+                    LocalDate.of(2026, 10, 25));
+
+            // When & Then
+            mockMvc.perform(post(BUY_URI, portfolioId.value())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.title").value("Bad Request"))
+                    .andExpect(jsonPath("$.errors[0].field").value("price"));
+
+            verify(recordBuyUseCase, never()).handle(any(RecordBuyCommand.class));
+        }
+
+        @Test
+        @DisplayName("Return 400 problem detail with field errors when fee has decimal places")
+        void should_return400ProblemDetailWithFieldErrors_when_feeHasDecimalPlaces() throws Exception {
+            // Given
+            PortfolioId portfolioId = PortfolioId.generate();
+            RecordBuyRequest request = new RecordBuyRequest(
+                    "ID1000109507",
+                    new BigDecimal("100"),
+                    "SHARES",
+                    new BigDecimal("2000"),
+                    new BigDecimal("1500.85"),
+                    LocalDate.of(2026, 10, 25));
+
+            // When & Then
+            mockMvc.perform(post(BUY_URI, portfolioId.value())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.title").value("Bad Request"))
+                    .andExpect(jsonPath("$.errors[0].field").value("fee"));
+
+            verify(recordBuyUseCase, never()).handle(any(RecordBuyCommand.class));
+        }
     }
 
     @Nested
