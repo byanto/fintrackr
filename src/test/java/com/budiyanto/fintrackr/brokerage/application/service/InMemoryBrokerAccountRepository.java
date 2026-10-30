@@ -13,13 +13,13 @@ class InMemoryBrokerAccountRepository implements BrokerAccountRepository {
 
     @Override
     public Optional<BrokerAccount> findById(BrokerAccountId id) {
-        BrokerAccount foundBrokerAccount = brokerAccounts.get(id);
-        if (foundBrokerAccount == null) {
-            return Optional.empty();
-        } else {
-            return Optional.of(BrokerAccount.reconstitute(
-                    foundBrokerAccount.id(), foundBrokerAccount.name(), foundBrokerAccount.rdn(), foundBrokerAccount.feeStructure()));
-        }
+        return Optional.ofNullable(brokerAccounts.get(id))
+                .map(account -> BrokerAccount.reconstitute(
+                    account.id(),
+                    account.name(),
+                    account.rdn(),
+                    account.feeStructure()
+                ));
     }
 
     @Override
