@@ -50,7 +50,7 @@ public class Portfolio {
         return new Portfolio(id, brokerAccountId, name, tradingBalance, transactions, acquisitions);
     }
 
-    public void recordDeposit(Money amount, LocalDate date, LocalDate today) {
+    public Deposit recordDeposit(Money amount, LocalDate date, LocalDate today) {
         Objects.requireNonNull(amount, "amount cannot be null");
         Objects.requireNonNull(date, "date cannot be null");
         Objects.requireNonNull(today, "today cannot be null");
@@ -63,10 +63,11 @@ public class Portfolio {
             throw new FutureDatedTransactionException(date, today);
         }
 
-        Transaction deposit = Deposit.create(id, date, amount);
+        Deposit deposit = Deposit.create(id, date, amount);
         transactions.add(deposit);
 
         tradingBalance = tradingBalance.add(amount);
+        return deposit;
     }
 
     public Buy recordBuy(AssetId assetId, Quantity quantity, Money price, Money fee, LocalDate date, LocalDate today) {
