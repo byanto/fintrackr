@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class RecordBuyService implements RecordBuyUseCase {
+class RecordBuyService implements RecordBuyUseCase {
 
     private final PortfolioRepository portfolioRepository;
     private final BrokerageApi brokerageApi;
@@ -27,12 +27,8 @@ public class RecordBuyService implements RecordBuyUseCase {
     @Override
     @Transactional
     public TransactionId handle(RecordBuyCommand command) {
-        Optional<Portfolio> portfolioOptional = portfolioRepository.findById(command.portfolioId());
-        if  (portfolioOptional.isEmpty()) {
-            throw new PortfolioNotFoundException(command.portfolioId());
-        }
-
-        Portfolio portfolio = portfolioOptional.get();
+        Portfolio portfolio = portfolioRepository.findById(command.portfolioId())
+                .orElseThrow(() -> new PortfolioNotFoundException(command.portfolioId()));
 
         Money fee = Optional.ofNullable(command.fee())
                 .orElseGet(() -> brokerageApi.computeBuyFee(portfolio.brokerAccountId(), command.quantity(), command.price()));
