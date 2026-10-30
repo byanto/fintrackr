@@ -15,7 +15,10 @@ import com.budiyanto.fintrackr.shared.DomainException;
 import com.budiyanto.fintrackr.shared.Money;
 import com.budiyanto.fintrackr.shared.Quantity;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -33,8 +36,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 class PortfolioTest {
 
     private Portfolio portfolio;
-    private final LocalDate date = LocalDate.of(2026, 6, 20);
-    private final LocalDate today = LocalDate.of(2026, 6, 28);
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-15T00:00:00Z"), ZoneOffset.UTC);
+    private static final LocalDate TODAY = LocalDate.now(CLOCK);
+    private static final LocalDate DATE = TODAY.minusDays(5);
 
     @BeforeEach
     void setup() {
@@ -96,7 +100,7 @@ class PortfolioTest {
             Money amount = Money.of(new BigDecimal("1000"));
 
             // When
-            portfolio.recordDeposit(amount, date, today);
+            portfolio.recordDeposit(amount, DATE, TODAY);
 
             // Then
             assertThat(portfolio.tradingBalance()).isEqualTo(amount);
@@ -111,9 +115,9 @@ class PortfolioTest {
             Money amount3 = Money.of(new BigDecimal(3500));
 
             // When
-            portfolio.recordDeposit(amount1, date, today);
-            portfolio.recordDeposit(amount2, date, today);
-            portfolio.recordDeposit(amount3, date, today);
+            portfolio.recordDeposit(amount1, DATE, TODAY);
+            portfolio.recordDeposit(amount2, DATE, TODAY);
+            portfolio.recordDeposit(amount3, DATE, TODAY);
 
             // Then
             assertThat(portfolio.tradingBalance()).isEqualTo(Money.of(new BigDecimal(7000)));
@@ -126,7 +130,7 @@ class PortfolioTest {
             Money amount = Money.of(new BigDecimal("15000"));
 
             // When
-            portfolio.recordDeposit(amount, today, today);
+            portfolio.recordDeposit(amount, TODAY, TODAY);
 
             // Then
             assertThat(portfolio.tradingBalance()).isEqualTo(amount);
@@ -139,7 +143,7 @@ class PortfolioTest {
             Money amount = Money.of(new BigDecimal(15000));
 
             // When
-            portfolio.recordDeposit(amount, date, today);
+            portfolio.recordDeposit(amount, DATE, TODAY);
 
             // Then
             List<Transaction> transactions = portfolio.transactions();
@@ -148,10 +152,23 @@ class PortfolioTest {
                     .isInstanceOfSatisfying(Deposit.class, d -> {
                         assertThat(d.id()).isNotNull();
                         assertThat(d.portfolioId()).isEqualTo(portfolio.id());
-                        assertThat(d.date()).isEqualTo(date);
+                        assertThat(d.date()).isEqualTo(DATE);
                         assertThat(d.amount()).isEqualTo(amount);
                     });
+        }
 
+        @Test
+        @DisplayName("Return the recorded deposit when record deposit")
+        void should_returnTheRecordedDeposit_when_recordDeposit() {
+            // Given
+            Money amount = Money.of(new BigDecimal(15000));
+
+            // When
+            Deposit result = portfolio.recordDeposit(amount, DATE, TODAY);
+
+            // Then
+            List<Transaction> transactions = portfolio.transactions();
+            assertThat(transactions).containsExactly(result);
         }
 
         // Invariant Violations
@@ -163,7 +180,7 @@ class PortfolioTest {
             Money amount = Money.of(new BigDecimal(input));
 
             // When & Then
-            assertThatThrownBy(() -> portfolio.recordDeposit(amount, date, today))
+            assertThatThrownBy(() -> portfolio.recordDeposit(amount, DATE, TODAY))
                     .isInstanceOf(NonPositiveAmountException.class);
         }
 
@@ -175,7 +192,7 @@ class PortfolioTest {
             LocalDate futureDate = LocalDate.of(2026, 12, 15);
 
             // When & Then
-            assertThatThrownBy(() -> portfolio.recordDeposit(amount, futureDate, today))
+            assertThatThrownBy(() -> portfolio.recordDeposit(amount, futureDate, TODAY))
                     .isInstanceOf(FutureDatedTransactionException.class);
         }
 
@@ -192,11 +209,11 @@ class PortfolioTest {
             Money secondDeposit = Money.of(new BigDecimal(amount));
             LocalDate validDate = LocalDate.of(2026, 6, 1);
 
-            portfolio.recordDeposit(firstDeposit, validDate, today);
+            portfolio.recordDeposit(firstDeposit, validDate, TODAY);
             Money balanceBefore = portfolio.tradingBalance();
 
             // When
-            assertThatThrownBy(() -> portfolio.recordDeposit(secondDeposit, depositDate, today))
+            assertThatThrownBy(() -> portfolio.recordDeposit(secondDeposit, depositDate, TODAY))
                     .isInstanceOf(DomainException.class);
 
             // Then
@@ -217,14 +234,14 @@ class PortfolioTest {
         void setup() {
             // Arrange: Ensure the portfolio has sufficient balance for most buy operations.
             // Tests with specific balance requirements will override this by making their own deposits.
-            portfolio.recordDeposit(Money.of(new BigDecimal("20000000")), date, today);
+            portfolio.recordDeposit(Money.of(new BigDecimal("20000000")), DATE, TODAY);
         }
 
         @Test
         @DisplayName("Decrease the trading balance by the total cost when a buy is recorded")
         void should_decreaseBalanceByCost_when_recordBuy() {
             // When
-            portfolio.recordBuy(assetId, quantity, price, fee, date, today);
+            portfolio.recordBuy(assetId, quantity, price, fee, DATE, TODAY);
 
             // Then
             assertThat(portfolio.tradingBalance()).isEqualTo(Money.of(new BigDecimal("14197500"))); // 20000000 - 5802500 = 14197500
@@ -234,7 +251,7 @@ class PortfolioTest {
         @DisplayName("Create a new open acquisition when a buy is recorded")
         void should_createAcquisition_when_recordBuy() {
             // When
-            portfolio.recordBuy(assetId, quantity, price, fee, date, today);
+            portfolio.recordBuy(assetId, quantity, price, fee, DATE, TODAY);
 
             // Then
             var acquisitions = portfolio.acquisitions();
@@ -244,7 +261,7 @@ class PortfolioTest {
             assertThat(acquisition.id()).isNotNull();
             assertThat(acquisition.portfolioId()).isEqualTo(portfolio.id());
             assertThat(acquisition.assetId()).isEqualTo(assetId);
-            assertThat(acquisition.openDate()).isEqualTo(date);
+            assertThat(acquisition.openDate()).isEqualTo(DATE);
             assertThat(acquisition.openPrice()).isEqualTo(price);
             assertThat(acquisition.openFee()).isEqualTo(fee);
             assertThat(acquisition.initialQuantity()).isEqualTo(quantity);
@@ -254,8 +271,8 @@ class PortfolioTest {
         @DisplayName("Create a second, distinct acquisition when buying the same asset again")
         void should_createSecondAcquisition_when_recordSecondBuyWithSameSymbol() {
             // When
-            portfolio.recordBuy(assetId, quantity, price, fee, date, today);
-            portfolio.recordBuy(assetId, quantity, price, fee, date, today);
+            portfolio.recordBuy(assetId, quantity, price, fee, DATE, TODAY);
+            portfolio.recordBuy(assetId, quantity, price, fee, DATE, TODAY);
 
             // Then
             var acquisitions = portfolio.acquisitions();
@@ -271,7 +288,7 @@ class PortfolioTest {
         @DisplayName("Record a Buy transaction in the ledger when a buy is recorded")
         void should_createBuyTransactionAndRecordItInLedger_when_recordBuy() {
             // When
-            portfolio.recordBuy(assetId, quantity, price, fee, date, today);
+            portfolio.recordBuy(assetId, quantity, price, fee, DATE, TODAY);
 
             // Then
             List<Transaction> transactions = portfolio.transactions();
@@ -281,7 +298,7 @@ class PortfolioTest {
                     .isInstanceOfSatisfying(Buy.class, b -> {
                         assertThat(b.id()).isNotNull();
                         assertThat(b.portfolioId()).isEqualTo(portfolio.id());
-                        assertThat(b.date()).isEqualTo(date);
+                        assertThat(b.date()).isEqualTo(DATE);
                         assertThat(b.assetId()).isEqualTo(assetId);
                         assertThat(b.quantity()).isEqualTo(quantity);
                         assertThat(b.price()).isEqualTo(price);
@@ -294,7 +311,7 @@ class PortfolioTest {
         @DisplayName("Return the buy added to the ledger when record buy")
         void should_returnTheBuyAddedToTheLedger_when_recordBuy() {
             // When
-            Buy result = portfolio.recordBuy(assetId, quantity, price, fee, date, today);
+            Buy result = portfolio.recordBuy(assetId, quantity, price, fee, DATE, TODAY);
 
             // Then
             assertThat(result).isSameAs(portfolio.transactions().getLast());
@@ -304,8 +321,8 @@ class PortfolioTest {
         @DisplayName("Match trading balance when cash flows of ledger are summed")
         void should_matchTradingBalance_when_cashFlowsOfLedgerAreSummed() {
             // When
-            portfolio.recordBuy(assetId, quantity, price, fee, date, today); // - (1000 * 5800 + 2500) = -5802500
-            portfolio.recordBuy(assetId, quantity, price, fee, date, today); // - (1000 * 5800 + 2500) = -5802500
+            portfolio.recordBuy(assetId, quantity, price, fee, DATE, TODAY); // - (1000 * 5800 + 2500) = -5802500
+            portfolio.recordBuy(assetId, quantity, price, fee, DATE, TODAY); // - (1000 * 5800 + 2500) = -5802500
 
             // Then
             Money sumOfLedgerCashFlows = portfolio.transactions().stream().map(Transaction::cashFlow).reduce(Money::add).orElseThrow();
@@ -318,10 +335,10 @@ class PortfolioTest {
         void should_allowBuy_when_costEqualsBalance() {
             // Given
             portfolio = Portfolio.create(BrokerAccountId.generate(), "Exact Balance Test");
-            portfolio.recordDeposit(Money.of(new BigDecimal("5802500")), date, today);
+            portfolio.recordDeposit(Money.of(new BigDecimal("5802500")), DATE, TODAY);
 
             // When
-            portfolio.recordBuy(assetId, quantity, price, fee, date, today);
+            portfolio.recordBuy(assetId, quantity, price, fee, DATE, TODAY);
 
             // Then
             assertThat(portfolio.tradingBalance()).isEqualTo(Money.zero());
@@ -331,7 +348,7 @@ class PortfolioTest {
         @DisplayName("Allow a buy when the transaction fee is zero")
         void should_allowBuy_when_feeIsZero() {
             // When
-            portfolio.recordBuy(assetId, quantity, price, Money.zero(), date, today);
+            portfolio.recordBuy(assetId, quantity, price, Money.zero(), DATE, TODAY);
 
             // Then
             assertThat(portfolio.tradingBalance()).isEqualTo(Money.of(new BigDecimal("14200000"))); // 20000000 - (5800 x 1000 + 0) = 14200000
@@ -345,7 +362,7 @@ class PortfolioTest {
             Quantity zeroQuantity = Quantity.ofShares(new BigDecimal("0"));
 
             // When & Then
-            assertThatThrownBy(() -> portfolio.recordBuy(assetId, zeroQuantity, price, fee, date, today))
+            assertThatThrownBy(() -> portfolio.recordBuy(assetId, zeroQuantity, price, fee, DATE, TODAY))
                     .isInstanceOf(ZeroQuantityException.class);
         }
 
@@ -357,7 +374,7 @@ class PortfolioTest {
             Money invalidPrice = Money.of(new BigDecimal(input));
 
             // When & Then
-            assertThatThrownBy(() -> portfolio.recordBuy(assetId, quantity, invalidPrice, fee, date, today))
+            assertThatThrownBy(() -> portfolio.recordBuy(assetId, quantity, invalidPrice, fee, DATE, TODAY))
                     .isInstanceOf(NonPositivePriceException.class);
         }
 
@@ -368,7 +385,7 @@ class PortfolioTest {
             Money negativeFee = Money.of(new BigDecimal("-1000"));
 
             // When & Then
-            assertThatThrownBy(() -> portfolio.recordBuy(assetId, quantity, price, negativeFee, date, today))
+            assertThatThrownBy(() -> portfolio.recordBuy(assetId, quantity, price, negativeFee, DATE, TODAY))
                     .isInstanceOf(NegativeFeeException.class);
         }
 
@@ -379,7 +396,7 @@ class PortfolioTest {
             LocalDate futureDate = LocalDate.of(2026, 12, 15);
 
             // When & Then
-            assertThatThrownBy(() -> portfolio.recordBuy(assetId, quantity, price, fee, futureDate, today))
+            assertThatThrownBy(() -> portfolio.recordBuy(assetId, quantity, price, fee, futureDate, TODAY))
                     .isInstanceOf(FutureDatedTransactionException.class);
         }
 
@@ -388,10 +405,10 @@ class PortfolioTest {
         void should_throwException_when_costGreaterThanBalance() {
             // Given
             portfolio = Portfolio.create(BrokerAccountId.generate(), "Insufficient Balance Test");
-            portfolio.recordDeposit(Money.of(new BigDecimal(4000000)), date, today);
+            portfolio.recordDeposit(Money.of(new BigDecimal(4000000)), DATE, TODAY);
 
             // When & Then
-            assertThatThrownBy(() ->portfolio.recordBuy(assetId, quantity, price, fee, date, today))
+            assertThatThrownBy(() ->portfolio.recordBuy(assetId, quantity, price, fee, DATE, TODAY))
                     .isInstanceOf(InsufficientBalanceException.class);
         }
 
@@ -413,12 +430,12 @@ class PortfolioTest {
             LocalDate buyingDate = LocalDate.parse(inputDate);
 
             portfolio = Portfolio.create(BrokerAccountId.generate(), "State Unchanged Test");
-            portfolio.recordDeposit(Money.of(new BigDecimal("10000")), LocalDate.of(2026, 6, 1), today);
+            portfolio.recordDeposit(Money.of(new BigDecimal("10000")), LocalDate.of(2026, 6, 1), TODAY);
 
             Money balanceBefore = portfolio.tradingBalance();
 
             // When
-            assertThatThrownBy(() -> portfolio.recordBuy(assetId, quantity, price, fee, buyingDate, today))
+            assertThatThrownBy(() -> portfolio.recordBuy(assetId, quantity, price, fee, buyingDate, TODAY))
                     .isInstanceOf(DomainException.class);
 
             // Then
@@ -444,9 +461,9 @@ class PortfolioTest {
         private final Money depositBalance = Money.of(new BigDecimal("10000000"));
         private final Money tradingBalance = Money.of(new BigDecimal("15000000"));
 
-        private final Acquisition acquisition = Acquisition.create(portfolioId, assetId, date, price, fee, quantity);
-        private final Deposit depositTransaction = Deposit.create(portfolioId, date, depositBalance);
-        private final Buy buyTransaction = Buy.create(portfolioId, date, assetId, quantity, price, fee, acquisition.id());
+        private final Acquisition acquisition = Acquisition.create(portfolioId, assetId, DATE, price, fee, quantity);
+        private final Deposit depositTransaction = Deposit.create(portfolioId, DATE, depositBalance);
+        private final Buy buyTransaction = Buy.create(portfolioId, DATE, assetId, quantity, price, fee, acquisition.id());
         private List<Transaction> transactions;
         private List<Acquisition> acquisitions;
 
@@ -493,7 +510,7 @@ class PortfolioTest {
             // Given
             Money violatedTradingBalance = Money.of(new BigDecimal("-10000"));
             Money violatedDepositBalance = Money.of(new BigDecimal("-50000"));
-            LocalDate futureDate = today.plusDays(20);
+            LocalDate futureDate = TODAY.plusDays(20);
 
             List<Acquisition> acquisitions = new ArrayList<>();
             var acquisition = Acquisition.create(portfolioId, assetId, futureDate, price, fee, quantity);
@@ -567,8 +584,8 @@ class PortfolioTest {
             Portfolio result = Portfolio.reconstitute(portfolioId, brokerAccountId, portfolioName,
                     tradingBalance, transactions, acquisitions);
 
-            transactions.add(Buy.create(portfolioId, date, assetId, quantity, price, fee, acquisition.id()));
-            acquisitions.add(Acquisition.create(portfolioId, assetId, date, price, fee, quantity));
+            transactions.add(Buy.create(portfolioId, DATE, assetId, quantity, price, fee, acquisition.id()));
+            acquisitions.add(Acquisition.create(portfolioId, assetId, DATE, price, fee, quantity));
 
             // Then
             assertThat(result.transactions()).hasSize(2); // The reconstituted list should only have 2 transactions
@@ -583,7 +600,7 @@ class PortfolioTest {
             // When
             Portfolio result = Portfolio.reconstitute(portfolioId, brokerAccountId, portfolioName,
                     tradingBalance, transactions, acquisitions);
-            result.recordDeposit(Money.of(new BigDecimal("5000000")), date, today);
+            result.recordDeposit(Money.of(new BigDecimal("5000000")), DATE, TODAY);
 
             // Then
             assertThat(result.transactions()).hasSize(3);
