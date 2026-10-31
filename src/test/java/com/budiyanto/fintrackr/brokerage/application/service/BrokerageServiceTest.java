@@ -3,7 +3,7 @@ package com.budiyanto.fintrackr.brokerage.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.budiyanto.fintrackr.brokerage.BrokerAccountNotFoundException;
+import com.budiyanto.fintrackr.brokerage.NoSuchBrokerAccountException;
 import com.budiyanto.fintrackr.brokerage.application.port.out.BrokerAccountRepository;
 import com.budiyanto.fintrackr.brokerage.domain.exception.InsufficientRdnException;
 import com.budiyanto.fintrackr.brokerage.domain.model.BrokerAccount;
@@ -55,7 +55,7 @@ class BrokerageServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> brokerageService.computeBuyFee(unknownId, quantity, price))
-                    .isInstanceOf(BrokerAccountNotFoundException.class);
+                    .isInstanceOf(NoSuchBrokerAccountException.class);
         }
     }
 
@@ -83,7 +83,7 @@ class BrokerageServiceTest {
             // When & Then
             assertThatThrownBy(
                     () -> brokerageService.applyCashFlow(unknownId, Money.of(new BigDecimal("150000"))))
-                    .isInstanceOf(BrokerAccountNotFoundException.class);
+                    .isInstanceOf(NoSuchBrokerAccountException.class);
 
         }
 

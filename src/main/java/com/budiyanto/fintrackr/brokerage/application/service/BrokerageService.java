@@ -1,7 +1,7 @@
 package com.budiyanto.fintrackr.brokerage.application.service;
 
-import com.budiyanto.fintrackr.brokerage.BrokerAccountNotFoundException;
 import com.budiyanto.fintrackr.brokerage.BrokerageApi;
+import com.budiyanto.fintrackr.brokerage.NoSuchBrokerAccountException;
 import com.budiyanto.fintrackr.brokerage.application.port.out.BrokerAccountRepository;
 import com.budiyanto.fintrackr.brokerage.domain.model.BrokerAccount;
 import com.budiyanto.fintrackr.shared.BrokerAccountId;
@@ -39,7 +39,7 @@ class BrokerageService implements BrokerageApi {
 
     private BrokerAccount loadAccount(BrokerAccountId accountId) {
         return brokerAccountRepository.findById(accountId).orElseThrow(
-                ()  -> new BrokerAccountNotFoundException(accountId)
+                ()  -> new NoSuchBrokerAccountException(accountId)
         );
     }
 }
