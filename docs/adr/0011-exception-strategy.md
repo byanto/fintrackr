@@ -1,6 +1,6 @@
 # ADR-011: Exception Strategy — Technical vs Domain Exceptions
 
-- **Status:** Accepted (amended 2026-10-27, 2026-10-28)
+- **Status:** Accepted (amended 2026-10-27, 2026-10-28, 2026-10-31)
 - **Date:** 2026-06-08
 - **Deciders:** Budi Yanto
 
@@ -89,7 +89,7 @@ their order does not matter. A catch-all handler would change that and then need
 since every module's translation step needs the same 400. It moved there with the first Brokerage
 endpoint (`POST /api/broker-accounts`).
 
-`BrokerAccountNotFoundException` still gets no handler. Whether a missing account is the
+`NoSuchBrokerAccountException` still gets no handler. Whether a missing account is the
 client's fault depends on where the id came from, and only the use case knows that. A handler
 sees the exception type, not the origin. `POST /api/portfolios` takes the id from the request
 body, so `CreatePortfolioService` asks `BrokerageApi.exists` first and throws its own
@@ -106,6 +106,27 @@ account there means broken data and stays a 500. The foreign key on
   machine instead of by status.
 - Domain exception messages reach the client as `detail`. They contain no secrets, but they are
   written for developers.
+
+## Amendment (2026-10-31): Exception names show the family
+
+The name of an exception tells which family it belongs to, and the family decides the status.
+
+| Family | Name shape | Example | Status |
+|---|---|---|---|
+| Business rule violated | state + thing, subtype of `DomainException` | `InsufficientBalanceException`, `NegativeFeeException` | 422 |
+| Unknown reference in the request body | `Unknown` + thing | `UnknownBrokerAccountException` | 422 |
+| Resource named in the URL does not exist | thing + `NotFound` | `PortfolioNotFoundException` | 404 |
+| Published API called with an id it does not know | `NoSuch` + thing | `NoSuchBrokerAccountException` | 500, no handler |
+
+`NoSuch` follows the JDK and Spring (`NoSuchElementException`, `NoSuchBeanDefinitionException`):
+a key the callee does not know, said from the callee's side. `BrokerageApi` cannot tell where the
+id came from, so the name does not claim the client is at fault. Until 2026-10-31 it was called
+`BrokerAccountNotFoundException`. That name read like a 404, and it is now free for the case where
+the id comes from the URL.
+
+`NotFound` and `Unknown` exceptions stay inside their module (`application.exception`) and are
+mapped by that module's advice. An exception thrown through a published API is part of that API
+and lives in the module's root package.
 
 ## References
 - ADR-002 (testing — assert by type)
