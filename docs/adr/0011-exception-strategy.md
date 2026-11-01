@@ -1,6 +1,6 @@
 # ADR-011: Exception Strategy — Technical vs Domain Exceptions
 
-- **Status:** Accepted (amended 2026-10-27, 2026-10-28, 2026-10-31)
+- **Status:** Accepted (amended 2026-10-27, 2026-10-28, 2026-10-31, 2026-11-01)
 - **Date:** 2026-06-08
 - **Deciders:** Budi Yanto
 
@@ -66,6 +66,7 @@ The first controller (`POST /api/portfolios/{id}/buys`) settles the mapping defe
 | `DomainException` and subtypes | 422, title "Business Rule Violated", detail = exception message | `GlobalExceptionHandler` |
 | `OptimisticLockingFailureException` | 409, title "Concurrent Update", fixed detail | `GlobalExceptionHandler` |
 | `PortfolioNotFoundException` | 404 | `PortfolioExceptionHandler` |
+| `BrokerAccountNotFoundException` | 404, title "Broker Account Not Found" | `BrokerageExceptionHandler` |
 | `UnknownBrokerAccountException` | 422, title "Unknown Broker Account", detail = exception message | `PortfolioExceptionHandler` |
 | Bad input during request translation | 400, title "Invalid Request" | `GlobalExceptionHandler` |
 | Malformed JSON, Bean Validation, path type mismatch | 400 | Spring, inherited from `ResponseEntityExceptionHandler` |
@@ -79,10 +80,12 @@ the original as cause. Once the command exists, every input has passed its value
 caught and becomes a 500. A global `IllegalArgumentException` handler would report such bugs to
 the client as 400, with no 500 and no alert. `RecordBuyControllerTest` pins both directions.
 
-**Two advices, split by ownership.** `GlobalExceptionHandler` in the root package handles the
-cross-cutting cases and is the only advice extending `ResponseEntityExceptionHandler`. It adds the
-field errors to the Bean Validation response as an `errors` property. `PortfolioExceptionHandler`
-in `portfolio.adapter.in.web` handles Portfolio's own exceptions. The advices do not overlap, so
+**One advice per module plus the global one, split by ownership.** `GlobalExceptionHandler` in
+the root package handles the cross-cutting cases and is the only advice extending
+`ResponseEntityExceptionHandler`. It adds the field errors to the Bean Validation response as an
+`errors` property. `PortfolioExceptionHandler` in `portfolio.adapter.in.web` handles Portfolio's
+own exceptions. `BrokerageExceptionHandler` in `brokerage.adapter.in.web` handles Brokerage's own
+exceptions (added 2026-11-01). The advices do not overlap, so
 their order does not matter. A catch-all handler would change that and then needs `@Order`.
 
 `InvalidRequestException` lives in the root package and is handled in `GlobalExceptionHandler`,

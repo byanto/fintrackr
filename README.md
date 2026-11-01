@@ -79,10 +79,13 @@ dev-time Testcontainers support):
 ./mvnw spring-boot:test-run
 ```
 
-The first REST endpoint records a buy: `POST /api/portfolios/{id}/buys`. There
-is no endpoint yet to create a portfolio or deposit cash, so the running
-application cannot be used end to end over HTTP (see Status and Known
-limitations below).
+The REST endpoints create a broker account (`POST /api/broker-accounts`),
+create a portfolio (`POST /api/portfolios`), record a deposit
+(`POST /api/portfolios/{id}/deposits`) and record a buy
+(`POST /api/portfolios/{id}/buys`). The read side has started:
+`GET /api/broker-accounts/{id}` returns a broker account with its cash
+balance. Portfolios cannot be read yet, and there is no end-to-end test over
+HTTP (see Status and Known limitations below).
 
 ### Code style
 
@@ -116,12 +119,15 @@ Work in progress (v1), built in vertical slices:
 - [x] Transactional use-case wiring: record-buy as one transaction across Portfolio and Brokerage, with a rollback integration test ([ADR-003](docs/adr/0003-cross-aggregate-cash-invariant.md); `RecordBuyServiceTransactionTest`)
 - [x] REST: record a buy, errors as ProblemDetail ([ADR-011](docs/adr/0011-exception-strategy.md); `RecordBuyControllerTest`)
 - [x] REST: create a portfolio, an unknown broker account answered with 422 ([ADR-011](docs/adr/0011-exception-strategy.md); `CreatePortfolioControllerTest`)
-- [ ] REST: deposits, read side
+- [x] REST: record a deposit, money in requests as whole rupiah (`RecordDepositControllerTest`)
+- [x] REST: read a broker account, `Location` built from the GET mapping (`GetBrokerAccountControllerTest`)
+- [ ] REST: read side for portfolios
 - [ ] Minimal web UI
 
 ## Known limitations
 
-- `Location` headers point at `GET` endpoints that do not exist yet (a recorded buy, a created broker account, a created portfolio). They answer 404 until the read side lands.
+- `Location` headers for a created portfolio, a recorded buy and a recorded deposit point at `GET` endpoints that do not exist yet. They answer 404 until the portfolio read side lands.
 - A retried `POST` records the buy twice. Fix when a second client or automatic retries appear: an `Idempotency-Key` header or client-generated ids.
 - `quantityKind` is sent by the client until the Asset Catalog can supply it.
 - Server errors (500) use Spring Boot's default error body, not `ProblemDetail`.
+- Validation messages are Hibernate Validator's defaults. They follow `Accept-Language`, and some are hard to read (`@Digits`). Fix when a UI shows them: stable codes, translated by the UI.

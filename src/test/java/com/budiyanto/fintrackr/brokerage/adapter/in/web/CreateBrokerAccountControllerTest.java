@@ -61,7 +61,7 @@ class CreateBrokerAccountControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
-                    .andExpect(header().string("Location", "/api/broker-accounts/" + brokerAccountId.value()))
+                    .andExpect(header().string("Location", "http://localhost/api/broker-accounts/" + brokerAccountId.value()))
                     .andExpect(content().string(""));
 
             verify(createBrokerAccountUseCase).handle(any(CreateBrokerAccountCommand.class));
