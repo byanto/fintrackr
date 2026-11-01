@@ -1,5 +1,8 @@
 package com.budiyanto.fintrackr.brokerage.adapter.in.web;
 
+import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.fromMethodCall;
+import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.on;
+
 import com.budiyanto.fintrackr.InvalidRequestException;
 import com.budiyanto.fintrackr.brokerage.application.port.in.CreateBrokerAccountCommand;
 import com.budiyanto.fintrackr.brokerage.application.port.in.CreateBrokerAccountUseCase;
@@ -25,7 +28,8 @@ class CreateBrokerAccountController {
     @PostMapping
     ResponseEntity<Void> createBrokerAccount(@Valid @RequestBody CreateBrokerAccountRequest request) {
         BrokerAccountId brokerAccountId = createBrokerAccountUseCase.handle(toCommand(request));
-        URI location = URI.create("/api/broker-accounts/" + brokerAccountId.value());
+        URI location = fromMethodCall(on(GetBrokerAccountController.class).getBrokerAccount(brokerAccountId.value()))
+                .build().toUri();
         return ResponseEntity.created(location).build();
     }
 
