@@ -82,10 +82,11 @@ dev-time Testcontainers support):
 The REST endpoints create a broker account (`POST /api/broker-accounts`),
 create a portfolio (`POST /api/portfolios`), record a deposit
 (`POST /api/portfolios/{id}/deposits`) and record a buy
-(`POST /api/portfolios/{id}/buys`). The read side has started:
+(`POST /api/portfolios/{id}/buys`). On the read side,
 `GET /api/broker-accounts/{id}` returns a broker account with its cash
-balance. Portfolios cannot be read yet, and there is no end-to-end test over
-HTTP (see Status and Known limitations below).
+balance and `GET /api/portfolios/{id}` returns a portfolio with its trading
+balance. Transactions and holdings cannot be read yet, and there is no
+end-to-end test over HTTP (see Status and Known limitations below).
 
 ### Code style
 
@@ -121,12 +122,14 @@ Work in progress (v1), built in vertical slices:
 - [x] REST: create a portfolio, an unknown broker account answered with 422 ([ADR-011](docs/adr/0011-exception-strategy.md); `CreatePortfolioControllerTest`)
 - [x] REST: record a deposit, money in requests as whole rupiah (`RecordDepositControllerTest`)
 - [x] REST: read a broker account, `Location` built from the GET mapping (`GetBrokerAccountControllerTest`)
-- [ ] REST: read side for portfolios
+- [x] REST: read a portfolio, `Location` for a new portfolio built from the GET mapping (`GetPortfolioControllerTest`)
+- [ ] REST: read the transactions and holdings of a portfolio
 - [ ] Minimal web UI
 
 ## Known limitations
 
-- `Location` headers for a created portfolio, a recorded buy and a recorded deposit point at `GET` endpoints that do not exist yet. They answer 404 until the portfolio read side lands.
+- `Location` headers for a recorded buy and a recorded deposit point at `GET /api/portfolios/{id}/transactions/{transactionId}`, which does not exist yet. They answer 404 until transactions can be read.
+- Reading or changing a portfolio loads its whole ledger, every transaction and acquisition. With one user and a few hundred entries a year that takes milliseconds. If loading gets measurably slow, the aggregate loads without its history and the ledger is read through a separate query. The schema stays the same.
 - A retried `POST` records the buy twice. Fix when a second client or automatic retries appear: an `Idempotency-Key` header or client-generated ids.
 - `quantityKind` is sent by the client until the Asset Catalog can supply it.
 - Server errors (500) use Spring Boot's default error body, not `ProblemDetail`.
