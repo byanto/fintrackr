@@ -59,7 +59,7 @@ class CreatePortfolioControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
-                    .andExpect(header().string("Location", "/api/portfolios/" + portfolioId.value()))
+                    .andExpect(header().string("Location", "http://localhost/api/portfolios/" + portfolioId.value()))
                     .andExpect(content().string(""));
 
             verify(createPortfolioUseCase).handle(any(CreatePortfolioCommand.class));

@@ -1,5 +1,8 @@
 package com.budiyanto.fintrackr.portfolio.adapter.in.web;
 
+import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.fromMethodCall;
+import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.on;
+
 import com.budiyanto.fintrackr.portfolio.application.port.in.CreatePortfolioCommand;
 import com.budiyanto.fintrackr.portfolio.application.port.in.CreatePortfolioUseCase;
 import com.budiyanto.fintrackr.portfolio.domain.model.PortfolioId;
@@ -23,7 +26,8 @@ class CreatePortfolioController {
     @PostMapping
     ResponseEntity<Void> createPortfolio(@Valid @RequestBody CreatePortfolioRequest request) {
         PortfolioId portfolioId = createPortfolioUseCase.handle(toCommand(request));
-        URI location = URI.create("/api/portfolios/" + portfolioId.value());
+        URI location = fromMethodCall(on(GetPortfolioController.class).getPortfolio(portfolioId.value()))
+                .build().toUri();
         return ResponseEntity.created(location).build();
     }
 
