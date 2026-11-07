@@ -40,6 +40,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(RecordBuyController.class)
+@DisplayName("RecordBuyController Tests")
 class RecordBuyControllerTest {
 
     @Autowired
@@ -73,7 +74,7 @@ class RecordBuyControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
-            .andExpect(header().string("Location", "/api/portfolios/" + portfolioId.value() + "/transactions/" + transactionId.value()))
+            .andExpect(header().string("Location", "http://localhost/api/portfolios/" + portfolioId.value() + "/transactions/" + transactionId.value()))
             .andExpect(content().string(""));
 
             verify(recordBuyUseCase).handle(any(RecordBuyCommand.class));

@@ -1,5 +1,8 @@
 package com.budiyanto.fintrackr.portfolio.adapter.in.web;
 
+import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.fromMethodCall;
+import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.on;
+
 import com.budiyanto.fintrackr.portfolio.application.port.in.RecordDepositCommand;
 import com.budiyanto.fintrackr.portfolio.application.port.in.RecordDepositUseCase;
 import com.budiyanto.fintrackr.portfolio.domain.model.PortfolioId;
@@ -26,7 +29,8 @@ class RecordDepositController {
     @PostMapping("/{pid}/deposits")
     ResponseEntity<Void> recordDeposit(@PathVariable("pid") UUID portfolioId, @Valid @RequestBody RecordDepositRequest request) {
         TransactionId transactionId = recordDepositUseCase.handle(toCommand(portfolioId, request));
-        URI location = URI.create("/api/portfolios/" + portfolioId + "/transactions/" + transactionId.value());
+        URI location = fromMethodCall(on(GetTransactionController.class).getTransaction(portfolioId, transactionId.value()))
+                .build().toUri();
         return ResponseEntity.created(location).build();
     }
 

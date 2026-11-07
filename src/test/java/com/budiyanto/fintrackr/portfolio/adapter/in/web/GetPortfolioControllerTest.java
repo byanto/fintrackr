@@ -1,6 +1,7 @@
 package com.budiyanto.fintrackr.portfolio.adapter.in.web;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -82,5 +83,7 @@ class GetPortfolioControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.title").value("Bad Request"));
+
+        verifyNoInteractions(getPortfolioUseCase);
     }
 }

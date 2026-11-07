@@ -66,6 +66,7 @@ The first controller (`POST /api/portfolios/{id}/buys`) settles the mapping defe
 | `DomainException` and subtypes | 422, title "Business Rule Violated", detail = exception message | `GlobalExceptionHandler` |
 | `OptimisticLockingFailureException` | 409, title "Concurrent Update", fixed detail | `GlobalExceptionHandler` |
 | `PortfolioNotFoundException` | 404 | `PortfolioExceptionHandler` |
+| `TransactionNotFoundException` | 404, title "Transaction Not Found", also when the transaction belongs to another portfolio | `PortfolioExceptionHandler` |
 | `BrokerAccountNotFoundException` | 404, title "Broker Account Not Found" | `BrokerageExceptionHandler` |
 | `UnknownBrokerAccountException` | 422, title "Unknown Broker Account", detail = exception message | `PortfolioExceptionHandler` |
 | Bad input during request translation | 400, title "Invalid Request" | `GlobalExceptionHandler` |
