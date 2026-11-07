@@ -1,6 +1,7 @@
 package com.budiyanto.fintrackr.portfolio.adapter.in.web;
 
 import com.budiyanto.fintrackr.portfolio.application.exception.PortfolioNotFoundException;
+import com.budiyanto.fintrackr.portfolio.application.exception.TransactionNotFoundException;
 import com.budiyanto.fintrackr.portfolio.application.exception.UnknownBrokerAccountException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -27,6 +28,16 @@ class PortfolioExceptionHandler {
             ex.getMessage()
         );
         body.setTitle("Unknown Broker Account");
+        return body;
+    }
+
+    @ExceptionHandler(TransactionNotFoundException.class)
+    ProblemDetail handleTransactionNotFoundException(TransactionNotFoundException ex) {
+        ProblemDetail body = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
+        body.setTitle("Transaction Not Found");
         return body;
     }
 }

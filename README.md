@@ -51,6 +51,7 @@ Key decisions are recorded as ADRs in [docs/adr](docs/adr):
 - [ADR-011: Exception Strategy](docs/adr/0011-exception-strategy.md)
 - [ADR-012: Asset Identity via ISIN](docs/adr/0012-asset-identity-via-isin.md)
 - [ADR-013: Portfolio Ledger Persistence](docs/adr/0013-portfolio-ledger-persistence.md)
+- [ADR-014: What a Read Use Case Returns](docs/adr/0014-what-a-read-use-case-returns.md)
 
 ## Tech Stack
 
@@ -123,12 +124,12 @@ Work in progress (v1), built in vertical slices:
 - [x] REST: record a deposit, money in requests as whole rupiah (`RecordDepositControllerTest`)
 - [x] REST: read a broker account, `Location` built from the GET mapping (`GetBrokerAccountControllerTest`)
 - [x] REST: read a portfolio, `Location` for a new portfolio built from the GET mapping (`GetPortfolioControllerTest`)
-- [ ] REST: read the transactions and holdings of a portfolio
+- [x] REST: read a single transaction, `Location` for a recorded buy and deposit built from the GET mapping ([ADR-014](docs/adr/0014-what-a-read-use-case-returns.md); `GetTransactionControllerTest`)
+- [ ] REST: list the transactions of a portfolio, read its holdings
 - [ ] Minimal web UI
 
 ## Known limitations
 
-- `Location` headers for a recorded buy and a recorded deposit point at `GET /api/portfolios/{id}/transactions/{transactionId}`, which does not exist yet. They answer 404 until transactions can be read.
 - Reading or changing a portfolio loads its whole ledger, every transaction and acquisition. With one user and a few hundred entries a year that takes milliseconds. If loading gets measurably slow, the aggregate loads without its history and the ledger is read through a separate query. The schema stays the same.
 - A retried `POST` records the buy twice. Fix when a second client or automatic retries appear: an `Idempotency-Key` header or client-generated ids.
 - `quantityKind` is sent by the client until the Asset Catalog can supply it.

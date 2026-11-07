@@ -1,5 +1,8 @@
 package com.budiyanto.fintrackr.portfolio.adapter.in.web;
 
+import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.fromMethodCall;
+import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.on;
+
 import com.budiyanto.fintrackr.InvalidRequestException;
 import com.budiyanto.fintrackr.portfolio.application.port.in.RecordBuyCommand;
 import com.budiyanto.fintrackr.portfolio.application.port.in.RecordBuyUseCase;
@@ -29,7 +32,8 @@ class RecordBuyController {
     @PostMapping("/{pid}/buys")
     ResponseEntity<Void> recordBuy(@PathVariable("pid") UUID portfolioId, @Valid @RequestBody RecordBuyRequest request) {
         TransactionId transactionId = recordBuyUseCase.handle(toCommand(portfolioId, request));
-        URI location = URI.create("/api/portfolios/" + portfolioId + "/transactions/" + transactionId.value());
+        URI location = fromMethodCall(on(GetTransactionController.class).getTransaction(portfolioId, transactionId.value()))
+                .build().toUri();
         return ResponseEntity.created(location).build();
     }
 
