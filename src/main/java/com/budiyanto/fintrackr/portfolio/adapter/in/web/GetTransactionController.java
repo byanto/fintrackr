@@ -1,10 +1,7 @@
 package com.budiyanto.fintrackr.portfolio.adapter.in.web;
 
 import com.budiyanto.fintrackr.portfolio.application.port.in.GetTransactionUseCase;
-import com.budiyanto.fintrackr.portfolio.domain.model.Buy;
-import com.budiyanto.fintrackr.portfolio.domain.model.Deposit;
 import com.budiyanto.fintrackr.portfolio.domain.model.PortfolioId;
-import com.budiyanto.fintrackr.portfolio.domain.model.Transaction;
 import com.budiyanto.fintrackr.portfolio.domain.model.TransactionId;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -23,17 +20,9 @@ class GetTransactionController {
 
     @GetMapping("/{pid}/transactions/{tid}")
     ResponseEntity<TransactionResponse> getTransaction(@PathVariable("pid") UUID portfolioId, @PathVariable("tid") UUID transactionId) {
-        TransactionResponse response = toResponse(
+        TransactionResponse response = TransactionResponse.from(
                 getTransactionUseCase.handle(PortfolioId.of(portfolioId), TransactionId.of(transactionId)));
         return ResponseEntity.ok(response);
-    }
-
-    private TransactionResponse toResponse(Transaction transaction) {
-        return switch (transaction) {
-            case Deposit d -> new DepositResponse(d.id().value(), d.portfolioId().value(), d.date(), d.amount().amount());
-            case Buy b -> new BuyResponse(b.id().value(), b.portfolioId().value(), b.date(), b.assetId().value(),
-                    b.quantity().value(), b.price().amount(), b.fee().amount());
-        };
     }
 
 }
