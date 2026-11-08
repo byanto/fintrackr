@@ -45,13 +45,15 @@ domain type.
 ## Consequences
 
 ### Positive
-- `Sell` is added in two places. The `switch` in the controller stops compiling until it is handled
+- `Sell` is added in two places. The `switch` in `TransactionResponse.from` stops compiling until it
+  is handled
 - The API stays independent of the domain, because the response records stand between them
 
 ### Negative (costs we explicitly accept)
 - Two patterns exist side by side, and a reader has to know this rule
-- `GetTransactionController` knows `Deposit` and `Buy`, not only ids. The dependency points inward
-  and stays inside the module
+- `TransactionResponse` knows `Deposit` and `Buy`, not only ids. The dependency points inward and
+  stays inside the module. The mapping lives there because two controllers need it, and neither
+  controller should depend on the other
 
 ### Neutral / Open Questions
 - Nothing enforces the rule. ArchUnit does not check it

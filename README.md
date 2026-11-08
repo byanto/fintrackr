@@ -85,9 +85,11 @@ create a portfolio (`POST /api/portfolios`), record a deposit
 (`POST /api/portfolios/{id}/deposits`) and record a buy
 (`POST /api/portfolios/{id}/buys`). On the read side,
 `GET /api/broker-accounts/{id}` returns a broker account with its cash
-balance and `GET /api/portfolios/{id}` returns a portfolio with its trading
-balance. Transactions and holdings cannot be read yet, and there is no
-end-to-end test over HTTP (see Status and Known limitations below).
+balance, `GET /api/portfolios/{id}` returns a portfolio with its trading
+balance, and `GET /api/portfolios/{id}/transactions` lists its deposits and
+buys in ledger order (one of them: `.../transactions/{transactionId}`).
+Holdings cannot be read yet, and there is no end-to-end test over HTTP
+(see Status and Known limitations below).
 
 ### Code style
 
@@ -125,7 +127,8 @@ Work in progress (v1), built in vertical slices:
 - [x] REST: read a broker account, `Location` built from the GET mapping (`GetBrokerAccountControllerTest`)
 - [x] REST: read a portfolio, `Location` for a new portfolio built from the GET mapping (`GetPortfolioControllerTest`)
 - [x] REST: read a single transaction, `Location` for a recorded buy and deposit built from the GET mapping ([ADR-014](docs/adr/0014-what-a-read-use-case-returns.md); `GetTransactionControllerTest`)
-- [ ] REST: list the transactions of a portfolio, read its holdings
+- [x] REST: list the transactions of a portfolio in ledger order, an empty portfolio answered with an empty list (`ListTransactionsControllerTest`)
+- [ ] REST: read the holdings of a portfolio
 - [ ] Minimal web UI
 
 ## Known limitations
